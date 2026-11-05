@@ -1,13 +1,14 @@
 // Live ENSv2 exclusivity proof for any name, read straight from Sepolia. Nothing here is hard-coded but the protocol's addresses.
 import "@verbatim/app-kit/style.css";
-import { createPublicClient, hexToBigInt, http, keccak256, namehash, parseAbi, toHex, type Address, type Hex } from "viem";
+import { createPublicClient, decodeFunctionResult, encodeFunctionData, hexToBigInt, http, keccak256, namehash, parseAbi, toHex, type Address, type Hex } from "viem";
 import { sepolia } from "viem/chains";
 import deployment from "../../../deployments/sepolia.json";
 
 const dep = deployment as any;
 const client = createPublicClient({ chain: sepolia, transport: http("https://ethereum-sepolia-rpc.publicnode.com") });
 const REG = parseAbi(["struct State { uint8 status; uint64 expiry; address latestOwner; uint256 tokenId; uint256 resource; }", "function getResolver(string) view returns (address)", "function getSubregistry(string) view returns (address)", "function getState(uint256) view returns (State)", "function roleCount(uint256) view returns (uint256)"]);
-const RES = parseAbi(["function roleCount(uint256) view returns (uint256)", "function hasRoles(uint256,uint256,address) view returns (bool)", "function resolve(bytes,bytes) view returns (bytes)", "function text(bytes32,string) view returns (string)"]);
+const RES = parseAbi(["function roleCount(uint256) view returns (uint256)", "function hasRoles(uint256,uint256,address) view returns (bool)", "function resolve(bytes,bytes) view returns (bytes)"]);
+const TEXT = parseAbi(["function text(bytes32,string) view returns (string)"]);
 const CHECK = parseAbi(["function check(bytes32,bytes32) view", "function COUNCIL() view returns (address)", "function RESOLVER_CODEHASH() view returns (bytes32)"]);
 const NYBBLE = 0xfn;
 const count = (bitmap: bigint, role: bigint) => (bitmap >> BigInt(role.toString(2).length - 1)) & NYBBLE;
@@ -74,9 +75,12 @@ async function run() {
 
     let record = "";
     try {
-      record = await client.readContract({ address: resolver, abi: RES, functionName: "text", args: [namehash(name), "clear-signing"] });
+      // This resolver serves records through resolve(name, data), as the ENSv2 docs describe.
+      const data = encodeFunctionData({ abi: TEXT, functionName: "text", args: [namehash(name), "clear-signing"] });
+      const raw = await client.readContract({ address: resolver, abi: RES, functionName: "resolve", args: [dns(name), data] });
+      record = decodeFunctionResult({ abi: TEXT, functionName: "text", data: raw });
     } catch {
-      /* read below reports it */
+      /* no record: reported below */
     }
     const hashes = record ? record.split(",") : [];
     rows.push(row("Descriptors this publisher stands behind", hashes.length ? null : false, hashes.length ? hashes.join(" ") : "No clear-signing record."));

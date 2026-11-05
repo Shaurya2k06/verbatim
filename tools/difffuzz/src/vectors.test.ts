@@ -10,7 +10,7 @@ const file = resolve(dirname(fileURLToPath(import.meta.url)), "../../../test/vec
 const { vectors } = JSON.parse(readFileSync(file, "utf8"));
 const revive = (i: any) => ({ ...i, chainId: BigInt(i.chainId), signedAtBlock: BigInt(i.signedAtBlock), ttl: BigInt(i.ttl), feeAmount: BigInt(i.feeAmount), gasLimitTotal: BigInt(i.gasLimitTotal) });
 
-describe("golden vectors", () => {
+describe("I8: golden vectors", () => {
   it("the TypeScript renderer reproduces them", () => {
     expect(vectors.length).toBeGreaterThan(10);
     for (const v of vectors) {
