@@ -5,27 +5,27 @@
     "expected": "admitted by the public alt mempool and mined; batch succeeds",
     "pass": true,
     "outcome": "mined",
-    "txHash": "0xf222bf12e0ccfdad23f37b32e548e355575e526fef97174f884e5d08dd4b8664",
-    "block": 406730,
+    "txHash": "0x41bf1e2ec41c3b56a4de327b71967cf759d505b0d4f9678afc0f3c75a4c88956",
+    "block": 406940,
     "frameGas": [
       {
         "execution": 18264,
         "state": 0
       },
       {
-        "execution": 56611,
+        "execution": 56650,
         "state": 0
       },
       {
-        "execution": 140557,
+        "execution": 140741,
         "state": 293760
       }
     ],
     "extra": {
-      "payer": "0xef1620187ebbda9ac4d9696f6c7c377d101fdbec",
+      "payer": "0x97da098b58c6c1659957dbd493e6cb0a84dbd3a0",
       "delivered": "1000000"
     },
-    "at": "2026-11-05T20:25:24.404Z"
+    "at": "2026-11-05T20:46:24.057Z"
   },
   "A1": {
     "id": "A1",
@@ -33,8 +33,8 @@
     "expected": "mempool reject (tree mismatch)",
     "pass": true,
     "outcome": "rejected-at-mempool",
-    "message": "validation frame 1: reverted with data 0x669a6fec3dd22f8abd690acaf66700c946e6194e1df54e794b48e805cab14d1f88c4d43ec84990c4f394ba905afbbe250999157b4099e38c602b10032aaf3387f5d2848f => TreeMismatch(0x3dd22f8abd690acaf66700c946e6194e1df54e794b48e805cab14d1f88c4d43e, 0xc84990c4f394ba905afbbe250999157b4099e38c602b10032aaf3387f5d2848f)",
-    "at": "2026-11-05T20:25:40.225Z"
+    "message": "validation frame 1: reverted with data 0x669a6fec4fbaeb3602762f7ee7b5511af98f2226cb9a8e89af5cf7b6e994698dca8de00071471eb15be1fb874f6046bfa09a1ca552d28b5aac962e6cb0b8f60663221572 => TreeMismatch(0x4fbaeb3602762f7ee7b5511af98f2226cb9a8e89af5cf7b6e994698dca8de000, 0x71471eb15be1fb874f6046bfa09a1ca552d28b5aac962e6cb0b8f60663221572)",
+    "at": "2026-11-05T20:46:39.872Z"
   },
   "A3": {
     "id": "A3",
@@ -43,7 +43,7 @@
     "pass": true,
     "outcome": "rejected-at-mempool",
     "message": "validation frame 0: reverted with data 0x3144dd7b0000000000000000000000000000000000000000000000000000000000000000 => BadLayout(0x0)",
-    "at": "2026-11-05T20:25:52.362Z"
+    "at": "2026-11-05T20:46:51.928Z"
   },
   "A3b": {
     "id": "A3b",
@@ -52,7 +52,7 @@
     "pass": true,
     "outcome": "rejected-at-mempool",
     "message": "validation frame 0: reverted with data 0x3144dd7b0000000000000000000000000000000000000000000000000000000000000004 => BadLayout(0x4)",
-    "at": "2026-11-05T20:25:52.935Z"
+    "at": "2026-11-05T20:46:52.474Z"
   },
   "A4": {
     "id": "A4",
@@ -60,8 +60,8 @@
     "expected": "frame 1 hash mismatch",
     "pass": true,
     "outcome": "rejected-at-mempool",
-    "message": "validation frame 1: reverted with data 0xaf0de3f3d1a553403a03de59143bc198ada523c65836557ae49359f0d0c94b02ee8d1de2a0b219aab5a0c3e67ed6e0bc32763d457ef02243c1462d5730e1f9493289a8a4 => SpecHashMismatch(0xd1a553403a03de59143bc198ada523c65836557ae49359f0d0c94b02ee8d1de2, 0xa0b219aab5a0c3e67ed6e0bc32763d457ef02243c1462d5730e1f9493289a8a4)",
-    "at": "2026-11-05T20:26:07.779Z"
+    "message": "validation frame 1: reverted with data 0xaf0de3f3d1a553403a03de59143bc198ada523c65836557ae49359f0d0c94b02ee8d1de26bb1ed23be5dae34fe42ad3ef61c4281d4a94bc8dd055d7babc0e7f7a623cd6c => SpecHashMismatch(0xd1a553403a03de59143bc198ada523c65836557ae49359f0d0c94b02ee8d1de2, 0x6bb1ed23be5dae34fe42ad3ef61c4281d4a94bc8dd055d7babc0e7f7a623cd6c)",
+    "at": "2026-11-05T20:47:08.887Z"
   },
   "A4b": {
     "id": "A4b",
@@ -69,8 +69,8 @@
     "expected": "frame 1 hash mismatch",
     "pass": true,
     "outcome": "rejected-at-mempool",
-    "message": "validation frame 1: reverted with data 0xaf0de3f3a0b219aab5a0c3e67ed6e0bc32763d457ef02243c1462d5730e1f9493289a8a4d1a553403a03de59143bc198ada523c65836557ae49359f0d0c94b02ee8d1de2 => SpecHashMismatch(0xa0b219aab5a0c3e67ed6e0bc32763d457ef02243c1462d5730e1f9493289a8a4, 0xd1a553403a03de59143bc198ada523c65836557ae49359f0d0c94b02ee8d1de2)",
-    "at": "2026-11-05T20:26:08.374Z"
+    "message": "validation frame 1: reverted with data 0xaf0de3f36bb1ed23be5dae34fe42ad3ef61c4281d4a94bc8dd055d7babc0e7f7a623cd6cd1a553403a03de59143bc198ada523c65836557ae49359f0d0c94b02ee8d1de2 => SpecHashMismatch(0x6bb1ed23be5dae34fe42ad3ef61c4281d4a94bc8dd055d7babc0e7f7a623cd6c, 0xd1a553403a03de59143bc198ada523c65836557ae49359f0d0c94b02ee8d1de2)",
+    "at": "2026-11-05T20:47:09.383Z"
   },
   "A9": {
     "id": "A9",
@@ -79,7 +79,7 @@
     "pass": true,
     "outcome": "rejected-at-mempool",
     "message": "validation frame 1: reverted with data 0x4f0ca25300000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000d02f22b00 => NoTicket(0x1, 0xd02f22b00)",
-    "at": "2026-11-05T20:28:46.912Z"
+    "at": "2026-11-05T20:49:35.614Z"
   },
   "A5": {
     "id": "A5",
@@ -88,7 +88,7 @@
     "pass": true,
     "outcome": "rejected-at-mempool",
     "message": "validation frame 1: reverted with data 0xa42253ed0000000000000000000000000000000000000000000000000000000000000003 => PolicyRefused(0x3)",
-    "at": "2026-11-05T20:26:19.464Z"
+    "at": "2026-11-05T20:47:20.650Z"
   },
   "A6": {
     "id": "A6",
@@ -96,27 +96,27 @@
     "expected": "assertion revert, fee kept",
     "pass": true,
     "outcome": "reverted-in-batch",
-    "txHash": "0xd3fff8fd0ab42f8eb19e8a71d9c91d71460a4aedd879b58621662fe9e4be285d",
-    "block": 406755,
-    "message": "0x7ad2804b00000000000000000000000000000000000000000000000000000000000000020000000000000000000000007de0208a1f460a6230c89a0f16bf1fc5cc53cb7e000000000000000000000000000000000000000000000002b5e3af16b1880000 => AssertionFailed(0x2, 0x7de0208a1f460a6230c89a0f16bf1fc5cc53cb7e, 0x2b5e3af16b1880000)",
+    "txHash": "0x1884f7b0ef007a4e10568773886de3ec6361f1ffff13063de2bc9787a8ec46b1",
+    "block": 406964,
+    "message": "0x7ad2804b000000000000000000000000000000000000000000000000000000000000000200000000000000000000000022b9ec43cf81fe4da34db0c0788ce0b0a86cecbe000000000000000000000000000000000000000000000002b5e3af16b1880000 => AssertionFailed(0x2, 0x22b9ec43cf81fe4da34db0c0788ce0b0a86cecbe, 0x2b5e3af16b1880000)",
     "frameGas": [
       {
         "execution": 18248,
         "state": 0
       },
       {
-        "execution": 51917,
+        "execution": 51962,
         "state": 0
       },
       {
-        "execution": 230055,
+        "execution": 230237,
         "state": 0
       }
     ],
     "extra": {
       "feeKept": "55884000000"
     },
-    "at": "2026-11-05T20:27:53.955Z"
+    "at": "2026-11-05T20:48:49.735Z"
   },
   "A7": {
     "id": "A7",
@@ -124,24 +124,24 @@
     "expected": "revert",
     "pass": true,
     "outcome": "reverted-in-batch",
-    "txHash": "0x739e7021c9ba4015b875cd47910b8190362ffa5c923ed3bed5b7c9fe85819a9c",
-    "block": 406762,
-    "message": "0xaa2fd925000000000000000000000000000000000000000000000000000000006aece6f2000000000000000000000000000000000000000000000000000000006aece6d8 => Expired(0x6aece6f2, 0x6aece6d8)",
+    "txHash": "0xf938324fe9eefe99b7e1685302147dbbf40306b5de9b0500963bbca329533552",
+    "block": 406970,
+    "message": "0xaa2fd925000000000000000000000000000000000000000000000000000000006aecebd2000000000000000000000000000000000000000000000000000000006aecebbe => Expired(0x6aecebd2, 0x6aecebbe)",
     "frameGas": [
       {
         "execution": 18264,
         "state": 0
       },
       {
-        "execution": 56611,
+        "execution": 56650,
         "state": 0
       },
       {
-        "execution": 56102,
+        "execution": 55930,
         "state": 0
       }
     ],
-    "at": "2026-11-05T20:28:35.184Z"
+    "at": "2026-11-05T20:49:23.828Z"
   },
   "A10": {
     "id": "A10",
@@ -150,7 +150,7 @@
     "pass": true,
     "outcome": "rejected-at-mempool",
     "message": "validation frame 0: reverted with data 0xf20030d8 => BadSignatureEntry()",
-    "at": "2026-11-05T20:29:16.747Z"
+    "at": "2026-11-05T20:51:41.522Z"
   },
   "A11": {
     "id": "A11",
@@ -158,8 +158,8 @@
     "expected": "reverts",
     "pass": true,
     "outcome": "reverted-in-batch",
-    "txHash": "0x02a74d89721f2092b354c93d5b42b1c1c72ce8d21fed3b96e68e43fb0ec783a7",
-    "block": 406772,
+    "txHash": "0x7cc61d7e4a19d46319101e81b30a8d962acc77445843a14d7218b8b19ada5759",
+    "block": 406997,
     "message": "0x5c0dee5d00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000006408c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001a7265656e747279206661696c65642061732064657369676e656400000000000000000000000000000000000000000000000000000000000000000000 => CallFailed(0x0, 0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001a7265656e747279206661696c65642061732064657369676e6564000000000000) [0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001a7265656e747279206661696c65642061732064657369676e6564000000000000 => Error(reentry failed as designed)]",
     "frameGas": [
       {
@@ -171,11 +171,11 @@
         "state": 0
       },
       {
-        "execution": 124430,
+        "execution": 124419,
         "state": 0
       }
     ],
-    "at": "2026-11-05T20:29:35.433Z"
+    "at": "2026-11-05T20:52:06.666Z"
   },
   "A12": {
     "id": "A12",
@@ -183,8 +183,8 @@
     "expected": "reserve keeps it safe",
     "pass": true,
     "outcome": "reverted-in-batch",
-    "txHash": "0x11f9d95d5ee9855ff189cc8eb27ed1f94cd8c0a2c141b2dcad6d0215d9992999",
-    "block": 406775,
+    "txHash": "0xfdfc492f755ae81bd25b600da557df75985e70151656f13071968d6ba8aceedb",
+    "block": 407004,
     "message": "0x5c0dee5d000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000 => CallFailed(0x0, 0x) [0x]",
     "frameGas": [
       {
@@ -192,15 +192,15 @@
         "state": 0
       },
       {
-        "execution": 41258,
+        "execution": 41270,
         "state": 0
       },
       {
-        "execution": 975701,
+        "execution": 975879,
         "state": 0
       }
     ],
-    "at": "2026-11-05T20:29:53.315Z"
+    "at": "2026-11-05T20:52:49.288Z"
   },
   "F7": {
     "id": "F7",
@@ -208,19 +208,19 @@
     "expected": "frame 2 fails; no protected call executes",
     "pass": true,
     "outcome": "mined",
-    "txHash": "0xfdcc352a4054117e08ba9ae1821c2d1a1d20c83546f09e7871f16cd16a052e74",
-    "block": 406313,
+    "txHash": "0xaafbfccd52a5fed20edaf1be132ad3eb465e40732ba42515363ac87179b63080",
+    "block": 407054,
     "frameGas": [
       {
-        "execution": 19376,
+        "execution": 18264,
         "state": 0
       },
       {
-        "execution": 62133,
+        "execution": 56638,
         "state": 0
       },
       {
-        "execution": 12524,
+        "execution": 12750,
         "state": 0
       }
     ],
@@ -231,7 +231,7 @@
         "0x0"
       ]
     },
-    "at": "2026-11-05T19:43:42.520Z"
+    "at": "2026-11-05T20:57:48.242Z"
   },
   "SWAP": {
     "id": "SWAP",
@@ -239,28 +239,28 @@
     "expected": "admitted, mined, min out respected",
     "pass": true,
     "outcome": "mined",
-    "txHash": "0xd6b5e9fcc5ccd51a407b28056a3eafe6e5e06392f77ad46248691e23aa4efa8a",
-    "block": 406318,
+    "txHash": "0x6aaba4c1fdc9073dbfc73c81cf779f31dac195d1180e7e4e6ccdbf81a15f0e27",
+    "block": 407087,
     "frameGas": [
       {
-        "execution": 19972,
+        "execution": 18860,
         "state": 0
       },
       {
-        "execution": 68249,
+        "execution": 62725,
         "state": 0
       },
       {
-        "execution": 350474,
-        "state": 0
+        "execution": 358960,
+        "state": 97920
       }
     ],
     "message": "",
     "extra": {
-      "receivedRaw": "2109249539",
+      "receivedRaw": "2983242441",
       "paidRaw": "1000000000000000000"
     },
-    "at": "2026-11-05T19:44:11.854Z"
+    "at": "2026-11-05T21:01:06.520Z"
   },
   "WRAP": {
     "id": "WRAP",
@@ -268,24 +268,24 @@
     "expected": "admitted, mined, exact WETH delta",
     "pass": true,
     "outcome": "mined",
-    "txHash": "0xd0050ff7c89f46f6e78ed332bc2807d493652717a223315276f71a8541c2110a",
-    "block": 406323,
+    "txHash": "0x9f48386b4340f071bc2f64a4b69d920da8f07c34a6b87f716089a18ea6efe908",
+    "block": 407094,
     "frameGas": [
       {
-        "execution": 19532,
+        "execution": 18420,
         "state": 0
       },
       {
-        "execution": 53298,
+        "execution": 47779,
         "state": 0
       },
       {
-        "execution": 251313,
-        "state": 0
+        "execution": 264408,
+        "state": 97920
       }
     ],
     "message": "",
-    "at": "2026-11-05T19:44:43.218Z"
+    "at": "2026-11-05T21:01:47.437Z"
   },
   "A2-eoa": {
     "id": "A2-eoa",
@@ -293,13 +293,13 @@
     "expected": "the skim works: this is what Verbatim prevents",
     "pass": true,
     "outcome": "mined",
-    "txHash": "0xfc0970583fc676c553e6093959fe13e49b19bfc6a424cf837dedb5d11f750fa4",
-    "block": 406329,
+    "txHash": "0x9187793b9a8511ed5dab4121d7abe9ba082c68b02aa2d33afdebf37b9b69bfa8",
+    "block": 407099,
     "extra": {
-      "victimReceivedRaw": "25568739",
-      "hookTookRaw": "2531305096"
+      "victimReceivedRaw": "28361251",
+      "hookTookRaw": "2807763804"
     },
-    "at": "2026-11-05T19:45:17.213Z"
+    "at": "2026-11-05T21:02:19.947Z"
   },
   "A2": {
     "id": "A2",
@@ -307,8 +307,8 @@
     "expected": "mempool reject (tree mismatch)",
     "pass": true,
     "outcome": "rejected-at-mempool",
-    "message": "validation frame 1: reverted with data 0x669a6fec289d0548d73152a54d9e464159463d65ce9ce74b242e6d4f33d60dfe0261f45eb275481ad93b24fdd6400ac3ce883afa68126395cfad1d73f1f01338d41cfd37 => TreeMismatch(0x289d0548d73152a54d9e464159463d65ce9ce74b242e6d4f33d60dfe0261f45e, 0xb275481ad93b24fdd6400ac3ce883afa68126395cfad1d73f1f01338d41cfd37)",
-    "at": "2026-11-05T19:45:37.216Z"
+    "message": "validation frame 1: reverted with data 0x669a6fec3b98ee55a7213ace57c714198b7e3928682e2185cd4eed02cd49f920281d4c45f410820caa42e9dafb6bb42ecb5e31c832afb02ccc1d44bb4a8b318cfb37b3cd => TreeMismatch(0x3b98ee55a7213ace57c714198b7e3928682e2185cd4eed02cd49f920281d4c45, 0xf410820caa42e9dafb6bb42ecb5e31c832afb02ccc1d44bb4a8b318cfb37b3cd)",
+    "at": "2026-11-05T21:02:38.648Z"
   },
   "A2b": {
     "id": "A2b",
@@ -324,7 +324,7 @@
         "! UNVERIFIED HOOK"
       ]
     },
-    "at": "2026-11-05T19:45:46.226Z"
+    "at": "2026-11-05T21:02:46.489Z"
   },
   "B-honest-pimlico": {
     "id": "B-honest-pimlico",
@@ -435,8 +435,8 @@
     "expected": "the device refuses; signed anyway, the policy cap reverts the batch",
     "pass": true,
     "outcome": "reverted-in-batch",
-    "txHash": "0xa5e2f5e8385562a3669e44788e61722ce21339fffbd2eca274b15bbefa4d1b90",
-    "block": 406780,
+    "txHash": "0x19af57ad97ddca0e2279a1ff3b0c97d042cdd7edae7f54c4831911717460ae53",
+    "block": 407009,
     "message": "0x11453ecf0000000000000000000000000000000000000000000000000000000000000df8000000000000000000000000000000000000000000000000000000000000012c => TtlTooLong(0xdf8, 0x12c)",
     "frameGas": [
       {
@@ -444,18 +444,18 @@
         "state": 0
       },
       {
-        "execution": 56611,
+        "execution": 56650,
         "state": 0
       },
       {
-        "execution": 57636,
+        "execution": 57464,
         "state": 0
       }
     ],
     "extra": {
-      "device": "this signature would stay valid for 3593 seconds, and the limit is 600"
+      "device": "this signature would stay valid for 3591 seconds, and the limit is 600"
     },
-    "at": "2026-11-05T20:30:25.522Z"
+    "at": "2026-11-05T20:53:18.791Z"
   },
   "A14": {
     "id": "A14",
@@ -464,7 +464,7 @@
     "pass": true,
     "outcome": "rejected-at-mempool",
     "message": "validation frame 1: reverted with data 0x4f0ca25300000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000d02f22b00 => NoTicket(0x2, 0xd02f22b00)",
-    "at": "2026-11-05T20:31:05.095Z"
+    "at": "2026-11-05T20:54:05.098Z"
   },
   "A16": {
     "id": "A16",
@@ -473,7 +473,7 @@
     "pass": true,
     "outcome": "rejected-at-mempool",
     "message": "validation frame 1: reverted with data 0xa42253ed0000000000000000000000000000000000000000000000000000000000000200 => PolicyRefused(0x200)",
-    "at": "2026-11-05T20:31:18.434Z"
+    "at": "2026-11-05T20:54:18.674Z"
   },
   "A17": {
     "id": "A17",
@@ -482,7 +482,7 @@
     "pass": true,
     "outcome": "rejected-at-mempool",
     "message": "validation frame 1: reverted with data 0xa42253ed0000000000000000000000000000000000000000000000000000000000000002 => PolicyRefused(0x2)",
-    "at": "2026-11-05T20:31:30.992Z"
+    "at": "2026-11-05T20:54:32.069Z"
   },
   "A17b": {
     "id": "A17b",
@@ -491,6 +491,65 @@
     "pass": true,
     "outcome": "rejected-at-mempool",
     "message": "validation frame 1: reverted with data 0xa42253ed0000000000000000000000000000000000000000000000000000000000000002 => PolicyRefused(0x2)",
-    "at": "2026-11-05T20:31:38.373Z"
+    "at": "2026-11-05T20:54:40.642Z"
+  },
+  "A18": {
+    "id": "A18",
+    "title": "Return bomb: a call reverts with 500 KB",
+    "expected": "batch reverts, fee stays paid",
+    "pass": true,
+    "outcome": "reverted-in-batch",
+    "txHash": "0xaaa9991453f62cb2589e3a9531b4c5b6cc17a74d51c08aedeebd944884d280bc",
+    "block": 407000,
+    "message": "0x5c0dee5d0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000001",
+    "frameGas": [
+      {
+        "execution": 18202,
+        "state": 0
+      },
+      {
+        "execution": 41309,
+        "state": 0
+      },
+      {
+        "execution": 646742,
+        "state": 0
+      }
+    ],
+    "at": "2026-11-05T20:52:24.160Z"
+  },
+  "A15": {
+    "id": "A15",
+    "title": "Revoking one descriptor stops only the transactions that use it",
+    "expected": "an unrelated refresh invalidates nothing; the revocation invalidates 1 of 5",
+    "pass": true,
+    "outcome": "rejected-at-mempool",
+    "message": "0x669a6fece78a5ca259fb56f2a1d1ab9b2778c3fce41dd3e67e7a423b4fdd5aac7791ef541e67d58e6f4cdabff71f91c6cc932859047b826145a2dbc1a1f4a46d30f21468 => TreeMismatch(0xe78a5ca259fb56f2a1d1ab9b2778c3fce41dd3e67e7a423b4fdd5aac7791ef54, 0x1e67d58e6f4cdabff71f91c6cc932859047b826145a2dbc1a1f4a46d30f21468)",
+    "extra": {
+      "before": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "afterUnrelatedRefresh": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "afterRevocation": [
+        false,
+        true,
+        true,
+        true,
+        true
+      ],
+      "unrelatedRefreshTx": "0xd4309b69196fb30c5531d10b2e4751836b96f006bc577620cc835c466ca3cd6e",
+      "revokeTx": "0x7e666c1bb263a252ada8b27f80e359932293cb0b927650d2a47add47e442fc32"
+    },
+    "at": "2026-11-05T20:59:12.166Z"
   }
 }
