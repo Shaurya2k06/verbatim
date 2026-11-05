@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Hook X-ray</title>
+    <style>
+      :root { --bg: #fbfaf7; --fg: #1c1b19; --muted: #6a675f; --line: #e3dfd6; --risk: #a3261d; --riskbg: #fbeae7; --ok: #1d6b45; --okbg: #e7f3ec; }
+      @media (prefers-color-scheme: dark) { :root { --bg: #161513; --fg: #ecebe6; --muted: #9d9a91; --line: #33312c; --risk: #f09a90; --riskbg: #3a1f1b; --ok: #84d3ab; --okbg: #17302a; } }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.5 ui-sans-serif, system-ui, sans-serif; }
+      main { max-width: 720px; margin: 0 auto; padding: 32px 16px 64px; }
+      h1 { font-size: 26px; margin: 0 0 4px; }
+      p { color: var(--muted); margin: 0 0 20px; }
+      label { display: block; font-weight: 600; margin: 16px 0 6px; }
+      textarea, select { width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: inherit; font: 14px/1.4 ui-monospace, monospace; }
+      textarea { min-height: 96px; }
+      button { margin-top: 12px; padding: 9px 16px; border: 0; border-radius: 6px; background: var(--fg); color: var(--bg); font-weight: 600; cursor: pointer; }
+      .risk, .ok { padding: 8px 10px; border-radius: 6px; margin: 6px 0; font-weight: 600; }
+      .risk { color: var(--risk); background: var(--riskbg); }
+      .ok { color: var(--ok); background: var(--okbg); }
+      table { border-collapse: collapse; width: 100%; margin-top: 14px; font-size: 14px; }
+      td { padding: 5px 0; border-bottom: 1px solid var(--line); }
+      td:last-child { text-align: right; font-family: ui-monospace, monospace; }
+      .on { font-weight: 700; }
+      .mono { font: 13px ui-monospace, monospace; overflow-wrap: anywhere; color: var(--muted); }
+    </style>
+  </head>
+  <body><main id="app"></main><script type="module" src="/src/main.ts"></script></body>
+</html>

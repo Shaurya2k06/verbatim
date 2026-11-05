@@ -556,7 +556,7 @@ contract StatelessTest is SnapshotFixture {
         _load(s, p, keccak256(s.tree), keccak256(s.spec));
         (bool ok, bytes memory ret) = _verify();
         assertFalse(ok);
-        assertEq(errorName(ret), StatelessRenderer.SpecArgMismatch.selector);
+        assertEq(errorName(ret), VerbatimAccountBase.SpecHashMismatch.selector);
     }
 
     function test_B11_A7b_starved_expiry_frame_refused() public {

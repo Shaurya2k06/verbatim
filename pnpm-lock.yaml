@@ -66,6 +66,19 @@ importers:
         specifier: ^5.4.0
         version: 5.4.21(@types/node@22.20.5)
 
+  apps/hook-xray:
+    dependencies:
+      viem:
+        specifier: ^2.21.0
+        version: 2.57.16(typescript@5.9.3)
+    devDependencies:
+      vite:
+        specifier: ^5.4.0
+        version: 5.4.21(@types/node@22.20.5)
+      vitest:
+        specifier: ^2.1.0
+        version: 2.1.9(@types/node@22.20.5)
+
   apps/swap-demo:
     dependencies:
       '@verbatim/app-kit':

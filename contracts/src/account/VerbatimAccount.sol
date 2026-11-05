@@ -20,7 +20,7 @@ interface IStatelessRenderer {
         address[] hints;
     }
 
-    function render(bytes32 root, bytes calldata proofs, In memory i) external view returns (bytes32 treeHash, bytes32 specHash, uint256 risk);
+    function render(bytes32 root, bytes calldata proofs, In memory i) external view returns (bytes32 treeHash, bytes32 specHash, uint256 risk, bytes32 argSpecHash);
 }
 
 interface IRevocationRegistry {
@@ -642,9 +642,10 @@ abstract contract VerbatimAccountBase is VerbatimCore, FrameIntrospection {
         i.maxFee = l.maxFee * (l.g0 + l.s0 + l.g1 + l.s1 + l.g2 + l.s2);
         i.body = _framedatacopy(4, l.l2 - 4, 2);
         i.hints = hints;
-        (bytes32 tree, bytes32 spec, uint256 risk) = IStatelessRenderer(STATELESS_RENDERER).render(root, proofs, i);
+        (bytes32 tree, bytes32 spec, uint256 risk, bytes32 argSpec) = IStatelessRenderer(STATELESS_RENDERER).render(root, proofs, i);
         if (tree != treeHash) revert TreeMismatch(treeHash, tree);
         if (spec != specHash) revert SpecHashMismatch(specHash, spec);
+        if (argSpec != specHash) revert SpecHashMismatch(specHash, argSpec);
         if (PolicyRules.refuses(risk, uint32(stored >> 88))) revert PolicyRefused(risk);
     }
 

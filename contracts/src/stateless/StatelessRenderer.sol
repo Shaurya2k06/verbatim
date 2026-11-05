@@ -16,7 +16,6 @@ contract StatelessRenderer is DisplayVM {
     address public immutable WETH;
     bytes32 public immutable ROUTER_PUBLISHER;
 
-    error SpecArgMismatch(bytes32 derived, bytes32 given);
     error DescriptorHashMismatch();
 
     constructor(address permit2, address weth, bytes32 routerPublisher) {
@@ -26,7 +25,7 @@ contract StatelessRenderer is DisplayVM {
     }
 
     /// Head of the calldata: selector, root, then an offset to `proofs`. `In` follows. Lookups read these by position.
-    function render(bytes32 root, bytes calldata proofs, In memory i) external view returns (bytes32 treeHash, bytes32 specHash, uint256 risk) {
+    function render(bytes32 root, bytes calldata proofs, In memory i) external view returns (bytes32 treeHash, bytes32 specHash, uint256 risk, bytes32 argSpecHash) {
         root;
         proofs;
         Out memory o = _render(i);
@@ -35,8 +34,7 @@ contract StatelessRenderer is DisplayVM {
         risk = o.risk;
         bytes memory body = i.body;
         uint256 sp = body.rdWord(32);
-        bytes32 argSpec = body.hashRange(sp + 32, body.rdWord(sp));
-        if (argSpec != specHash) revert SpecArgMismatch(specHash, argSpec);
+        argSpecHash = body.hashRange(sp + 32, body.rdWord(sp));
     }
 
     function renderView(bytes32 root, bytes calldata proofs, In memory i) external view returns (bytes memory tree, bytes memory spec, uint256 risk) {

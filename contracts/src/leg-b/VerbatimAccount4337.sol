@@ -90,9 +90,10 @@ contract VerbatimAccount4337 is VerbatimCore {
         i.maxFee = _maxFee(op);
         i.body = _body(op.callData);
         i.hints = s.hints;
-        (bytes32 tree, bytes32 spec, uint256 risk) = IStatelessRenderer(STATELESS_RENDERER).render(s.root, s.proofs, i);
+        (bytes32 tree, bytes32 spec, uint256 risk, bytes32 argSpec) = IStatelessRenderer(STATELESS_RENDERER).render(s.root, s.proofs, i);
         if (tree != s.treeHash) revert TreeMismatch(s.treeHash, tree);
         if (spec != s.specHash) revert SpecHashMismatch(s.specHash, spec);
+        if (argSpec != s.specHash) revert SpecHashMismatch(s.specHash, argSpec);
         if (PolicyRules.refuses(risk, allowMask)) revert PolicyRefused(risk);
 
         if (missingAccountFunds != 0) {
