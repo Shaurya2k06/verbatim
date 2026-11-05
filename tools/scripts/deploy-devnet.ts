@@ -1,11 +1,10 @@
 // Deploys Verbatim to the frames devnet and attests the demo's descriptors. Idempotent per state key.
 import { encodeFunctionData, getContractAddress, keccak256, parseEther, type Address, type Hex } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
 import { STAKING_REGISTRY } from "@verbatim/frames-sdk";
 import { PAYMASTER_ABI, packedUniswap } from "@verbatim/client";
 import { addr, key, readState, writeState } from "./lib/env";
 import { artifact, deploy, faucet, pub, send, waitBalance } from "./lib/chain";
-import { REFRESH_ABI, descriptorsFor, emptyUpdate, tokenEntry, updateHash } from "./lib/trust-update";
+import { attest, descriptorsFor, emptyUpdate, tokenEntry } from "./lib/trust-update";
 
 // Predeployed on the devnet: deployments/devnet.md in forshtat/mempool-workshop-sidecar.
 export const PERMIT2: Address = "0x000000000022D473030F116dDEE9F6B43aC78BA3";
@@ -60,6 +59,13 @@ if (!s.staked) {
   s = readState();
 }
 
+if (!s.feeRateSet) {
+  // Above the devnet's base fee plus our tip, so a fee covers the worst case the paymaster can be charged.
+  await send(deployer, s.paymaster, encodeFunctionData({ abi: PAYMASTER_ABI, functionName: "setFeeAsset", args: ["0x0000000000000000000000000000000000000000", 1100n, true] }));
+  writeState({ feeRateSet: true });
+  s = readState();
+}
+
 if (!s.tokenA) {
   const a = await deploy(deployer, "TestTokens.sol", "TestToken", { args: ["Demo USD", "dUSDC", 6] });
   const b = await deploy(deployer, "TestTokens.sol", "TestToken", { args: ["Demo Wrapped Ether", "dWETH", 18] });
@@ -69,6 +75,18 @@ if (!s.tokenA) {
 if (!s.evilVault) {
   const v = await deploy(deployer, "EvilVault.sol", "EvilVault", { args: [s.tokenA, s.tokenB, addr("ATTACKER_KEY")] });
   writeState({ evilVault: v.address });
+  s = readState();
+}
+
+if (!s.reenterer) {
+  const r = await deploy(deployer, "EvilVault.sol", "Reenterer");
+  const g = await deploy(deployer, "EvilVault.sol", "GasBurner");
+  writeState({ reenterer: r.address, gasBurner: g.address });
+  s = readState();
+}
+if (!s.account2) {
+  const a = await deploy(deployer, "VerbatimAccount.sol", "VerbatimAccount", { args: [s.paymaster, 200n, owners, 2, s.frameReader], approve: true });
+  writeState({ account2: a.address });
   s = readState();
 }
 
@@ -82,14 +100,12 @@ if (!s.trustEpoch) {
     ...descriptorsFor("account-admin.json", s.accountCodehash),
     ...descriptorsFor("renderer-paymaster.json", await chOf(s.paymaster)),
     ...descriptorsFor("evil-vault.json", await chOf(s.evilVault), { USDC: s.tokenA }),
+    ...descriptorsFor("attack-kit.json", await chOf(s.reenterer)),
+    ...descriptorsFor("attack-kit-burner.json", await chOf(s.gasBurner)),
   ];
   u.tokens = [tokenEntry(s.tokenA, "dUSDC", 6), tokenEntry(s.tokenB, "dWETH", 18), tokenEntry(WETH9, "WETH", 18)];
   u.routers = [await chOf(ROUTER)];
-  const h = updateHash(1337n, s.paymaster, u);
-  const signers = ["ATTESTOR1_KEY", "ATTESTOR2_KEY", "ATTESTOR3_KEY"].map((k) => privateKeyToAccount(key(k)));
-  const sorted = signers.sort((x, y) => (BigInt(x.address) < BigInt(y.address) ? -1 : 1)).slice(0, 2);
-  const sigs = await Promise.all(sorted.map((x) => x.sign({ hash: h })));
-  const r = await send(deployer, s.paymaster, encodeFunctionData({ abi: REFRESH_ABI, functionName: "refreshTrust", args: [u as never, sigs] }), 0n, 20_000_000n);
+  const r = await attest(s.paymaster, u);
   console.log("refreshTrust", r.transactionHash, "gas", r.gasUsed);
   writeState({ trustEpoch: 1, refreshTx: r.transactionHash });
   s = readState();
@@ -97,6 +113,7 @@ if (!s.trustEpoch) {
 
 if (!s.funded) {
   await send(deployer, s.paymaster, encodeFunctionData({ abi: PAYMASTER_ABI, functionName: "deposit", args: [s.account, "0x0000000000000000000000000000000000000000", 0n] }), parseEther("0.05"));
+  await send(deployer, s.paymaster, encodeFunctionData({ abi: PAYMASTER_ABI, functionName: "deposit", args: [s.account2, "0x0000000000000000000000000000000000000000", 0n] }), 1n);
   await send(deployer, s.tokenA, encodeFunctionData({ abi: artifact("TestTokens.sol", "TestToken").abi, functionName: "mint", args: [s.account, 1_000_000_000_000n] }));
   await send(deployer, s.tokenB, encodeFunctionData({ abi: artifact("TestTokens.sol", "TestToken").abi, functionName: "mint", args: [s.account, parseEther("100")] }));
   writeState({ funded: true });

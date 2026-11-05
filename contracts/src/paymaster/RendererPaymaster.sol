@@ -141,7 +141,7 @@ abstract contract RendererCore is TrustStore {
         emit Deposited(account, asset, amount);
     }
 
-    function charge(address asset, uint256 amount) external {
+    function charge(address asset, uint256 amount) external virtual {
         Deposit storage d = deposits[msg.sender][asset];
         if (d.amount < amount) revert InsufficientDeposit(d.amount, amount);
         d.amount -= uint128(amount);
@@ -270,4 +270,16 @@ abstract contract RendererPaymasterBase is RendererCore, FrameIntrospection {
 
 contract RendererPaymaster is RendererPaymasterBase, DevnetFrames {
     constructor(bytes32 accountCodehash, address owner_, address trustAdmin, address permit2, address weth, bytes32 routerPublisher, address[] memory attestors_, uint8 threshold, address frameReader) RendererPaymasterBase(accountCodehash, owner_, trustAdmin, permit2, weth, routerPublisher, attestors_, threshold) DevnetFrames(frameReader) {}
+}
+
+/// Test deployment only: `charge` fails on demand, because the real one cannot fail after validation passes.
+/// Lets I4 (fee failure means nothing protected runs) be proven by a real transaction on the devnet.
+contract FeeFailPaymaster is RendererPaymaster {
+    error ChargeForcedToFail();
+
+    constructor(bytes32 accountCodehash, address owner_, address trustAdmin, address permit2, address weth, bytes32 routerPublisher, address[] memory attestors_, uint8 threshold, address frameReader) RendererPaymaster(accountCodehash, owner_, trustAdmin, permit2, weth, routerPublisher, attestors_, threshold, frameReader) {}
+
+    function charge(address, uint256) external pure override {
+        revert ChargeForcedToFail();
+    }
 }

@@ -1,0 +1,4 @@
+{
+  "metadata": { "owner": "Verbatim attack kit" },
+  "display": { "formats": { "attack(address,bytes)": { "intent": "Test call: reenter", "x-verbatim": { "fields": [{ "path": "0", "label": "Account", "format": "address" }, { "path": "1", "label": "Payload", "format": "bytes" }] } } } }
+}

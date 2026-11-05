@@ -1,0 +1,236 @@
+{
+  "HONEST": {
+    "id": "HONEST",
+    "title": "Honest 3-frame transfer",
+    "expected": "admitted by the public alt mempool and mined; batch succeeds",
+    "pass": true,
+    "outcome": "mined",
+    "txHash": "0x2d45a60087828ef4b8f9370a5939cb7ac59200e1767c2c484e7071a2054602ff",
+    "block": 404950,
+    "frameGas": [
+      {
+        "execution": 19376,
+        "state": 0
+      },
+      {
+        "execution": 68773,
+        "state": 0
+      },
+      {
+        "execution": 177731,
+        "state": 0
+      }
+    ],
+    "extra": {
+      "payer": "0x72e546202a4d870b458bcaab3056a2d26fbd2d70",
+      "delivered": "1000000"
+    },
+    "at": "2026-11-05T17:27:12.223Z"
+  },
+  "A1": {
+    "id": "A1",
+    "title": "Swap the recipient",
+    "expected": "mempool reject (tree mismatch)",
+    "pass": true,
+    "outcome": "rejected-at-mempool",
+    "message": "validation frame 1: reverted with data 0x669a6fecbb8f1cf9ab68b093a0c44499a262990d3a9842ec861ccbdc24752975d9ce19c2d6e36993613a14a133363bcb0626dcd65dddd702faf30224d1ffbceccb79e7d3 => TreeMismatch(0xbb8f1cf9ab68b093a0c44499a262990d3a9842ec861ccbdc24752975d9ce19c2, 0xd6e36993613a14a133363bcb0626dcd65dddd702faf30224d1ffbceccb79e7d3)",
+    "at": "2026-11-05T17:16:58.956Z"
+  },
+  "A3": {
+    "id": "A3",
+    "title": "Drop the renderer frame (self-pay layout)",
+    "expected": "frame 0 rejects",
+    "pass": true,
+    "outcome": "rejected-at-mempool",
+    "message": "validation frame 0: reverted with data 0x9fb70902 => FrameReadFailed()",
+    "at": "2026-11-05T17:17:12.265Z"
+  },
+  "A3b": {
+    "id": "A3b",
+    "title": "Swap in a permissive paymaster",
+    "expected": "frame 0 rejects (BadLayout)",
+    "pass": true,
+    "outcome": "rejected-at-mempool",
+    "message": "validation frame 0: reverted with data 0x3144dd7b0000000000000000000000000000000000000000000000000000000000000004 => BadLayout(0x4)",
+    "at": "2026-11-05T17:17:14.203Z"
+  },
+  "A4": {
+    "id": "A4",
+    "title": "Signed weaker spec hash",
+    "expected": "frame 1 hash mismatch",
+    "pass": true,
+    "outcome": "rejected-at-mempool",
+    "message": "validation frame 1: reverted with data 0xaf0de3f3d1a553403a03de59143bc198ada523c65836557ae49359f0d0c94b02ee8d1de26ebdac1c2d2d3a08e6f5ad61b8ea4943e00384c4324b9ca9ffd24bf486233964 => SpecHashMismatch(0xd1a553403a03de59143bc198ada523c65836557ae49359f0d0c94b02ee8d1de2, 0x6ebdac1c2d2d3a08e6f5ad61b8ea4943e00384c4324b9ca9ffd24bf486233964)",
+    "at": "2026-11-05T17:17:30.414Z"
+  },
+  "A4b": {
+    "id": "A4b",
+    "title": "Weak spec bytes under honest hash",
+    "expected": "frame 1 hash mismatch",
+    "pass": true,
+    "outcome": "rejected-at-mempool",
+    "message": "validation frame 1: reverted with data 0xaf0de3f36ebdac1c2d2d3a08e6f5ad61b8ea4943e00384c4324b9ca9ffd24bf486233964d1a553403a03de59143bc198ada523c65836557ae49359f0d0c94b02ee8d1de2 => SpecHashMismatch(0x6ebdac1c2d2d3a08e6f5ad61b8ea4943e00384c4324b9ca9ffd24bf486233964, 0xd1a553403a03de59143bc198ada523c65836557ae49359f0d0c94b02ee8d1de2)",
+    "at": "2026-11-05T17:17:30.917Z"
+  },
+  "A9": {
+    "id": "A9",
+    "title": "Fee griefing with an empty deposit",
+    "expected": "frame 1 rejects",
+    "pass": true,
+    "outcome": "rejected-at-mempool",
+    "message": "validation frame 1: reverted with data 0x25c3f46e000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000001bc44e900 => InsufficientDeposit(0x1, 0x1bc44e900)",
+    "at": "2026-11-05T17:17:44.624Z"
+  },
+  "A5": {
+    "id": "A5",
+    "title": "Poisoned descriptor (unattested code)",
+    "expected": "UNVERIFIED_CONTRACT, policy reject",
+    "pass": true,
+    "outcome": "rejected-at-mempool",
+    "message": "validation frame 1: reverted with data 0xa42253ed0000000000000000000000000000000000000000000000000000000000000003 => PolicyRefused(0x3)",
+    "at": "2026-11-05T17:18:14.436Z"
+  },
+  "A6": {
+    "id": "A6",
+    "title": "EvilVault hidden WETH pull",
+    "expected": "assertion revert, fee kept",
+    "pass": true,
+    "outcome": "reverted-in-batch",
+    "txHash": "0xd236d5961a831f21c614603ea60bdad52ef5c0d93c4802d402d7ad298044f04b",
+    "block": 404945,
+    "message": "0x7ad2804b00000000000000000000000000000000000000000000000000000000000000020000000000000000000000005c44a2ef8b6737a6ed084efe27860838ced50369000000000000000000000000000000000000000000000002b5e3af16b1880000 => AssertionFailed(0x2, 0x5c44a2ef8b6737a6ed084efe27860838ced50369, 0x2b5e3af16b1880000)",
+    "frameGas": [
+      {
+        "execution": 19360,
+        "state": 0
+      },
+      {
+        "execution": 62711,
+        "state": 0
+      },
+      {
+        "execution": 215261,
+        "state": 0
+      }
+    ],
+    "extra": {
+      "feeKept": "3073400000"
+    },
+    "at": "2026-11-05T17:26:43.763Z"
+  },
+  "A7": {
+    "id": "A7",
+    "title": "Stale pre-signed transaction past TTL",
+    "expected": "revert",
+    "pass": true,
+    "outcome": "reverted-in-batch",
+    "txHash": "0x60f366a188083185f3f29eee7d2b2db03e0664be1752d096fc8526df4ff952ef",
+    "block": 404870,
+    "message": "0xaa2fd9250000000000000000000000000000000000000000000000000000000000062d860000000000000000000000000000000000000000000000000000000000062d71 => Expired(0x62d86, 0x62d71)",
+    "frameGas": [
+      {
+        "execution": 19376,
+        "state": 0
+      },
+      {
+        "execution": 68773,
+        "state": 0
+      },
+      {
+        "execution": 45363,
+        "state": 0
+      }
+    ],
+    "at": "2026-11-05T17:19:11.990Z"
+  },
+  "A10": {
+    "id": "A10",
+    "title": "7702-delegated sender",
+    "expected": "rejected",
+    "pass": true,
+    "outcome": "rejected-at-mempool",
+    "message": "validation frame 0: reverted with data 0xf20030d8 => BadSignatureEntry()",
+    "at": "2026-11-05T17:19:37.480Z"
+  },
+  "A11": {
+    "id": "A11",
+    "title": "Reentrancy into executeVerified",
+    "expected": "reverts",
+    "pass": true,
+    "outcome": "reverted-in-batch",
+    "txHash": "0xc4044a96493148e05a4c3bd14fbfcc33250045f28c66f146490450a165a82668",
+    "block": 404915,
+    "message": "0x5c0dee5d00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000006408c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001a7265656e747279206661696c65642061732064657369676e656400000000000000000000000000000000000000000000000000000000000000000000 => CallFailed(0x0, 0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001a7265656e747279206661696c65642061732064657369676e6564000000000000) [0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001a7265656e747279206661696c65642061732064657369676e6564000000000000 => Error(reentry failed as designed)]",
+    "frameGas": [
+      {
+        "execution": 19579,
+        "state": 0
+      },
+      {
+        "execution": 60334,
+        "state": 0
+      },
+      {
+        "execution": 76430,
+        "state": 0
+      }
+    ],
+    "at": "2026-11-05T17:23:41.806Z"
+  },
+  "A12": {
+    "id": "A12",
+    "title": "Gas griefing: a call burns all its gas",
+    "expected": "reserve keeps it safe",
+    "pass": true,
+    "outcome": "reverted-in-batch",
+    "txHash": "0x2db6dd6e4d2ba831e15ad4c5138da62238fe7b4bda1efe61e0c05057d03a78b9",
+    "block": 404925,
+    "message": "0x5c0dee5d000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000 => CallFailed(0x0, 0x) [0x]",
+    "frameGas": [
+      {
+        "execution": 19298,
+        "state": 0
+      },
+      {
+        "execution": 51322,
+        "state": 0
+      },
+      {
+        "execution": 975706,
+        "state": 0
+      }
+    ],
+    "at": "2026-11-05T17:24:42.886Z"
+  },
+  "F7": {
+    "id": "F7",
+    "title": "Fee failure runs nothing",
+    "expected": "frame 2 fails; no protected call executes",
+    "pass": true,
+    "outcome": "mined",
+    "txHash": "0x3cb2c250ea33b8f49fc3fabbbb6a8632c2fb81911d71d9b28c0a40fa6d5487bf",
+    "block": 404893,
+    "frameGas": [
+      {
+        "execution": 19376,
+        "state": 0
+      },
+      {
+        "execution": 68773,
+        "state": 0
+      },
+      {
+        "execution": 12876,
+        "state": 0
+      }
+    ],
+    "extra": {
+      "statuses": [
+        "0x1",
+        "0x1",
+        "0x0"
+      ]
+    },
+    "at": "2026-11-05T17:21:30.313Z"
+  }
+}

@@ -1,9 +1,11 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { encodeAbiParameters, keccak256, type Address, type Hex } from "viem";
+import { encodeAbiParameters, encodeFunctionData, keccak256, type Address, type Hex } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
 import { compileFile } from "@verbatim/vdesc-compiler";
 import { packStr } from "@verbatim/displayvm-ts";
-import { ROOT } from "./env";
+import { ROOT, key } from "./env";
+import { send } from "./chain";
 
 export const TRUST_UPDATE_TUPLE = {
   type: "tuple",
@@ -54,3 +56,12 @@ export const tokenEntry = (token: Address, symbol: string, decimals: number, fla
   decimals,
   flags,
 });
+
+/** Collects 2 of 3 attestor signatures and submits `refreshTrust`. */
+export async function attest(paymaster: Address, u: TrustUpdate, chainId = 1337n) {
+  const h = updateHash(chainId, paymaster, u);
+  const signers = ["ATTESTOR1_KEY", "ATTESTOR2_KEY", "ATTESTOR3_KEY"].map((k) => privateKeyToAccount(key(k)));
+  const sorted = signers.sort((x, y) => (BigInt(x.address) < BigInt(y.address) ? -1 : 1)).slice(0, 2);
+  const sigs = await Promise.all(sorted.map((x) => x.sign({ hash: h })));
+  return send(key("DEPLOYER_KEY"), paymaster, encodeFunctionData({ abi: REFRESH_ABI, functionName: "refreshTrust", args: [u as never, sigs] }), 0n, 25_000_000n);
+}

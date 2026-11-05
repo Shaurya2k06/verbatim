@@ -1,0 +1,4 @@
+{
+  "metadata": { "owner": "Verbatim attack kit" },
+  "display": { "formats": { "burn()": { "intent": "Test call: burn gas", "x-verbatim": { "exactWords": 0, "fields": [] } } } }
+}

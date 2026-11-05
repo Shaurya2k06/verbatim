@@ -6,7 +6,7 @@ import { pub } from "./chain";
 
 export const ERC20 = parseAbi(["function transfer(address,uint256)", "function approve(address,uint256)", "function balanceOf(address) view returns (uint256)", "function allowance(address,address) view returns (uint256)", "function mint(address,uint256)"]);
 export const ZERO: Address = "0x0000000000000000000000000000000000000000";
-export const FEE_RATE = 1n;
+export const FEE_RATE = 1100n;
 
 export const state = () => readState();
 export const trust = () => new ChainTrust(pub as never, state().paymaster);

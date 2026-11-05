@@ -460,7 +460,8 @@ abstract contract VerbatimAccountBase is VerbatimCore, FrameIntrospection {
         Layout memory l = _layoutLock();
         uint256 digest = uint256(digestOf(_txCommit(l), treeHash, specHash, signedAtBlock));
         uint256 k = threshold;
-        if (l.sigCount != k) revert BadSignatureEntry();
+        // Zero only in a 7702 delegator's empty storage: such a sender must not approve without signatures.
+        if (k == 0 || l.sigCount != k) revert BadSignatureEntry();
         address last;
         for (uint256 i = 0; i < k; i++) {
             if (_sigparam(i, SP_SCHEME) != SCHEME_SECP256K1 || _sigparam(i, SP_MSG) != digest) revert BadSignatureEntry();

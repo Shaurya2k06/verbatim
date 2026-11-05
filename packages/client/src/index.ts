@@ -176,7 +176,7 @@ export interface GasPlan {
 }
 
 /** Fits the deployed sidecar's flat 100k prefix cap, with 2 x 2,800 of signature cost. */
-export const PUBLIC_GATEWAY_GAS: GasPlan = { frame0: 22_000n, frame1: 72_000n, frame2: 1_200_000n, frame2State: 400_000n };
+export const PUBLIC_GATEWAY_GAS: GasPlan = { frame0: 22_000n, frame1: 72_000n, frame2: 1_200_000n, frame2State: 1_500_000n };
 
 export interface Sentence {
   account: Address;
