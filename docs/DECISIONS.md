@@ -60,7 +60,7 @@ Checked against `Uniswap/universal-router@edf19bf`, `v4-periphery@c6e4754` and `
 - **Pinned resolver code covers one instance.** VerifiableFactory proxies differ per instance, so `RESOLVER_CODEHASH` pins the publisher's own resolver rather than the implementation. Fails closed, but each new publisher needs its own checker today. A better version verifies the implementation.
 - **Second-level `.eth` names only** in the checker; §12.1's subname example is not built.
 - **Parents.** Sepolia's `.eth` and root registries have no direct `SET_RESOLVER` or `SET_SUBREGISTRY` holders, which the checker enforces. Their admin roles remain with ENS; that is §12's irreducible trust.
-- **Forward checks only on chain.** `refreshTrust` and `NAME_EQ` check name to address. §3's reverse direction is **not** checked. Universal Resolver reverse lookups were not built, and the demo's recipient has no primary name set.
+- **Names are checked both ways at refresh, forward only at execution.** `refreshTrust` requires the name to resolve to the address, and the address's primary name (Universal Resolver `reverse`, read on chain) to be that name. CCIP-read cannot be followed by a contract, so a name needing it fails closed. `NAME_EQ` re-checks forward at execution, as §12.3 specifies.
 - **The council is a plain EOA in the demo**, not a multisig.
 
 ### D-A12: other cuts and small choices

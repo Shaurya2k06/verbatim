@@ -131,7 +131,7 @@ const steps: Record<string, () => Promise<void>> = {
     await tx({ address: state.resolver, abi: RESOLVER_ABI, functionName: "setText", args: [dnsName(name), "clear-signing", vdescHash(vdesc)] });
     const lookCode = keccak256((await pub.getCode({ address: state.resolver })) as Hex);
     const w = wallet();
-    const dh = await w.sendTransaction({ data: encodeDeployData({ abi: a.abi, bytecode: a.creation, args: [ENS.root, ENS.ethRegistry, lookCode, council, 365n * 24n * 3600n] }), account: w.account!, chain: w.chain, gas: 15_000_000n });
+    const dh = await w.sendTransaction({ data: encodeDeployData({ abi: a.abi, bytecode: a.creation, args: [ENS.root, ENS.ethRegistry, ENS.universalResolver, lookCode, council, 365n * 24n * 3600n] }), account: w.account!, chain: w.chain, gas: 15_000_000n });
     const dr = await pub.waitForTransactionReceipt({ hash: dh, timeout: 180_000 });
     const direct = decodeRevert(await rawRevert(w.account!.address, dr.contractAddress as Address, encodeFunctionData({ abi: a.abi, functionName: "check", args: [packStr(name), vdescHash(vdesc)] })));
     const exclusive = /RootRolesHeld/.test(direct);

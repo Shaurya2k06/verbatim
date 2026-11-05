@@ -18,7 +18,7 @@ State of the build at the end of the run. Evidence for every claim: `docs/PROOFS
 - **e-ink hardware.** Per the agreed cut order. The offline signer is a one-file web app.
 - **ERC-1271 opt-in.** Off is the safe default, so it is simply always off.
 - **Multi-call batches on the deployed sidecar.** Not cut from the code, but each call past the first overflows the deployed 100k cap. One call per transaction on Leg A.
-- **ENS reverse resolution, subnames, a multisig council.** Forward only, `.eth` second-level only, an EOA council. See D-A11.
+- **ENS subnames, a multisig council.** `.eth` second-level names only, and an EOA council. See D-A11.
 - **ERC-1155 and `getApproved` readers.** No v1 descriptor needs them.
 
 ## Falsifiers
@@ -44,7 +44,7 @@ Also found on the deployed sidecar: precompile calls are blocked (`precompiles: 
 | Transfer | 19,376 | 62,213 | 87,189 | 127,909 |
 | v4 swap | 19,972 | 68,249 | 93,821 | 344,729 |
 
-Sepolia `actualGasUsed`: 1.06M to 1.25M. Full tables in `docs/GAS.md`.
+Sepolia `actualGasUsed` figures are in `docs/GAS.md`. Full tables in `docs/GAS.md`.
 
 ## Known weaknesses a judge might probe
 

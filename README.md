@@ -155,10 +155,10 @@ Full lists: [deployments/devnet.json](deployments/devnet.json), [deployments/sep
 
 | Contract | Address |
 |---|---|
-| RendererPaymaster4337 (staked at EntryPoint v0.7) | `0x9626d7421105bbaf8a06d2355d4cfa709e46486d` |
-| VerbatimAccount4337 | `0xa8fca8c624865375322a73b1bd32e4ccb87d1788` |
-| EnsTrustChecker | `0x5f1fef15f33ef60d0a5519121455ef728891f4ae` |
-| TrustAdminEns | `0x0490fbc6c9492dbb2e21973c93cdb8ef1526ff1a` |
+| RendererPaymaster4337 (staked at EntryPoint v0.7) | `0xc242b797a9ab3f151f434d902cec2f5acef31701` |
+| VerbatimAccount4337 | `0x59092c8916926f8ddab8421e7b4e8c08834a542c` |
+| EnsTrustChecker | `0x38a831cfbcef623f0fdf4978d1e61fc7576e143c` |
+| TrustAdminEns | `0x9625a7abd1cc169bc8dc4620589d9adaa97b96ec` |
 | dUSDC / dWETH | `0x7e068face3fc4a6826d182b1ec0e80d7d8979e0f` / `0x42808f35830dfe250ad998b3b239c0776f01be97` |
 | Universal Router / PoolManager / PositionManager (official) | `0x3A9D48AB9751398BbFa63ad67599Bb04e4BdF98b` / `0xE03A1074c86CFeDd5C142C4F04F1a1536e203543` / `0x429ba70129df741B2Ca2a85BC3A2a3328e5c09b4` |
 | ENS | `verbatim-demo.eth`, resolver `0xc449d31B38414D39ad733f8A676027956B7a1E88` |
@@ -203,7 +203,7 @@ Full lists: [deployments/devnet.json](deployments/devnet.json), [deployments/sep
 - nobody can change the name's resolver or subregistry, and parents hold no direct right to;
 - registered at least a year past now.
 
-A shown name is re-resolved at execution, and a mismatch reverts. `apps/ens-demo` runs the same checks live for any name you type. See `docs/DECISIONS.md` (D-A11) for limits: reverse resolution is not checked, only second-level `.eth` names work, and the demo's council is an EOA.
+A shown name must resolve forward and reverse at `refreshTrust`, and is re-resolved at execution, where a mismatch reverts. `apps/ens-demo` runs the same checks live for any name you type. See `docs/DECISIONS.md` (D-A11) for limits: only second-level `.eth` names work, and the demo's council is an EOA.
 
 ## Trust assumptions and residual risks
 

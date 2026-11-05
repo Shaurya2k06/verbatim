@@ -45,22 +45,21 @@ sender, so they were not all held pending at once.
 **Explorer links** name the miner's node (`?node=...`), because the explorer otherwise asks the gateway, which did not see these. There each honest row shows "On chain" and "Every rule passed", with the admission report for frame 0 (sender) and frame 1 (payer).
 
 **Which endpoint:** the docs' gateway and the miner's sidecar run the same rules. On the night of 5 to 6 November the gateway lost its gossip link to the miner
-(`skandha_connectedPeers` returned `[]`, and every sender's transactions stayed `New`), so these were submitted to the miner's sidecar. Rule-enforcing admission is identical; earlier runs
-went through the gateway without trouble.
+(`skandha_connectedPeers` returned `[]`, and every sender's transactions stayed `New`), so these were submitted to the miner's sidecar. Rule-enforcing admission is identical. Earlier deployments' transactions did go through the gateway and landed, for example `0x70855b1b...73f4` in block 404793.
 
 **Staked vs unstaked, canonical vs alt:** ethrex's canonical check reports `StorageReadNonSender` for these transactions, since the paymaster reads its own storage. The alt mempool
 admits them because the paymaster is staked. This is the "needs the alt mempool" evidence.
 
 ## Leg B: Sepolia, official Uniswap contracts, ENSv2
 
-Paymaster `0x9626d7421105bbaf8a06d2355d4cfa709e46486d`, account `0xa8fca8c624865375322a73b1bd32e4ccb87d1788`.
+Paymaster `0xc242b797a9ab3f151f434d902cec2f5acef31701`, account `0x59092c8916926f8ddab8421e7b4e8c08834a542c`.
 
 | ID | Case | Spec expects | Met | Transaction | Reason or detail |
 |---|---|---|---|---|---|
-| B-honest-pimlico | Honest transfer on Sepolia via Pimlico, recipient shown by ENS name | bundler accepts; lands; delivered | yes | [`0xa5b0dddd8c73...`](https://sepolia.etherscan.io/tx/0xa5b0dddd8c732b0beeedb1192ffecc58f67d9bfd5fc40623b56a68373c1b0b73) | `as expected` |
-| B-honest-alchemy | Honest transfer on Sepolia via Alchemy | bundler accepts; lands; delivered | yes | [`0x0668bf44585e...`](https://sepolia.etherscan.io/tx/0x0668bf44585ef7914da9497df05aa7539b86834b470a5118780dec5974097a41) | `as expected` |
-| B-swap | v4 swap through Uniswap's official Sepolia Universal Router and PoolManager | bundler accepts; lands; min out respected | yes | [`0xf93a83efe826...`](https://sepolia.etherscan.io/tx/0xf93a83efe8268adef516c11652defd3f064a88f5ab72adc75b8695ff31d78549) | `as expected` |
-| B-A1 | Swapped recipient under an honest sentence, on Sepolia | bundler rejects; paymaster reverts TreeMismatch | yes | rejected, no tx | `TreeMismatch(0x4eb6f6893458703fbc9efbd4efd833b216e3605e4baaf9bc816fd8ae79725f19, 0x5df46` |
+| B-honest-pimlico | Honest transfer on Sepolia via Pimlico, recipient shown by ENS name | bundler accepts; lands; delivered | yes | [`0x7b3bfedf761d...`](https://sepolia.etherscan.io/tx/0x7b3bfedf761de3b8f865ce9a70fcee7833b104f7b747c7ae1a45082b855d3ac7) | `as expected` |
+| B-honest-alchemy | Honest transfer on Sepolia via Alchemy | bundler accepts; lands; delivered | yes | [`0x3fbd70ec1b76...`](https://sepolia.etherscan.io/tx/0x3fbd70ec1b765f101fc8227552811bee19f8b7c28fd4a55c2d33a921e13357a1) | `as expected` |
+| B-swap | v4 swap through Uniswap's official Sepolia Universal Router and PoolManager | bundler accepts; lands; min out respected | yes | [`0xa2f20f899612...`](https://sepolia.etherscan.io/tx/0xa2f20f89961206408f5b0832d55fb79f7f9c75ce50c48a1e2494569cb2728052) | `as expected` |
+| B-A1 | Swapped recipient under an honest sentence, on Sepolia | bundler rejects; paymaster reverts TreeMismatch | yes | rejected, no tx | `TreeMismatch(0x671701f7b3b55b2ff944e4a395ced4da8e84e66bb4db7beab525f13333b9b0bc, 0x8236d` |
 | A8 | Lookalike ENS name | name not in the cache, so hex is shown; the exclusivity check fails at refresh | yes | rejected, no tx | `WrongResolverCode(0x0530a4cbd0086fc7728614d14cf73974e1e0e17089000b956b98a659ed979f5e)` |
 
 | ENS step | Transaction |
@@ -69,10 +68,10 @@ Paymaster `0x9626d7421105bbaf8a06d2355d4cfa709e46486d`, account `0xa8fca8c624865
 | Renounced resolver root roles (SET_TEXT, LINK, UPGRADE and their admins) | [`0x7b229411e300...`](https://sepolia.etherscan.io/tx/0x7b229411e300a7691a6866c8d667def2d00d6c1f5449d877c759a53a07c04231) |
 | Renounced registry roles (SET_RESOLVER, SET_SUBREGISTRY and their admins) | [`0x34e539877e7e...`](https://sepolia.etherscan.io/tx/0x34e539877e7e8155a25083ceb9ce396a503df666e6f4e0ea9360542eb1344562) |
 | Council published the `clear-signing` record | [`0x9c72f2c56c76...`](https://sepolia.etherscan.io/tx/0x9c72f2c56c762a4cd4f3236c7d2e4e1fd7dc2f332b9a96128222d831f884039a) |
-| `refreshTrust`, passing attestors and the live exclusivity proof | [`0x13eab916ebe0...`](https://sepolia.etherscan.io/tx/0x13eab916ebe013ac4c2878d37e4b503fbcbcae613fcce79434d2e0a2fa0be3b2) |
+| `refreshTrust`, passing attestors and the live exclusivity proof | [`0x34c2d07303a1...`](https://sepolia.etherscan.io/tx/0x34c2d07303a148601c306705232eb0289c4840d01e4796e2bf11ccf3bf707ce3) |
 
 **A8 in detail:** `verbatim-dem0.eth` was registered without giving up any roles, and published a record claiming a descriptor. `refreshTrust` refuses it with `WrongResolverCode`.
-A checker pinned to the lookalike's own resolver code still refuses it, with `RootRolesHeld` (checker `0xd0dd3f693a5ba49c66cdf73a47f49dc9eb9f7677`). A sentence paying its address shows `To: 0x000000000000000000000000000000000000bad1`: hex, no name.
+A checker pinned to the lookalike's own resolver code still refuses it, with `RootRolesHeld` (checker `0x75b6a2862a67099677b57bd1f3123ed050f2f14d`). A sentence paying its address shows `To: 0x000000000000000000000000000000000000bad1`: hex, no name.
 
 ## In the browser
 

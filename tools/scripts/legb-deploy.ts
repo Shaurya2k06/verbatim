@@ -4,7 +4,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { packedUniswap } from "@verbatim/client";
 import { packStr } from "@verbatim/displayvm-ts";
 import { compileFile } from "@verbatim/vdesc-compiler";
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { ROOT, addr, key } from "./lib/env";
 import { artifact } from "./lib/chain";
@@ -34,7 +34,7 @@ const chOf = async (a: Address) => keccak256((await pub.getCode({ address: a }))
 
 if (!readS().checker) {
   const YEAR = 365n * 24n * 3600n;
-  const c = await deploy("EnsTrustChecker.sol", "EnsTrustChecker", [ENS.root, ENS.ethRegistry, await chOf(ens().resolver), council, YEAR]);
+  const c = await deploy("EnsTrustChecker.sol", "EnsTrustChecker", [ENS.root, ENS.ethRegistry, ENS.universalResolver, await chOf(ens().resolver), council, YEAR]);
   const m = await deploy("EnsTrustChecker.sol", "TrustAdminEns", [c.address]);
   writeS({ checker: c.address, trustAdmin: m.address, checkerTx: c.hash, trustAdminTx: m.hash });
 }
@@ -51,7 +51,7 @@ const s = () => readS();
 const PM_ABI = artifact("RendererPaymaster4337.sol", "RendererPaymaster4337").abi;
 if (!s().staked) {
   const a = await tx({ address: s().paymaster, abi: PM_ABI, functionName: "stakeEntryPoint", args: [86400], value: parseEther("0.11") });
-  const b = await tx({ address: s().paymaster, abi: PM_ABI, functionName: "fundEntryPoint", args: [], value: parseEther("0.25") });
+  const b = await tx({ address: s().paymaster, abi: PM_ABI, functionName: "fundEntryPoint", args: [], value: parseEther("0.08") });
   console.log("staked", a.transactionHash, "funded", b.transactionHash);
   writeS({ staked: a.transactionHash, fundedEp: b.transactionHash });
 }
@@ -128,4 +128,14 @@ if (!s().pool) {
   writeS({ pool: { key: k, init: init.transactionHash, liquidity: liq.transactionHash } });
 }
 void encodeFunctionData; void KEY; void key;
+
+// The public addresses the demo page and docs read. No keys, by construction.
+const st = s();
+const dep = {
+  network: "sepolia", chainId: 11155111, entryPoint: ENTRY_POINT, account: st.account, paymaster: st.paymaster, accountCodehash: st.accountCodehash, ensTrustChecker: st.checker, trustAdmin: st.trustAdmin,
+  tokens: { dUSDC: st.tokenA, dWETH: st.tokenB }, pool: st.pool, refreshTrustTx: st.attested, stakeTx: st.staked,
+  uniswap: { router: UNI.router, poolManager: UNI.poolManager, positionManager: UNI.positionManager, permit2: UNI.permit2 },
+  ens: { name: NAME, resolver: ens().resolver, registered: ens().registered, lockTxs: ens().locked, lookalike: "verbatim-dem0.eth", lookalikeResolver: st["verbatim-dem0"]?.resolver, recordTx: st.textSet, rootRegistry: ENS.root, ethRegistry: ENS.ethRegistry, universalResolver: ENS.universalResolver },
+};
+writeFileSync(resolve(ROOT, "deployments/sepolia.json"), JSON.stringify(dep, null, 2) + "\n");
 console.log(JSON.stringify({ account: s().account, paymaster: s().paymaster, checker: s().checker, attested: s().attested, pool: s().pool?.init }, null, 1));

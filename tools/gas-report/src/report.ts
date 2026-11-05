@@ -122,8 +122,7 @@ sender, so they were not all held pending at once.
 **Explorer links** name the miner's node (\`?node=...\`), because the explorer otherwise asks the gateway, which did not see these. There each honest row shows "On chain" and "Every rule passed", with the admission report for frame 0 (sender) and frame 1 (payer).
 
 **Which endpoint:** the docs' gateway and the miner's sidecar run the same rules. On the night of 5 to 6 November the gateway lost its gossip link to the miner
-(\`skandha_connectedPeers\` returned \`[]\`, and every sender's transactions stayed \`New\`), so these were submitted to the miner's sidecar. Rule-enforcing admission is identical; earlier runs
-went through the gateway without trouble.
+(\`skandha_connectedPeers\` returned \`[]\`, and every sender's transactions stayed \`New\`), so these were submitted to the miner's sidecar. Rule-enforcing admission is identical. Earlier deployments' transactions did go through the gateway and landed, for example \`0x70855b1b...73f4\` in block 404793.
 
 **Staked vs unstaked, canonical vs alt:** ethrex's canonical check reports \`StorageReadNonSender\` for these transactions, since the paymaster reads its own storage. The alt mempool
 admits them because the paymaster is staked. This is the "needs the alt mempool" evidence.

@@ -19,7 +19,11 @@ export interface Proof {
   at?: string;
 }
 
-export function record(p: Proof) {
+/** Node errors quote the RPC URL, which holds the API key. Nothing with a key in it reaches a committed file. */
+const scrub = (t?: string) => t?.replace(/(apikey=|\/v2\/)[A-Za-z0-9_-]+/g, "$1***");
+
+export function record(raw: Proof) {
+  const p = { ...raw, message: scrub(raw.message) };
   const all: Record<string, Proof> = existsSync(FILE) ? JSON.parse(readFileSync(FILE, "utf8")) : {};
   all[p.id] = { ...p, at: new Date().toISOString() };
   writeFileSync(FILE, JSON.stringify(all, null, 2) + "\n");

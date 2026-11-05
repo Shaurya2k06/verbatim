@@ -25,6 +25,10 @@ interface IPermissionedResolverV2 {
     function hasRoles(uint256 resource, uint256 roleBitmap, address account) external view returns (bool);
 }
 
+interface IUniversalResolverV2 {
+    function reverse(bytes calldata lookupAddress, uint256 coinType) external view returns (string memory name, address resolver, address reverseResolver);
+}
+
 /// §12.2: a publisher's claim on a descriptor stands only if nobody but its council can change the record, for at least
 /// the horizon. Checked against ENSv2 docs and the live Sepolia deployment (contracts-v2 07e55a05).
 /// Irreducible trust: the ENS DAO and the root registry.
@@ -42,6 +46,7 @@ contract EnsTrustChecker {
 
     address public immutable ROOT_REGISTRY;
     address public immutable ETH_REGISTRY;
+    address public immutable UNIVERSAL_RESOLVER;
     bytes32 public immutable RESOLVER_CODEHASH;
     address public immutable COUNCIL;
     uint256 public immutable HORIZON;
@@ -56,10 +61,12 @@ contract EnsTrustChecker {
     error RegistryRolesHeld(uint256 roleCount);
     error ExpiresTooSoon(uint64 expiry);
     error ForwardMismatch(address found);
+    error ReverseMismatch(string found);
 
-    constructor(address rootRegistry, address ethRegistry, bytes32 resolverCodehash, address council, uint256 horizon) {
+    constructor(address rootRegistry, address ethRegistry, address universalResolver, bytes32 resolverCodehash, address council, uint256 horizon) {
         ROOT_REGISTRY = rootRegistry;
         ETH_REGISTRY = ethRegistry;
+        UNIVERSAL_RESOLVER = universalResolver;
         RESOLVER_CODEHASH = resolverCodehash;
         COUNCIL = council;
         HORIZON = horizon;
@@ -131,12 +138,15 @@ contract EnsTrustChecker {
         if (st.expiry < block.timestamp + HORIZON) revert ExpiresTooSoon(st.expiry);
     }
 
-    /// Forward check for a cached name: it must resolve to the address it will be shown for.
+    /// A cached name must resolve to the address it will be shown for, and that address must claim the name back.
+    /// A resolver needing CCIP-read reverts here, because a contract cannot follow it: that fails closed (D3).
     function checkName(address a, bytes32 packedName, address resolver) external view {
         (string memory label, ) = _parse(packedName);
         if (address(_resolver(label)) != resolver) revert NoResolver();
         address found = AssertionKit.resolveAddr(resolver, packedName);
         if (found != a) revert ForwardMismatch(found);
+        (string memory primary, , ) = IUniversalResolverV2(UNIVERSAL_RESOLVER).reverse(abi.encodePacked(a), 60);
+        if (keccak256(bytes(primary)) != keccak256(abi.encodePacked(label, ".eth"))) revert ReverseMismatch(primary);
     }
 
     function _hex(bytes32 h) private pure returns (bytes memory out) {

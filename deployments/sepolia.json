@@ -2,11 +2,11 @@
   "network": "sepolia",
   "chainId": 11155111,
   "entryPoint": "0x0000000071727De22E5E9d8BAf0edAc6f37da032",
-  "account": "0xa8fca8c624865375322a73b1bd32e4ccb87d1788",
-  "paymaster": "0x9626d7421105bbaf8a06d2355d4cfa709e46486d",
-  "accountCodehash": "0xcfc640eb33fe8b85a9a815ec7a85407af81022e07626a2a1df7ed5e7ed4d9fdc",
-  "ensTrustChecker": "0x5f1fef15f33ef60d0a5519121455ef728891f4ae",
-  "trustAdmin": "0x0490fbc6c9492dbb2e21973c93cdb8ef1526ff1a",
+  "account": "0x59092c8916926f8ddab8421e7b4e8c08834a542c",
+  "paymaster": "0xc242b797a9ab3f151f434d902cec2f5acef31701",
+  "accountCodehash": "0xd01313e953123dbc58597fad26cea059cebfb3689d00e5ffd08da7f3ed2203f8",
+  "ensTrustChecker": "0x38a831cfbcef623f0fdf4978d1e61fc7576e143c",
+  "trustAdmin": "0x9625a7abd1cc169bc8dc4620589d9adaa97b96ec",
   "tokens": {
     "dUSDC": "0x7e068face3fc4a6826d182b1ec0e80d7d8979e0f",
     "dWETH": "0x42808f35830dfe250ad998b3b239c0776f01be97"
@@ -22,8 +22,8 @@
     "init": "0xb813aa2401747bf11577ab9c8f6f9bb07e5cd594647ce7f544cb179480b554fd",
     "liquidity": "0x495d3462ebb2128c2297f460d6a9030665048be1ca57483bb5b1188d91becfd4"
   },
-  "refreshTrustTx": "0x13eab916ebe013ac4c2878d37e4b503fbcbcae613fcce79434d2e0a2fa0be3b2",
-  "stakeTx": "0x104cf2be6a6aedaeaf55db061c404d1153e916ea793e8eda81e3271f9bc1d7e2",
+  "refreshTrustTx": "0x34c2d07303a148601c306705232eb0289c4840d01e4796e2bf11ccf3bf707ce3",
+  "stakeTx": "0xcd09919e0afc0f13007d9e1cf07f37b45413b67ca442c4193a267c50e0cc4dba",
   "uniswap": {
     "router": "0x3A9D48AB9751398BbFa63ad67599Bb04e4BdF98b",
     "poolManager": "0xE03A1074c86CFeDd5C142C4F04F1a1536e203543",
@@ -42,6 +42,7 @@
     "lookalikeResolver": "0xbfE84a49fE4834a9eedDbFCb3Ffc2E3851124Dcd",
     "recordTx": "0x9c72f2c56c762a4cd4f3236c7d2e4e1fd7dc2f332b9a96128222d831f884039a",
     "rootRegistry": "0xb458d6a3a77919449d03e7a6903c26827c1ec43f",
-    "ethRegistry": "0xd4ebcbbdf463c9c45784603db0ddd499bc44a8b4"
+    "ethRegistry": "0xd4ebcbbdf463c9c45784603db0ddd499bc44a8b4",
+    "universalResolver": "0x24e1d8e068620b647ca097f961a61055f4f42d72"
   }
 }

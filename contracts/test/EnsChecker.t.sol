@@ -79,6 +79,18 @@ contract MockResolver {
     }
 }
 
+contract MockUniversalResolver {
+    mapping(address => string) public primary;
+
+    function setPrimary(address a, string calldata n) external {
+        primary[a] = n;
+    }
+
+    function reverse(bytes calldata who, uint256) external view returns (string memory, address, address) {
+        return (primary[address(bytes20(who))], address(0), address(0));
+    }
+}
+
 /// Every step of the exclusivity proof (§12.2) fails closed on its own. A8 lives here and on Sepolia (docs/PROOFS.md).
 contract EnsCheckerTest is Test {
     uint256 constant KEY = uint256(keccak256("clear-signing"));
@@ -95,6 +107,7 @@ contract EnsCheckerTest is Test {
     MockRegistry root;
     MockRegistry eth;
     MockResolver res;
+    MockUniversalResolver ur;
     EnsTrustChecker checker;
 
     function setUp() public {
@@ -104,7 +117,8 @@ contract EnsCheckerTest is Test {
         root = new MockRegistry();
         eth = new MockRegistry();
         res = new MockResolver();
-        checker = new EnsTrustChecker(address(root), address(eth), address(res).codehash, COUNCIL, 365 days);
+        ur = new MockUniversalResolver();
+        checker = new EnsTrustChecker(address(root), address(eth), address(ur), address(res).codehash, COUNCIL, 365 days);
         root.setSub("eth", address(eth));
         eth.setResolver(LABEL, address(res));
         eth.setExpiry(uint64(block.timestamp + 2 * 365 days));
@@ -207,10 +221,19 @@ contract EnsCheckerTest is Test {
         checker.check(dns, DESC);
     }
 
-    function test_forward_check_for_cached_names() public {
+    function test_cached_names_check_forward_and_reverse() public {
         res.setAddr(address(0xBEEF));
+        ur.setPrimary(address(0xBEEF), "vault.eth");
         checker.checkName(address(0xBEEF), name_, address(res));
+        // Forward disagrees.
         vm.expectRevert(abi.encodeWithSelector(EnsTrustChecker.ForwardMismatch.selector, address(0xBEEF)));
         checker.checkName(address(0xBAD), name_, address(res));
+        // Forward agrees, but the address claims another name, or none.
+        ur.setPrimary(address(0xBEEF), "other.eth");
+        vm.expectRevert(abi.encodeWithSelector(EnsTrustChecker.ReverseMismatch.selector, "other.eth"));
+        checker.checkName(address(0xBEEF), name_, address(res));
+        ur.setPrimary(address(0xBEEF), "");
+        vm.expectRevert(abi.encodeWithSelector(EnsTrustChecker.ReverseMismatch.selector, ""));
+        checker.checkName(address(0xBEEF), name_, address(res));
     }
 }

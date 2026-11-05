@@ -21,6 +21,8 @@ export interface Gas {
 }
 
 export const GAS: Gas = { callGasLimit: 3_500_000n, verificationGasLimit: 110_000n, preVerificationGas: 300_000n, paymasterVerificationGasLimit: 400_000n, paymasterPostOpGasLimit: 100_000n };
+/** A new account's first operation also pays state gas for new slots: the EntryPoint's nonce, the paymaster's reservation. */
+export const FIRST_OP_GAS: Gas = { ...GAS, verificationGasLimit: 200_000n, paymasterVerificationGasLimit: 500_000n };
 const total = (g: Gas) => g.callGasLimit + g.verificationGasLimit + g.preVerificationGas + g.paymasterVerificationGasLimit + g.paymasterPostOpGasLimit;
 
 export async function rpc(url: string, method: string, params: unknown[]) {
@@ -56,7 +58,8 @@ export interface Built {
 /** Renders with the twin and signs with two owners. `override` lets an attack sign something other than what it sends. */
 export async function buildOp(calls: Call[], bundler: string, opts: { signedAtBlock?: bigint; gas?: Gas; override?: { tree: Hex; spec: Hex } } = {}): Promise<Built> {
   const s = readS();
-  const gas = opts.gas ?? GAS;
+  const firstNonce = await pub.readContract({ address: ENTRY_POINT, abi: EP, functionName: "getNonce", args: [s.account, 0n] });
+  const gas = opts.gas ?? (firstNonce === 0n ? FIRST_OP_GAS : GAS);
   const trust = new ChainTrust(pub as never, s.paymaster);
   trust.legB = true;
   const fee: Fee = { asset: "0x0000000000000000000000000000000000000000", amount: total(gas) };
