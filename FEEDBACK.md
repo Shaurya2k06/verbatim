@@ -20,9 +20,9 @@ From building `URRender`, an on-chain renderer for Universal Router and v4 calld
 
 4. **`SETTLE_ALL` and `TAKE_ALL` semantics are easy to misread when asserting effects.** Exact-in with partial fill means the debt can be under `amountIn`, so an `amountIn` delta assertion is strict by choice. `TAKE_ALL`'s minimum and `amountOutMinimum` are separate protections, and either being zero looks safe when the other is set. A short note on how they interact in the `V4Router` docs would help. We take the larger of the two.
 
-5. **Hook mining has no off-the-shelf path for non-Foundry stacks.** `HookMiner` is a Solidity library. We ported the loop to TypeScript in about 20 lines. A small JS helper in the SDK would save that. Also, a mined address must match the *full* 14-bit mask: every other flag must be zero, which the v4-template docs do say, but it is easy to read as "these bits are set".
+5. **Hook mining has no off-the-shelf path for non-Foundry stacks.** `HookMiner` is a Solidity library. We ported the loop to TypeScript in about 20 lines. A small JS helper in the SDK would save that. A mined address must match the *full* 14-bit mask, with every other flag zero, which is worth stating prominently.
 
-6. **`afterSwapReturnDelta` is hard to reason about from the docs.** Which currency is "unspecified", what sign the return takes, and how it nets against the hook's own `take` took trial and error to write `SkimHook`, our test attacker.
+6. **`afterSwapReturnDelta` needed reading `Hooks.sol` to get right.** Which currency is "unspecified", what sign the return takes, and how it nets against the hook's own `take` all came from the source rather than the docs. Once read, our test attacker `SkimHook` worked first time: it took 99% of a swap's output on the real PoolManager.
 
 7. **Permit2's two-step approval takes real gas and two sentences for a human.** `token.approve(Permit2)` then `Permit2.approve(token, router)` is hard to explain on a small screen. We support on-chain approve only, because signed permits cannot be post-checked in our model. A plain-language explanation in the docs of why both exist would help wallet authors.
 

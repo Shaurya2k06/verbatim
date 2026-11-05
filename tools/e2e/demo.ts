@@ -1,8 +1,10 @@
 // Walks the §20 demo end to end in real browsers against the live devnet, through the real pages.
-// Pass --record to save a fallback video to docs/demo/. The signer is the offline app with networking blocked.
+// Pass --record to save a captioned fallback video to docs/demo/verbatim-demo.mp4. The signer is the offline app with
+// networking blocked.
 // Reads owner keys from the git-ignored .env; types them into the pages' local key fields only.
-import { spawn, type ChildProcess } from "node:child_process";
-import { copyFileSync, mkdirSync, readFileSync, readdirSync, rmSync } from "node:fs";
+import { spawn, spawnSync, type ChildProcess } from "node:child_process";
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync } from "node:fs";
+import { homedir } from "node:os";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium, type BrowserContext, type Page } from "playwright";
@@ -49,7 +51,54 @@ await Promise.all([5173, 5174, 5175, 5176].map((p) => waitFor(`http://localhost:
 const browser = await chromium.launch();
 const VIDEO = resolve(ROOT, "tools/e2e/.video");
 rmSync(VIDEO, { recursive: true, force: true });
-const ctx: BrowserContext = await browser.newContext({ viewport: { width: 1280, height: 860 }, ...(RECORD ? { recordVideo: { dir: VIDEO, size: { width: 1280, height: 860 } } } : {}) });
+const ctx: BrowserContext = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+
+// Recording follows whichever page is on stage, so the video stays one continuous take across tabs.
+let stage: Page | null = null;
+let frameNo = 0;
+let recording = RECORD;
+let captionText = "";
+async function recorder() {
+  mkdirSync(VIDEO, { recursive: true });
+  while (recording) {
+    const started = Date.now();
+    if (stage) {
+      try {
+        await stage.screenshot({ path: resolve(VIDEO, `f${String(frameNo++).padStart(6, "0")}.jpg`), type: "jpeg", quality: 80 });
+      } catch {
+        /* page mid-navigation */
+      }
+    }
+    await new Promise((r) => setTimeout(r, Math.max(0, 200 - (Date.now() - started))));
+  }
+}
+const recorderDone = RECORD ? recorder() : Promise.resolve();
+
+async function caption(page: Page, text: string) {
+  captionText = text;
+  await page.evaluate((t) => {
+    let c = document.getElementById("__caption");
+    if (!c) {
+      c = document.createElement("div");
+      c.id = "__caption";
+      c.setAttribute("style", "position:fixed;left:0;right:0;bottom:0;z-index:99999;background:#111;color:#fff;font:600 19px/1.35 system-ui;padding:12px 20px");
+      document.body.append(c);
+    }
+    c.textContent = t;
+  }, text).catch(() => {});
+}
+
+async function show(page: Page, text?: string) {
+  await page.bringToFront();
+  stage = page;
+  await caption(page, text ?? captionText);
+}
+
+/** A beat's title card. */
+async function say(page: Page, text: string, ms = 4500) {
+  await show(page, text);
+  if (RECORD) await page.waitForTimeout(ms);
+}
 
 // The device: loaded once, then cut off from every network.
 const device = await ctx.newPage();
@@ -64,7 +113,7 @@ const results: { beat: string; pass: boolean; text: string }[] = [];
 async function signFlow(page: Page) {
   await page.getByRole("button", { name: "Copy request" }).waitFor({ timeout: 60_000 });
   const req = await page.locator("textarea[readonly]").inputValue();
-  await device.bringToFront();
+  await show(device, "On the offline device: it decodes the sentence itself and signs only what it shows.");
   await device.getByPlaceholder("Scan the request").fill(req);
   await device.getByRole("button", { name: "Review" }).click();
   await device.getByRole("button", { name: "Approve and sign" }).waitFor();
@@ -74,7 +123,7 @@ async function signFlow(page: Page) {
   const sig = await device.locator("textarea[readonly]").inputValue();
   await device.waitForTimeout(PACE / 2);
   await device.getByRole("button", { name: "Done" }).click();
-  await page.bringToFront();
+  await show(page, "Second owner signs. Submitting to the ERC-8421 alt mempool.");
   await page.getByPlaceholder("Paste the signature").fill(sig);
   await page.getByRole("button", { name: "Add signature" }).click();
   await page.getByPlaceholder("0x owner key held").fill(env.OWNER2_KEY);
@@ -90,6 +139,7 @@ async function outcome(page: Page, want: RegExp, beat: string) {
   const pass = want.test(parent);
   results.push({ beat, pass, text: parent.replace(/\s+/g, " ").slice(0, 200) });
   console.log(`${pass ? "PASS" : "FAIL"} ${beat}: ${parent.replace(/\s+/g, " ").slice(0, 160)}`);
+  await caption(page, `${pass ? "" : "UNEXPECTED: "}${beat}`);
   await page.waitForTimeout(PACE * 2);
 }
 
@@ -98,13 +148,16 @@ const pause = () => new Promise((r) => setTimeout(r, 9000)); // one block, so ea
 // Beat 1: the swap lie.
 const swap = await ctx.newPage();
 await swap.goto("http://localhost:5175");
+await say(swap, "Bybit, Feb 2025, $1.5B. Drift, April 2026, $285M. Signers approved what a screen told them. Binance was a hacked machine: a different problem, out of scope here.", 7000);
+await say(swap, "Verbatim fixes the human case: the chain checks you signed what you read, then checks it actually happened.", 5000);
 await swap.locator("select").selectOption("lie");
-await swap.waitForTimeout(PACE);
+await say(swap, "Beat 1. An evil frontend says \"swap 1 dWETH for at least 2000 dUSDC\". Its calldata sets minOut = 0 and routes through a hook that skims 99%.", 6000);
 await swap.getByRole("button", { name: "Swap", exact: true }).click();
 await signFlow(swap);
 await outcome(swap, /Rejected.*TreeMismatch/s, "beat 1: lying swap frontend");
 
 await swap.locator("select").selectOption("truth");
+await say(swap, "Rejected: that calldata does not render to the sentence signed. So show the truth instead, and sign it anyway.", 5000);
 await swap.getByRole("button", { name: "Swap", exact: true }).click();
 const truth = await signFlow(swap);
 if (!/NO MINIMUM OUTPUT/.test(truth) || !/HOOK CAN TAKE YOUR OUTPUT/.test(truth)) results.push({ beat: "beat 1: device risk lines", pass: false, text: truth });
@@ -112,6 +165,7 @@ else console.log("PASS beat 1: device shows NO MINIMUM OUTPUT and HOOK CAN TAKE 
 await outcome(swap, /Rejected.*PolicyRefused/s, "beat 1: true sentence, policy refuses");
 
 await swap.locator("select").selectOption("honest");
+await say(swap, "The device warned, and policy refused. Now the honest swap, through the real Universal Router.", 4000);
 await swap.getByRole("button", { name: "Swap", exact: true }).click();
 await signFlow(swap);
 await outcome(swap, /Landed in block/, "beat 1: honest swap lands");
@@ -120,6 +174,7 @@ await pause();
 // Beat 2 and beat 3 share the attack kit page. The vault needs the old approvals tools/scripts/attacks.ts A6 made.
 const evil = await ctx.newPage();
 await evil.goto("http://localhost:5176");
+await say(evil, "Beat 2. The contract tells the truth, then does more. \"Deposit 5 dUSDC\" is accurate, and it also pulls dWETH through an old approval.", 6000);
 const kit: [string, RegExp][] = [
   ["The contract tells the truth", /Mined.*AssertionFailed/s],
   ["Swap the recipient", /Rejected.*TreeMismatch/s],
@@ -129,6 +184,8 @@ const kit: [string, RegExp][] = [
   ["Replay a stale signature", /Mined.*Expired/s],
 ];
 for (const [name, want] of kit) {
+  if (name === "Swap the recipient") await say(evil, "The chain caught what it did. Beat 3: attack us. Every lie fails live.", 4500);
+  await show(evil, name);
   await evil.getByRole("button", { name }).click();
   await signFlow(evil);
   await outcome(evil, want, name.startsWith("The contract") ? `beat 2: ${name}` : `beat 3: ${name}`);
@@ -142,14 +199,22 @@ await wallet.getByRole("button", { name: "Render the sentence" }).click();
 await signFlow(wallet);
 await outcome(wallet, /Landed in block/, "wallet: honest send lands");
 
+await say(wallet, "Clear signing, enforced by the chain. Runs today on the frame-transaction alt mempool; ships as a Uniswap renderer anyone can use.", 6000);
+
 const failed = results.filter((r) => !r.pass);
+recording = false;
+await recorderDone;
 await ctx.close();
 await browser.close();
 if (RECORD) {
   mkdirSync(resolve(ROOT, "docs/demo"), { recursive: true });
-  const videos = readdirSync(VIDEO).filter((f) => f.endsWith(".webm"));
-  videos.forEach((f, i) => copyFileSync(resolve(VIDEO, f), resolve(ROOT, `docs/demo/page-${i}.webm`)));
-  console.log(`saved ${videos.length} page recordings to docs/demo/`);
+  const frames = readdirSync(VIDEO).filter((f) => f.endsWith(".jpg")).length;
+  const cache = resolve(homedir(), "Library/Caches/ms-playwright");
+  const bundled = existsSync(cache) ? readdirSync(cache).filter((d) => d.startsWith("ffmpeg")).map((d) => resolve(cache, d, "ffmpeg-mac")).find(existsSync) : undefined;
+  const out = resolve(ROOT, "docs/demo/verbatim-demo.mp4");
+  const ff = spawnSync("ffmpeg", ["-y", "-framerate", "5", "-i", resolve(VIDEO, "f%06d.jpg"), "-c:v", "libx264", "-pix_fmt", "yuv420p", "-r", "25", out], { stdio: "ignore" });
+  if (ff.status === 0) console.log(`saved ${out} (${frames} frames, about ${Math.round(frames / 5)} s)`);
+  else console.log(`no ffmpeg on PATH${bundled ? ` (Playwright's has no H.264)` : ""}: ${frames} frames kept in tools/e2e/.video. Encode with: ffmpeg -framerate 5 -i tools/e2e/.video/f%06d.jpg -pix_fmt yuv420p docs/demo/verbatim-demo.mp4`);
 }
 console.log(`${results.length - failed.length}/${results.length} beats passed`);
 for (const f of failed) console.log("FAILED", f.beat, f.text);
