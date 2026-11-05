@@ -1,141 +1,118 @@
-// Deploys Leg B against the official Uniswap contracts and Sepolia ENSv2, then attests through both gates.
-import { encodeAbiParameters, encodeDeployData, encodeFunctionData, encodePacked, getContractAddress, keccak256, parseAbi, parseEther, type Address, type Hex } from "viem";
+// Deploys the production leg on Sepolia: VerbatimAccount4337 with stateless semantics, against the official Uniswap contracts,
+// with ENSv2 as the trust root (§13). Idempotent through .state/sepolia.json. `tsx legb-ens.ts verbatim-anchor --anchor` first.
+import { writeFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { encodeAbiParameters, encodeDeployData, encodePacked, keccak256, parseAbi, parseEther, type Address, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { packedUniswap } from "@verbatim/client";
 import { packStr } from "@verbatim/displayvm-ts";
-import { compileFile } from "@verbatim/vdesc-compiler";
-import { readFileSync, writeFileSync } from "node:fs";
-import { resolve } from "node:path";
 import { ROOT, addr, key } from "./lib/env";
 import { artifact } from "./lib/chain";
-import { ENS, ENTRY_POINT, KEY, RESOLVER_ABI, UNI, WETH_SEPOLIA, dnsName, me, namedKey, pub, readS, tx, wallet, writeS } from "./lib/sepolia";
-import { attest, descriptorsFor, emptyUpdate, tokenEntry, type TrustUpdate } from "./lib/trust-update";
+import { ENS, ENTRY_POINT, RESOLVER_ABI, UNI, WETH_SEPOLIA, dnsName, me, namedKey, pub, readS, tx, wallet, writeS } from "./lib/sepolia";
+import { descriptorsFor, emptyUpdate, publishSnapshot, tokenEntry, type TrustUpdate } from "./lib/trust-update";
 
-const LABEL = "verbatim-demo";
-const NAME = `${LABEL}.eth`;
-const PUBLISHER = packStr(NAME);
+const PUBLISHER = "verbatim-demo";
+const ANCHOR = "verbatim-anchor";
+const NAME = `${PUBLISHER}.eth`;
 
-async function deploy(file: string, name: string, args: unknown[] = [], value = 0n) {
+async function deploy(file: string, name: string, args: unknown[] = []) {
   const a = artifact(file, name);
   const data = args.length ? encodeDeployData({ abi: a.abi, bytecode: a.creation, args: args as never }) : a.creation;
   const w = wallet();
-  const hash = await w.sendTransaction({ data, value, account: w.account!, chain: w.chain, gas: name.startsWith("RendererPaymaster") || name.startsWith("VerbatimAccount") || name.startsWith("TrustAdmin") ? 50_000_000n : 15_000_000n });
+  const hash = await w.sendTransaction({ data, account: w.account!, chain: w.chain, gas: 50_000_000n });
   const r = await pub.waitForTransactionReceipt({ hash, timeout: 180_000 });
   if (r.status !== "success" || !r.contractAddress) throw new Error(`deploy of ${name} failed: ${hash}`);
   console.log(name, r.contractAddress, hash, "gas", r.gasUsed);
-  return { address: r.contractAddress, hash, abi: a.abi };
+  return { address: r.contractAddress, hash };
 }
 
-const ens = () => readS()[LABEL];
+const s = () => readS();
+const pub_ = () => s()[PUBLISHER];
+const anc = () => s()[ANCHOR];
+if (!anc()?.locked) throw new Error(`run: tsx legb-ens.ts ${ANCHOR} --anchor`);
 const council = privateKeyToAccount(namedKey("ens-council")).address;
 const owners = ["OWNER1_KEY", "OWNER2_KEY", "OWNER3_KEY"].map(addr);
 const attestors = ["ATTESTOR1_KEY", "ATTESTOR2_KEY", "ATTESTOR3_KEY"].map(addr);
 const chOf = async (a: Address) => keccak256((await pub.getCode({ address: a })) as Hex);
 
-if (!readS().checker) {
-  const YEAR = 365n * 24n * 3600n;
-  const c = await deploy("EnsTrustChecker.sol", "EnsTrustChecker", [ENS.root, ENS.ethRegistry, ENS.universalResolver, await chOf(ens().resolver), council, YEAR]);
-  const m = await deploy("EnsTrustChecker.sol", "TrustAdminEns", [c.address]);
-  writeS({ checker: c.address, trustAdmin: m.address, checkerTx: c.hash, trustAdminTx: m.hash });
+if (!s().checker) {
+  const c = await deploy("EnsTrustChecker.sol", "EnsTrustChecker", [ENS.root, ENS.ethRegistry, ENS.universalResolver, await chOf(pub_().resolver), council, 365n * 24n * 3600n]);
+  writeS({ checker: c.address, checkerTx: c.hash });
 }
-if (!readS().paymaster) {
-  const nonce = BigInt(await pub.getTransactionCount({ address: me }));
-  const predicted = getContractAddress({ from: me, nonce: nonce + 1n });
-  const acc = await deploy("VerbatimAccount4337.sol", "VerbatimAccount4337", [ENTRY_POINT, predicted, owners, 2]);
-  const ch = await chOf(acc.address);
-  const pm = await deploy("RendererPaymaster4337.sol", "RendererPaymaster4337", [ENTRY_POINT, ch, me, readS().trustAdmin, UNI.permit2, WETH_SEPOLIA, packedUniswap, attestors, 2]);
-  if (pm.address.toLowerCase() !== predicted.toLowerCase()) throw new Error("prediction missed");
-  writeS({ account: acc.address, accountCodehash: ch, paymaster: pm.address, accountTx: acc.hash, paymasterTx: pm.hash });
+if (!s().statelessRenderer) {
+  const r = await deploy("StatelessRenderer.sol", "StatelessRenderer", [UNI.permit2, WETH_SEPOLIA, packedUniswap]);
+  const g = await deploy("RevocationRegistry.sol", "RevocationRegistry", [attestors, 2]);
+  writeS({ statelessRenderer: r.address, statelessRendererTx: r.hash, revocations: g.address, revocationsTx: g.hash });
 }
-const s = () => readS();
-const PM_ABI = artifact("RendererPaymaster4337.sol", "RendererPaymaster4337").abi;
-if (!s().staked) {
-  const a = await tx({ address: s().paymaster, abi: PM_ABI, functionName: "stakeEntryPoint", args: [86400], value: parseEther("0.11") });
-  const b = await tx({ address: s().paymaster, abi: PM_ABI, functionName: "fundEntryPoint", args: [], value: parseEther("0.08") });
-  console.log("staked", a.transactionHash, "funded", b.transactionHash);
-  writeS({ staked: a.transactionHash, fundedEp: b.transactionHash });
+if (!s().anchor) {
+  const a = await deploy("EnsTrustAnchor.sol", "EnsTrustAnchor", [ENS.root, ENS.ethRegistry, await chOf(anc().resolver), council, s().checker, ANCHOR]);
+  writeS({ anchor: a.address, anchorTx: a.hash });
 }
-if (!s().tokenA) {
-  const a = await deploy("TestTokens.sol", "TestToken", ["Demo USD", "dUSDC", 6]);
-  const b = await deploy("TestTokens.sol", "TestToken", ["Demo Wrapped Ether", "dWETH", 18]);
-  writeS({ tokenA: a.address, tokenB: b.address });
+if (!s().attestorsRecord) {
+  const r = await tx({ address: anc().resolver, abi: RESOLVER_ABI, functionName: "setText", args: [dnsName(`${ANCHOR}.eth`), "attestors", attestors.map((a) => a.toLowerCase()).join(",")] }, namedKey("ens-council"));
+  console.log("council set the attestor list", r.transactionHash);
+  writeS({ attestorsRecord: r.transactionHash });
+}
+if (!s().account4337) {
+  const a = await deploy("VerbatimAccount4337.sol", "VerbatimAccount4337", [ENTRY_POINT, s().statelessRenderer, s().revocations, s().anchor, UNI.permit2, owners, 2, attestors, 2]);
+  writeS({ account4337: a.address, account4337Tx: a.hash });
 }
 const ERC20 = artifact("TestTokens.sol", "TestToken").abi;
-const ADMIN = artifact("TrustStore.sol", "TrustAdmin").abi;
 
-// Everything the ENS name stands behind, so the record can list it before attestation.
-const load = (file: string) => compileFile(JSON.parse(readFileSync(resolve(ROOT, "descriptors", file), "utf8")));
-const erc20 = load("erc20.json");
-const permit2 = load("permit2.json");
+// The attested snapshot. Same leaves on every path; only this leg carries ENS names.
+const u: TrustUpdate = emptyUpdate(1n);
+const tokenCode = await chOf(s().tokenA);
+const p2Code = await chOf(UNI.permit2);
+u.descriptors = [...(await descriptorsFor("erc20.json", tokenCode, {}, NAME)), ...(await descriptorsFor("permit2.json", p2Code, {}, NAME))];
+u.tokens = [tokenEntry(s().tokenA, "dUSDC", 6), tokenEntry(s().tokenB, "dWETH", 18)];
+u.routers = [{ codehash: await chOf(UNI.router), legacy: true }];
+u.spenders = [UNI.permit2, UNI.router];
+u.names = [{ addr: pub_().nameAddress, name: packStr(NAME), resolver: pub_().resolver }];
+const snap = await publishSnapshot(u, 11155111n, 1);
+writeFileSync(resolve(ROOT, "deployments/snapshot-sepolia.json"), JSON.stringify(snap, null, 1) + "\n");
+console.log("snapshot", snap.root, "expires", new Date(Number(snap.expiry) * 1000).toISOString());
 
-if (!s().textSet) {
-  const list = [...erc20, ...permit2].map((d) => d.descHash).join(",");
-  const r = await tx({ address: ens().resolver, abi: RESOLVER_ABI, functionName: "setText", args: [dnsName(NAME), "clear-signing", list] }, namedKey("ens-council"));
-  console.log("council set the record", r.transactionHash);
-  writeS({ textSet: r.transactionHash });
+if (!s().funded4337) {
+  const w = wallet();
+  const hash = await w.sendTransaction({ to: s().account4337, value: parseEther("0.2"), account: w.account!, chain: w.chain });
+  await pub.waitForTransactionReceipt({ hash });
+  await tx({ address: s().tokenA, abi: ERC20, functionName: "mint", args: [s().account4337, 1_000_000_000_000n] });
+  writeS({ funded4337: true });
 }
 
-if (!s().attested) {
-  const u: TrustUpdate = emptyUpdate(1n);
-  const tokenCode = await chOf(s().tokenA);
-  const p2Code = await chOf(UNI.permit2);
-  u.descriptors = [...(await descriptorsFor("erc20.json", tokenCode, {}, NAME)), ...(await descriptorsFor("permit2.json", p2Code, {}, NAME))];
-  u.tokens = [tokenEntry(s().tokenA, "dUSDC", 6), tokenEntry(s().tokenB, "dWETH", 18)];
-  u.routers = [{ codehash: await chOf(UNI.router), legacy: true }];
-  u.spenders = [UNI.permit2, UNI.router];
-  u.names = [{ addr: ens().nameAddress, name: PUBLISHER, resolver: ens().resolver }];
-  const r = await attest(s().paymaster, u, 11155111n, async (data: Hex) => {
-    const w = wallet();
-    const hash = await w.sendTransaction({ to: s().paymaster, data, account: w.account!, chain: w.chain, gas: 6_000_000n });
-    return pub.waitForTransactionReceipt({ hash, timeout: 180_000 }) as never;
-  });
-  if ((r as any).status !== "success") throw new Error(`refreshTrust reverted: ${(r as any).transactionHash}`);
-  console.log("refreshTrust with ENS exclusivity", (r as any).transactionHash, "gas", (r as any).gasUsed);
-  writeS({ attested: (r as any).transactionHash, refreshGas: String((r as any).gasUsed) });
-}
-
-if (!s().feeSet) {
-  await tx({ address: s().paymaster, abi: ADMIN, functionName: "deposit", args: [s().account, "0x0000000000000000000000000000000000000000", 0n], value: parseEther("0.06") });
-  await tx({ address: s().tokenA, abi: ERC20, functionName: "mint", args: [s().account, 1_000_000_000_000n] });
-  await tx({ address: s().tokenB, abi: ERC20, functionName: "mint", args: [s().account, parseEther("100")] });
-  writeS({ feeSet: true });
-}
-
-// Demo pool on the official PoolManager, liquidity through the official PositionManager.
+// A native-ETH pool on the official PoolManager: a swap from ETH needs no approval, so nothing outlives the batch (D9).
 const PM = parseAbi(["struct PoolKey { address currency0; address currency1; uint24 fee; int24 tickSpacing; address hooks; }", "function initialize(PoolKey key, uint160 sqrtPriceX96) returns (int24)"]);
 const P2 = parseAbi(["function approve(address token, address spender, uint160 amount, uint48 expiration)"]);
-if (!s().pool) {
-  const [c0, c1] = BigInt(s().tokenA) < BigInt(s().tokenB) ? [s().tokenA as Address, s().tokenB as Address] : [s().tokenB as Address, s().tokenA as Address];
-  const usdcIs0 = c0.toLowerCase() === s().tokenA.toLowerCase();
-  const price = usdcIs0 ? 1e18 / 3000e6 : 3000e6 / 1e18;
+if (!s().poolEth) {
+  const usdc = s().tokenA as Address;
+  await tx({ address: usdc, abi: ERC20, functionName: "mint", args: [me, parseEther("100000000")] });
+  await tx({ address: usdc, abi: ERC20, functionName: "approve", args: [UNI.permit2, (1n << 256n) - 1n] });
+  await tx({ address: UNI.permit2, abi: P2, functionName: "approve", args: [usdc, UNI.positionManager, (1n << 160n) - 1n, 2 ** 47] });
+  const price = 3000e6 / 1e18;
   const sqrtPriceX96 = BigInt(Math.floor(Math.sqrt(price) * 2 ** 48)) * 2n ** 48n;
   const tick = Math.floor(Math.log(price) / Math.log(1.0001));
   const tickLower = Math.floor((tick - 6000) / 60) * 60;
   const tickUpper = Math.floor((tick + 6000) / 60) * 60;
-  for (const t of [s().tokenA, s().tokenB] as Address[]) {
-    await tx({ address: t, abi: ERC20, functionName: "mint", args: [me, parseEther("100000000")] });
-    await tx({ address: t, abi: ERC20, functionName: "approve", args: [UNI.permit2, (1n << 256n) - 1n] });
-    await tx({ address: UNI.permit2, abi: P2, functionName: "approve", args: [t, UNI.positionManager, (1n << 160n) - 1n, 2 ** 47] });
-  }
-  const k = { currency0: c0, currency1: c1, fee: 3000, tickSpacing: 60, hooks: "0x0000000000000000000000000000000000000000" as Address };
+  const ZERO = "0x0000000000000000000000000000000000000000" as Address;
+  const k = { currency0: ZERO, currency1: usdc, fee: 3000, tickSpacing: 60, hooks: ZERO };
   const init = await tx({ address: UNI.poolManager, abi: PM, functionName: "initialize", args: [k, sqrtPriceX96] });
   const KEY_T = { type: "tuple", components: [{ name: "currency0", type: "address" }, { name: "currency1", type: "address" }, { name: "fee", type: "uint24" }, { name: "tickSpacing", type: "int24" }, { name: "hooks", type: "address" }] } as const;
-  const mint = encodeAbiParameters([KEY_T, { type: "int24" }, { type: "int24" }, { type: "uint256" }, { type: "uint128" }, { type: "uint128" }, { type: "address" }, { type: "bytes" }], [k, tickLower, tickUpper, 1_000_000_000_000_000n, 1n << 127n, 1n << 127n, me, "0x"]);
-  const settle = encodeAbiParameters([{ type: "address" }, { type: "address" }], [c0, c1]);
-  const unlock = encodeAbiParameters([{ type: "bytes" }, { type: "bytes[]" }], [encodePacked(["uint8", "uint8"], [0x02, 0x0d]), [mint, settle]]);
-  const liq = await tx({ address: UNI.positionManager, abi: parseAbi(["function modifyLiquidities(bytes unlockData, uint256 deadline) payable"]), functionName: "modifyLiquidities", args: [unlock, BigInt(Math.floor(Date.now() / 1000) + 3600)] });
-  console.log("pool", init.transactionHash, "liquidity", liq.transactionHash);
-  writeS({ pool: { key: k, init: init.transactionHash, liquidity: liq.transactionHash } });
+  const value = parseEther("0.1");
+  const mint = encodeAbiParameters([KEY_T, { type: "int24" }, { type: "int24" }, { type: "uint256" }, { type: "uint128" }, { type: "uint128" }, { type: "address" }, { type: "bytes" }], [k, tickLower, tickUpper, 8_000_000_000_000n, value, 1n << 127n, me, "0x"]);
+  const settle = encodeAbiParameters([{ type: "address" }, { type: "address" }], [ZERO, usdc]);
+  const sweep = encodeAbiParameters([{ type: "address" }, { type: "address" }], [ZERO, me]);
+  const unlock = encodeAbiParameters([{ type: "bytes" }, { type: "bytes[]" }], [encodePacked(["uint8", "uint8", "uint8"], [0x02, 0x0d, 0x14]), [mint, settle, sweep]]);
+  const liq = await tx({ address: UNI.positionManager, abi: parseAbi(["function modifyLiquidities(bytes unlockData, uint256 deadline) payable"]), functionName: "modifyLiquidities", args: [unlock, BigInt(Math.floor(Date.now() / 1000) + 3600)], value });
+  console.log("ETH pool", init.transactionHash, "liquidity", liq.transactionHash);
+  writeS({ poolEth: { key: k, init: init.transactionHash, liquidity: liq.transactionHash } });
 }
-void encodeFunctionData; void KEY; void key;
 
-// The public addresses the demo page and docs read. No keys, by construction.
 const st = s();
-const dep = {
-  network: "sepolia", chainId: 11155111, entryPoint: ENTRY_POINT, account: st.account, paymaster: st.paymaster, accountCodehash: st.accountCodehash, ensTrustChecker: st.checker, trustAdmin: st.trustAdmin,
-  tokens: { dUSDC: st.tokenA, dWETH: st.tokenB }, pool: st.pool, refreshTrustTx: st.attested, stakeTx: st.staked,
+writeFileSync(resolve(ROOT, "deployments/sepolia.json"), JSON.stringify({
+  network: "sepolia", chainId: 11155111, entryPoint: ENTRY_POINT, account: st.account4337, statelessRenderer: st.statelessRenderer, revocations: st.revocations, ensTrustChecker: st.checker, ensTrustAnchor: st.anchor,
+  tokens: { dUSDC: st.tokenA, dWETH: st.tokenB }, pools: { eth: st.poolEth, erc20: st.pool },
   uniswap: { router: UNI.router, poolManager: UNI.poolManager, positionManager: UNI.positionManager, permit2: UNI.permit2 },
-  ens: { name: NAME, resolver: ens().resolver, registered: ens().registered, lockTxs: ens().locked, lookalike: "verbatim-dem0.eth", lookalikeResolver: st["verbatim-dem0"]?.resolver, recordTx: st.textSet, rootRegistry: ENS.root, ethRegistry: ENS.ethRegistry, universalResolver: ENS.universalResolver },
-};
-writeFileSync(resolve(ROOT, "deployments/sepolia.json"), JSON.stringify(dep, null, 2) + "\n");
-console.log(JSON.stringify({ account: s().account, paymaster: s().paymaster, checker: s().checker, attested: s().attested, pool: s().pool?.init }, null, 1));
+  ens: { publisher: NAME, publisherResolver: pub_().resolver, anchor: `${ANCHOR}.eth`, anchorResolver: anc().resolver, attestorsRecordTx: st.attestorsRecord, lookalike: "verbatim-dem0.eth" },
+}, null, 2) + "\n");
+console.log(JSON.stringify({ account: st.account4337, anchor: st.anchor, renderer: st.statelessRenderer }, null, 1));
+void addr; void key;

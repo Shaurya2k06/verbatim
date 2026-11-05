@@ -2,28 +2,39 @@
   "network": "sepolia",
   "chainId": 11155111,
   "entryPoint": "0x0000000071727De22E5E9d8BAf0edAc6f37da032",
-  "account": "0x74cba4a5916a8e665167d25da40e29d4ae5e0b67",
-  "paymaster": "0x6c7a705a6a744b316c7f2a070419630dcf978b45",
-  "accountCodehash": "0x184e2440a8c5261b48fb9a886c0d426b744a10ce7bee7697209edafea21e4fd5",
-  "ensTrustChecker": "0x6378d334c24bca2f6c17ba4199a59a55252d5561",
-  "trustAdmin": "0x12955e8c98b05155bd16f9cf0383ec53d4670158",
+  "account": "0x73d9885c7c4d03b038e10d19514e3d786395a0cb",
+  "statelessRenderer": "0x61616a20f4b8245f3b1e31b6a94f6670d76a091e",
+  "revocations": "0xc3d1e23aa19b21b4b543003277f7eaaddad07a02",
+  "ensTrustChecker": "0x6921ceaff12259930aa31f3645d14a2b886827ff",
+  "ensTrustAnchor": "0x2a1f197493d847e8bdb02ccd7ba8fc2b8e1132c2",
   "tokens": {
     "dUSDC": "0x7e068face3fc4a6826d182b1ec0e80d7d8979e0f",
     "dWETH": "0x42808f35830dfe250ad998b3b239c0776f01be97"
   },
-  "pool": {
-    "key": {
-      "currency0": "0x42808f35830dfe250ad998b3b239c0776f01be97",
-      "currency1": "0x7e068face3fc4a6826d182b1ec0e80d7d8979e0f",
-      "fee": 3000,
-      "tickSpacing": 60,
-      "hooks": "0x0000000000000000000000000000000000000000"
+  "pools": {
+    "eth": {
+      "key": {
+        "currency0": "0x0000000000000000000000000000000000000000",
+        "currency1": "0x7e068face3fc4a6826d182b1ec0e80d7d8979e0f",
+        "fee": 3000,
+        "tickSpacing": 60,
+        "hooks": "0x0000000000000000000000000000000000000000"
+      },
+      "init": "0x1a70726c072d8a7fd38c28c59989f94217878401bd43b67e37e6ef4d79fdae2e",
+      "liquidity": "0x06f5ead06256d3cd8aab2e49745513a0aadf0cf1577cfa74e7e730c1bd6f651e"
     },
-    "init": "0xb813aa2401747bf11577ab9c8f6f9bb07e5cd594647ce7f544cb179480b554fd",
-    "liquidity": "0x495d3462ebb2128c2297f460d6a9030665048be1ca57483bb5b1188d91becfd4"
+    "erc20": {
+      "key": {
+        "currency0": "0x42808f35830dfe250ad998b3b239c0776f01be97",
+        "currency1": "0x7e068face3fc4a6826d182b1ec0e80d7d8979e0f",
+        "fee": 3000,
+        "tickSpacing": 60,
+        "hooks": "0x0000000000000000000000000000000000000000"
+      },
+      "init": "0xb813aa2401747bf11577ab9c8f6f9bb07e5cd594647ce7f544cb179480b554fd",
+      "liquidity": "0x495d3462ebb2128c2297f460d6a9030665048be1ca57483bb5b1188d91becfd4"
+    }
   },
-  "refreshTrustTx": "0x3b66fd1dd6c2e59b9a0d3dd018d468051e7b4d9e117eea4cccae7731b049a7a5",
-  "stakeTx": "0xa1eec563d25084249794be1ab3a5e1f5ac1a946d0af5a62a68977e13e9bbc0ee",
   "uniswap": {
     "router": "0x3A9D48AB9751398BbFa63ad67599Bb04e4BdF98b",
     "poolManager": "0xE03A1074c86CFeDd5C142C4F04F1a1536e203543",
@@ -31,18 +42,11 @@
     "permit2": "0x000000000022D473030F116dDEE9F6B43aC78BA3"
   },
   "ens": {
-    "name": "verbatim-demo.eth",
-    "resolver": "0xc449d31B38414D39ad733f8A676027956B7a1E88",
-    "registered": "0x6ba53bc758efa538cc53136e12274e4e4835d135d76b8094e8cd81df68cb21dc",
-    "lockTxs": {
-      "resolver": "0x7b229411e300a7691a6866c8d667def2d00d6c1f5449d877c759a53a07c04231",
-      "registry": "0x34e539877e7e8155a25083ceb9ce396a503df666e6f4e0ea9360542eb1344562"
-    },
-    "lookalike": "verbatim-dem0.eth",
-    "lookalikeResolver": "0xbfE84a49fE4834a9eedDbFCb3Ffc2E3851124Dcd",
-    "recordTx": "0x9c72f2c56c762a4cd4f3236c7d2e4e1fd7dc2f332b9a96128222d831f884039a",
-    "rootRegistry": "0xb458d6a3a77919449d03e7a6903c26827c1ec43f",
-    "ethRegistry": "0xd4ebcbbdf463c9c45784603db0ddd499bc44a8b4",
-    "universalResolver": "0x24e1d8e068620b647ca097f961a61055f4f42d72"
+    "publisher": "verbatim-demo.eth",
+    "publisherResolver": "0xc449d31B38414D39ad733f8A676027956B7a1E88",
+    "anchor": "verbatim-anchor.eth",
+    "anchorResolver": "0xDC598782f5f7721F9409AF631716e67345Cb89e5",
+    "attestorsRecordTx": "0xf810b825f4c03cd55bd46bfedbef0541b8d475c0969d380956dbaf75bc02e48e",
+    "lookalike": "verbatim-dem0.eth"
   }
 }

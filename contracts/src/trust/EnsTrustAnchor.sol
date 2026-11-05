@@ -1,18 +1,22 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import {IPermissionedRegistryV2, IPermissionedResolverV2} from "./EnsTrustChecker.sol";
+import {EnsTrustChecker, IPermissionedRegistryV2, IPermissionedResolverV2} from "./EnsTrustChecker.sol";
+import {ITrustAnchor} from "../leg-b/VerbatimAccount4337.sol";
 
 /// ENSv2 as the trust root on chains with ENS (§13). Read at execution, so it never touches the mempool.
 /// `<label>.eth` holds two text records, each written only through an argument-scoped role, whose exclusivity this checks:
 ///   `attestors`  comma-separated lowercase hex addresses. Every attestor whose signature was used must be listed.
 ///   `revoked`    comma-separated lowercase hex leaf hashes. No leaf used may be listed.
+/// The other two of §13's questions go to EnsTrustChecker at the same moment: who published each descriptor used (exclusivity of
+/// its `clear-signing` record), and whether each recipient name shown still resolves forward and reverse.
 /// Nothing is hard-coded: the name, the registries and the resolver's code come from the deployment and the records.
-contract EnsTrustAnchor {
+contract EnsTrustAnchor is ITrustAnchor {
     address public immutable ROOT_REGISTRY;
     address public immutable ETH_REGISTRY;
     bytes32 public immutable RESOLVER_CODEHASH;
     address public immutable GOVERNANCE;
+    EnsTrustChecker public immutable CHECKER;
     bytes32 public immutable NODE;
     bytes32 private immutable LABEL_HASH;
 
@@ -35,7 +39,8 @@ contract EnsTrustAnchor {
     error RootRolesHeld(uint256 roleCount);
     error RecordSetterNotExclusive(string key, uint256 roleCount);
 
-    constructor(address rootRegistry, address ethRegistry, bytes32 resolverCodehash, address governance, string memory label) {
+    constructor(address rootRegistry, address ethRegistry, bytes32 resolverCodehash, address governance, EnsTrustChecker checker, string memory label) {
+        CHECKER = checker;
         ROOT_REGISTRY = rootRegistry;
         ETH_REGISTRY = ethRegistry;
         RESOLVER_CODEHASH = resolverCodehash;
@@ -67,7 +72,7 @@ contract EnsTrustAnchor {
         if ((count & (ROLE_SET_TEXT * NYBBLE)) != ROLE_SET_TEXT || count >> 128 != 0 || !r.hasRoles(resource, ROLE_SET_TEXT, GOVERNANCE)) revert RecordSetterNotExclusive(key, count);
     }
 
-    function check(address[] calldata attestorsUsed, bytes32[] calldata leafHashes) external view {
+    function check(Used calldata used) external view {
         IPermissionedResolverV2 r = _resolver();
         uint256 root = r.roleCount(0);
         uint256 forbidden = (ROLE_SET_TEXT * NYBBLE) | (ROLE_LINK * NYBBLE) | (ROLE_UPGRADE * NYBBLE);
@@ -76,15 +81,17 @@ contract EnsTrustAnchor {
         _exclusive(r, REVOKED_KEY);
 
         bytes memory listed = _record(r, ATTESTORS_KEY);
-        for (uint256 i = 0; i < attestorsUsed.length; i++) {
-            if (!_contains(listed, _hexAddress(attestorsUsed[i]))) revert AttestorNotListed(attestorsUsed[i]);
+        for (uint256 i = 0; i < used.attestors.length; i++) {
+            if (!_contains(listed, _hexAddress(used.attestors[i]))) revert AttestorNotListed(used.attestors[i]);
         }
         bytes memory revoked = _record(r, REVOKED_KEY);
         if (revoked.length != 0) {
-            for (uint256 i = 0; i < leafHashes.length; i++) {
-                if (_contains(revoked, _hexBytes(abi.encodePacked(leafHashes[i])))) revert LeafRevokedInEns(leafHashes[i]);
+            for (uint256 i = 0; i < used.leaves.length; i++) {
+                if (_contains(revoked, _hexBytes(abi.encodePacked(used.leaves[i])))) revert LeafRevokedInEns(used.leaves[i]);
             }
         }
+        for (uint256 i = 0; i < used.publishers.length; i++) CHECKER.check(used.publishers[i], used.descHashes[i]);
+        for (uint256 i = 0; i < used.names.length; i++) CHECKER.checkName(used.nameAddrs[i], used.names[i], used.nameResolvers[i]);
     }
 
     function _hexAddress(address a) private pure returns (bytes memory) {

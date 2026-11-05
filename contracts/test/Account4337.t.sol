@@ -6,6 +6,7 @@ import {VerbatimCore} from "../src/account/VerbatimAccount.sol";
 import {VerbatimAccount4337} from "../src/leg-b/VerbatimAccount4337.sol";
 import {PackedUserOperation} from "../src/leg-b/PackedUserOperation.sol";
 import {EnsTrustAnchor} from "../src/trust/EnsTrustAnchor.sol";
+import {EnsTrustChecker} from "../src/trust/EnsTrustChecker.sol";
 import {DisplayVM} from "../src/lib/DisplayVM.sol";
 import {AssertionKit} from "../src/lib/AssertionKit.sol";
 
@@ -61,12 +62,28 @@ contract AnchorResolver {
     }
 }
 
+contract CheckerStub {
+    bool public failPublisher;
+    uint256 public publishersSeen;
+
+    function setFail(bool f) external {
+        failPublisher = f;
+    }
+
+    function check(bytes32, bytes32) external view {
+        require(!failPublisher, "publisher not exclusive");
+    }
+
+    function checkName(address, bytes32, address) external pure {}
+}
+
 /// §11: the production leg, with this test standing in for EntryPoint v0.7. B13 and the anchor are here too.
 contract Account4337Test is SnapshotFixture {
     VerbatimAccount4337 internal acct;
     AnchorResolver internal resolver;
     AnchorRegistry internal reg2;
     EnsTrustAnchor internal anchor;
+    CheckerStub internal checker;
     address internal constant GOV = address(0x6060);
     uint64 internal constant EXP = T0 + 100;
 
@@ -75,7 +92,8 @@ contract Account4337Test is SnapshotFixture {
         resolver = new AnchorResolver();
         reg2 = new AnchorRegistry();
         reg2.set(address(reg2), address(resolver));
-        anchor = new EnsTrustAnchor(address(reg2), address(reg2), address(resolver).codehash, GOV, "verbatim-demo");
+        checker = new CheckerStub();
+        anchor = new EnsTrustAnchor(address(reg2), address(reg2), address(resolver).codehash, GOV, EnsTrustChecker(address(checker)), "verbatim-demo");
         for (uint256 i = 0; i < 2; i++) {
             uint256 res = uint256(keccak256(bytes(i == 0 ? "attestors" : "revoked")));
             resolver.setCount(res, 1 << 4);
@@ -301,6 +319,14 @@ contract Account4337Test is SnapshotFixture {
         uint256 res = uint256(keccak256(bytes("attestors")));
         resolver.setCount(res, (1 << 4) * 2);
         vm.expectRevert();
+        acct.executeUserOp(op, h);
+    }
+
+    function test_publisher_that_lost_exclusivity_stops_at_execution() public {
+        (PackedUserOperation memory op, bytes32 h, , , , ) = _honest(1);
+        acct.validateUserOp(op, h, 0);
+        checker.setFail(true);
+        vm.expectRevert(bytes("publisher not exclusive"));
         acct.executeUserOp(op, h);
     }
 

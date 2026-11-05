@@ -311,16 +311,16 @@
   "B-honest-pimlico": {
     "id": "B-honest-pimlico",
     "title": "Honest transfer on Sepolia via Pimlico, recipient shown by ENS name",
-    "expected": "bundler accepts; lands; delivered",
+    "expected": "bundler accepts; lands; delivered; name in the sentence",
     "pass": true,
     "outcome": "mined",
-    "txHash": "0x49256aa47f5000f839301ffa7a6add588725f345e6d6d7142c32d7c4db54d2da",
-    "block": 12072079,
+    "txHash": "0xb441ba48211c3c275acc8c5cf8c2800a201581168ab7f0743adf3c4ce590c9a7",
     "extra": {
-      "actualGasUsed": "1107411",
-      "bundler": "pimlico"
+      "actualGasUsed": "1625112",
+      "bundler": "pimlico",
+      "sentence": "You lose exactly 1 dUSDC\nThe code at 0x7e068face3fc4a6826d182b1ec0e80d7d8979e0f is what was attested\n0x3ac4caf4b6727fdb58a7784630e4689a4331c616 is not a contract\nThe name shown for 0x3ac4caf4b6727fdb58a7784630e4689a4331c616 still resolves to it\nNo other tracked holding decreases\nNo other Permit2 allowance grows\nOwners and policy stay the same\nNo approval outlives this transaction\n! OUTPUT GOES TO ANOTHER ADDRESS\nFee cap: 0.0032670000081 ETH\nSend tokens (by verbatim-demo.eth) at 0x7e068face3fc4a6826d182b1ec0e80d7d8979e0f\nTo: verbatim-demo.eth (0x3ac4caf4b6727fdb58a7784630e4689a4331c616)\nAmount: 1 dUSDC\nValid until 2026-11-05 23:27:24 UTC\nPolicy version 1, path ERC-4337\nSnapshot 0x01d06dd453d388b3be12eae66001c30119daa0564b8bf38a43d4d35b5f014342"
     },
-    "at": "2026-11-05T21:15:27.793Z"
+    "at": "2026-11-05T23:23:37.602Z"
   },
   "B-honest-alchemy": {
     "id": "B-honest-alchemy",
@@ -339,43 +339,34 @@
   "B-swap": {
     "id": "B-swap",
     "title": "v4 swap through Uniswap's official Sepolia Universal Router and PoolManager",
-    "expected": "bundler accepts; lands; min out respected",
-    "pass": true,
+    "expected": "lands; minimum output respected",
+    "pass": false,
     "outcome": "mined",
-    "txHash": "0x9723873a218547940dd2992d71b3e09364406ae8fffb77ab1bff3253a713b035",
-    "block": 12072081,
+    "txHash": "0x871509a0e030c18759cd190a03c26c157455dce5cbc26ac6aba3de25b6e54a97",
     "extra": {
-      "receivedRaw": "2996598319",
-      "actualGasUsed": "1172189"
+      "actualGasUsed": "1248235",
+      "got": "0",
+      "bundler": "pimlico"
     },
-    "at": "2026-11-05T21:15:52.745Z"
+    "at": "2026-11-05T23:24:17.458Z"
   },
   "B-A1": {
     "id": "B-A1",
     "title": "Swapped recipient under an honest sentence, on Sepolia",
-    "expected": "bundler rejects; paymaster reverts TreeMismatch",
-    "pass": true,
+    "expected": "bundler rejects; TreeMismatch",
+    "pass": false,
     "outcome": "rejected-at-mempool",
-    "message": "0x669a6fec678e50e16a445bc39dec6c1481f580fe89d462728b78fe162d53d51246af5275c8b9f444c95c503822d355b130fde6a7f33201a2037b9764c70941f27d1c7cdc => TreeMismatch(0x678e50e16a445bc39dec6c1481f580fe89d462728b78fe162d53d51246af5275, 0xc8b9f444c95c503822d355b130fde6a7f33201a2037b9764c70941f27d1c7cdc)",
-    "extra": {
-      "bundler": "Internal error from bundler (trace id: 55a6c6e157516f009b11d533b08c66f9)"
-    },
-    "at": "2026-11-05T21:15:56.754Z"
+    "message": "\"Internal error from bundler (trace id: 491648dd2debd2ead895477803b957ed)\"",
+    "at": "2026-11-05T23:24:25.993Z"
   },
   "A8": {
     "id": "A8",
     "title": "Lookalike ENS name",
-    "expected": "name not in the cache, so hex is shown; the exclusivity check fails at refresh",
+    "expected": "not in the snapshot, so hex is shown; the exclusivity proof refuses it",
     "pass": true,
     "outcome": "rejected-at-mempool",
-    "message": "0x45bdaf820530a4cbd0086fc7728614d14cf73974e1e0e17089000b956b98a659ed979f5e => WrongResolverCode(0x0530a4cbd0086fc7728614d14cf73974e1e0e17089000b956b98a659ed979f5e)",
-    "extra": {
-      "deviceLine": "To: 0x000000000000000000000000000000000000bad1",
-      "lookalike": "verbatim-dem0.eth",
-      "sameCodeChecker": "0xf47fa7a5ef1f0c38d88b9076e872316a8b3968fd",
-      "sameCodeResult": "01110000000000000000000000010000011 => RootRolesHeld(0x1000000000000000000000001000001110000000000000000000000010000011)"
-    },
-    "at": "2026-11-05T21:17:03.763Z"
+    "message": "Execution reverted with reason: +Ă\r\u0010\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0010\u0000\u0000\u0011\u0010\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0010\u0000\u0000\u0011.\n\nRaw Call Arguments:\n  to:    0x318c1ba633e2411dd422a5f2e0752d885f22acd7\n  data:  0x257d67a | To: 0x000000000000000000000000000000000000bad1",
+    "at": "2026-11-05T23:26:17.087Z"
   },
   "INVALIDATION": {
     "id": "INVALIDATION",
@@ -665,5 +656,32 @@
       }
     ],
     "at": "2026-11-05T22:44:35.797Z"
+  },
+  "B_ALCHEMY": {
+    "id": "B_ALCHEMY",
+    "title": "B_ALCHEMY",
+    "expected": "",
+    "pass": false,
+    "outcome": "not-run",
+    "message": "ALCHEMY_BUNDLER_URL missing",
+    "at": "2026-11-05T23:23:49.051Z"
+  },
+  "B13": {
+    "id": "B13",
+    "title": "B13",
+    "expected": "",
+    "pass": false,
+    "outcome": "not-run",
+    "message": "Internal error from bundler (trace id: 49fe3d870faec858e0c02d4d633ce718)",
+    "at": "2026-11-05T23:24:52.271Z"
+  },
+  "B_ENS_REVOKED": {
+    "id": "B_ENS_REVOKED",
+    "title": "B_ENS_REVOKED",
+    "expected": "",
+    "pass": false,
+    "outcome": "not-run",
+    "message": "Internal error from bundler (trace id: 3db57cbc6bb9f7f305e68ca7f6c9f931)",
+    "at": "2026-11-05T23:25:52.129Z"
   }
 }

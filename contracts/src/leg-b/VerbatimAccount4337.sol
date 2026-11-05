@@ -8,7 +8,19 @@ import {PolicyRules} from "../lib/VTree.sol";
 
 /// Reads ENS records at execution (§13). Optional: address zero where a chain has no ENS.
 interface ITrustAnchor {
-    function check(address[] calldata attestorsUsed, bytes32[] calldata leafHashes) external view;
+    struct Used {
+        address[] attestors;
+        bytes32[] leaves;
+        /// Each descriptor's publisher name and hash.
+        bytes32[] publishers;
+        bytes32[] descHashes;
+        /// Each recipient name shown: its address, packed name and resolver.
+        address[] nameAddrs;
+        bytes32[] names;
+        address[] nameResolvers;
+    }
+
+    function check(Used calldata used) external view;
 }
 
 /// The production leg (§11): stateless semantics behind EntryPoint v0.7, so any bundler takes it, with no paymaster and no stake.
@@ -141,9 +153,12 @@ contract VerbatimAccount4337 is VerbatimCore {
     function executeUserOp(PackedUserOperation calldata op, bytes32 userOpHash) external {
         if (msg.sender != ENTRY_POINT) revert NotEntryPoint();
         Sig memory s = abi.decode(op.signature, (Sig));
-        bytes32[] memory leaves = _leafHashes(s.proofs);
-        for (uint256 i = 0; i < leaves.length; i++) if (IRevocationRegistry(REVOCATIONS).isRevoked(leaves[i])) revert LeafRevoked(leaves[i]);
-        if (TRUST_ANCHOR != address(0)) ITrustAnchor(TRUST_ANCHOR).check(_recoverAttestors(s), leaves);
+        ITrustAnchor.Used memory used = _parse(s.proofs);
+        for (uint256 i = 0; i < used.leaves.length; i++) if (IRevocationRegistry(REVOCATIONS).isRevoked(used.leaves[i])) revert LeafRevoked(used.leaves[i]);
+        if (TRUST_ANCHOR != address(0)) {
+            used.attestors = _recoverAttestors(s);
+            ITrustAnchor(TRUST_ANCHOR).check(used);
+        }
         (Call[] memory calls, bytes memory spec) = abi.decode(op.callData[4:], (Call[], bytes));
         bytes32 digest = OwnerDigest.compute(address(this), s.treeHash, s.specHash, s.expiry, s.root, PATH_ERC4337, userOpHash);
         this.executeBatch(calls, spec, s.specHash, s.expiry, digest);
@@ -173,18 +188,26 @@ contract VerbatimAccount4337 is VerbatimCore {
         }
     }
 
-    function _leafHashes(bytes memory proofs) private pure returns (bytes32[] memory out) {
-        if (proofs.length == 0) return out;
+    function _parse(bytes memory proofs) private pure returns (ITrustAnchor.Used memory u) {
+        if (proofs.length == 0) return u;
         uint256 depth = uint8(proofs[0]);
         uint256 n;
+        uint256 nDesc;
+        uint256 nName;
         uint256 p = 1;
-        out = new bytes32[](32);
+        u.leaves = new bytes32[](32);
+        u.publishers = new bytes32[](32);
+        u.descHashes = new bytes32[](32);
+        u.nameAddrs = new address[](32);
+        u.names = new bytes32[](32);
+        u.nameResolvers = new address[](32);
         while (p < proofs.length) {
             uint256 w;
             assembly ("memory-safe") {
                 w := mload(add(add(proofs, 0x20), p))
             }
-            uint256 words = ((w >> 224) & 0xff) + ((w >> 216) & 0xff);
+            uint256 nKey = (w >> 224) & 0xff;
+            uint256 words = nKey + ((w >> 216) & 0xff);
             uint256 keyAt = p + 7;
             uint256 kind = w >> 248;
             bytes32 h;
@@ -196,11 +219,37 @@ contract VerbatimAccount4337 is VerbatimCore {
                 mcopy(add(m, 2), add(add(proofs, 0x20), keyAt), len)
                 h := keccak256(m, add(len, 2))
             }
-            out[n++] = h;
+            u.leaves[n++] = h;
+            uint256 valueAt = keyAt + nKey * 32;
+            if (kind == SnapshotVerifier.DESC) {
+                u.descHashes[nDesc] = bytes32(_wordAt(proofs, valueAt));
+                u.publishers[nDesc++] = bytes32(_wordAt(proofs, valueAt + 32));
+            } else if (kind == SnapshotVerifier.NAME) {
+                u.nameAddrs[nName] = address(uint160(_wordAt(proofs, keyAt + 32)));
+                u.names[nName] = bytes32(_wordAt(proofs, valueAt));
+                u.nameResolvers[nName++] = address(uint160(_wordAt(proofs, valueAt + 32)));
+            }
             p = keyAt + words * 32 + depth * 32 + ((w >> 200) & 0xffff);
         }
+        bytes32[] memory leaves = u.leaves;
+        bytes32[] memory pubs = u.publishers;
+        bytes32[] memory descs = u.descHashes;
+        address[] memory addrs = u.nameAddrs;
+        bytes32[] memory names = u.names;
+        address[] memory resolvers = u.nameResolvers;
         assembly ("memory-safe") {
-            mstore(out, n)
+            mstore(leaves, n)
+            mstore(pubs, nDesc)
+            mstore(descs, nDesc)
+            mstore(addrs, nName)
+            mstore(names, nName)
+            mstore(resolvers, nName)
+        }
+    }
+
+    function _wordAt(bytes memory d, uint256 at) private pure returns (uint256 v) {
+        assembly ("memory-safe") {
+            v := mload(add(add(d, 0x20), at))
         }
     }
 }
