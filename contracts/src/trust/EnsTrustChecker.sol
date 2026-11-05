@@ -121,6 +121,9 @@ contract EnsTrustChecker {
 
         // The name stays pointed at this resolver, and stays registered.
         IPermissionedRegistryV2 eth = IPermissionedRegistryV2(ETH_REGISTRY);
+        // Parents hold no direct right to repoint names. Their admin roles stay with ENS: the irreducible trust.
+        uint256 parentCount = eth.roleCount(0) | IPermissionedRegistryV2(ROOT_REGISTRY).roleCount(0);
+        if (parentCount & (_nybble(REG_ROLE_SET_RESOLVER) | _nybble(REG_ROLE_SET_SUBREGISTRY)) != 0) revert RegistryRolesHeld(parentCount);
         IPermissionedRegistryV2.State memory st = eth.getState(uint256(keccak256(bytes(label))));
         uint256 regForbidden = _nybble(REG_ROLE_SET_RESOLVER) | _nybble(REG_ROLE_SET_SUBREGISTRY);
         uint256 nameCount = eth.roleCount(st.resource);

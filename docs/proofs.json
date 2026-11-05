@@ -325,5 +325,83 @@
       ]
     },
     "at": "2026-11-05T17:39:39.101Z"
+  },
+  "B-honest-pimlico": {
+    "id": "B-honest-pimlico",
+    "title": "Honest transfer on Sepolia via Pimlico, recipient shown by ENS name",
+    "expected": "bundler accepts; lands; delivered",
+    "pass": true,
+    "outcome": "mined",
+    "txHash": "0xa5b0dddd8c732b0beeedb1192ffecc58f67d9bfd5fc40623b56a68373c1b0b73",
+    "block": 12071190,
+    "extra": {
+      "actualGasUsed": "1248536",
+      "bundler": "pimlico"
+    },
+    "at": "2026-11-05T18:14:28.424Z"
+  },
+  "B_ALCHEMY": {
+    "id": "B_ALCHEMY",
+    "title": "B_ALCHEMY",
+    "expected": "",
+    "pass": false,
+    "outcome": "not-run",
+    "message": "Verification gas limit efficiency too low. Required: 0.4, Actual: 0.33401714285714285 \"\"",
+    "at": "2026-11-05T18:14:31.643Z"
+  },
+  "B-honest-alchemy": {
+    "id": "B-honest-alchemy",
+    "title": "Honest transfer on Sepolia via Alchemy",
+    "expected": "bundler accepts; lands; delivered",
+    "pass": true,
+    "outcome": "mined",
+    "txHash": "0x0668bf44585ef7914da9497df05aa7539b86834b470a5118780dec5974097a41",
+    "block": 12071206,
+    "extra": {
+      "actualGasUsed": "1062488",
+      "bundler": "alchemy"
+    },
+    "at": "2026-11-05T18:17:43.891Z"
+  },
+  "B-swap": {
+    "id": "B-swap",
+    "title": "v4 swap through Uniswap's official Sepolia Universal Router and PoolManager",
+    "expected": "bundler accepts; lands; min out respected",
+    "pass": true,
+    "outcome": "mined",
+    "txHash": "0xf93a83efe8268adef516c11652defd3f064a88f5ab72adc75b8695ff31d78549",
+    "block": 12071212,
+    "extra": {
+      "receivedRaw": "2836125055",
+      "actualGasUsed": "1177510"
+    },
+    "at": "2026-11-05T18:18:51.196Z"
+  },
+  "B-A1": {
+    "id": "B-A1",
+    "title": "Swapped recipient under an honest sentence, on Sepolia",
+    "expected": "bundler rejects; paymaster reverts TreeMismatch",
+    "pass": true,
+    "outcome": "rejected-at-mempool",
+    "message": "0x669a6fec4eb6f6893458703fbc9efbd4efd833b216e3605e4baaf9bc816fd8ae79725f195df46041c947ba5030a2a3ffcfb5a579f05e259333d1c7b76c44165b12de0397 => TreeMismatch(0x4eb6f6893458703fbc9efbd4efd833b216e3605e4baaf9bc816fd8ae79725f19, 0x5df46041c947ba5030a2a3ffcfb5a579f05e259333d1c7b76c44165b12de0397)",
+    "extra": {
+      "bundler": "Internal error from bundler (trace id: e865531da807a9c0a9b235d3dd5c2db9)"
+    },
+    "at": "2026-11-05T18:19:39.114Z"
+  },
+  "A8": {
+    "id": "A8",
+    "title": "Lookalike ENS name",
+    "expected": "name not in the cache, so hex is shown; the exclusivity check fails at refresh",
+    "pass": true,
+    "outcome": "rejected-at-mempool",
+    "message": "0x45bdaf820530a4cbd0086fc7728614d14cf73974e1e0e17089000b956b98a659ed979f5e => WrongResolverCode(0x0530a4cbd0086fc7728614d14cf73974e1e0e17089000b956b98a659ed979f5e)",
+    "extra": {
+      "deviceLine": "To: 0x000000000000000000000000000000000000bad1",
+      "lookalike": "verbatim-dem0.eth",
+      "sameCodeChecker": "0xd0dd3f693a5ba49c66cdf73a47f49dc9eb9f7677",
+      "sameCodeResult": "01110000000000000000000000010000011 => RootRolesHeld(0x1000000000000000000000001000001110000000000000000000000010000011)"
+    },
+    "at": "2026-11-05T18:21:28.554Z"
   }
 }

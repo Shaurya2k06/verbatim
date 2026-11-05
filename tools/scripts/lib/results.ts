@@ -2,7 +2,7 @@ import { decodeErrorResult, keccak256, parseAbi, toHex, type Address, type Hex }
 import type { FrameReceipt } from "@verbatim/frames-sdk";
 import { artifact } from "./chain";
 
-const ERRORS = [...artifact("VerbatimAccount.sol", "VerbatimAccount").abi.filter((x: any) => x.type === "error"), ...artifact("RendererPaymaster.sol", "RendererPaymaster").abi.filter((x: any) => x.type === "error"), ...parseAbi(["error AssertionFailed(uint256 index, uint256 expected, uint256 actual)", "error ReadFailed(address target)", "error BadSpec()"])];
+const ERRORS = [...artifact("VerbatimAccount.sol", "VerbatimAccount").abi.filter((x: any) => x.type === "error"), ...artifact("RendererPaymaster.sol", "RendererPaymaster").abi.filter((x: any) => x.type === "error"), ...artifact("EnsTrustChecker.sol", "EnsTrustChecker").abi.filter((x: any) => x.type === "error"), ...parseAbi(["error AssertionFailed(uint256 index, uint256 expected, uint256 actual)", "error ReadFailed(address target)", "error BadSpec()"])];
 
 /** Decodes revert data anywhere in a node's message. */
 export function decodeRevert(text: string): string {
