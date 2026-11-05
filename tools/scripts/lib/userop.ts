@@ -8,7 +8,7 @@ import { ENTRY_POINT, pub, readS } from "./sepolia";
 export const ACCOUNT_4337_ABI = parseAbi([
   "struct Fee { address asset; uint256 amount; }",
   "struct Call { address target; uint256 value; bytes data; }",
-  "function executeVerified(Fee fee, Call[] calls, bytes spec, uint64 signedAtBlock)",
+  "function executeVerified(Fee fee, Call[] calls, bytes spec, uint64 validUntil)",
 ]);
 const EP = parseAbi(["function getNonce(address sender, uint192 key) view returns (uint256)"]);
 
@@ -52,41 +52,42 @@ export interface Built {
   specHash: Hex;
   risk: number;
   hints: Address[];
-  signedAtBlock: bigint;
+  validUntil: bigint;
 }
 
 /** Renders with the twin and signs with two owners. `override` lets an attack sign something other than what it sends. */
-export async function buildOp(calls: Call[], bundler: string, opts: { signedAtBlock?: bigint; gas?: Gas; override?: { tree: Hex; spec: Hex } } = {}): Promise<Built> {
+export async function buildOp(calls: Call[], bundler: string, opts: { validUntil?: bigint; gas?: Gas; override?: { tree: Hex; spec: Hex } } = {}): Promise<Built> {
   const s = readS();
   const firstNonce = await pub.readContract({ address: ENTRY_POINT, abi: EP, functionName: "getNonce", args: [s.account, 0n] });
   const gas = opts.gas ?? (firstNonce === 0n ? FIRST_OP_GAS : GAS);
   const trust = new ChainTrust(pub as never, s.paymaster);
   trust.legB = true;
-  const fee: Fee = { asset: "0x0000000000000000000000000000000000000000", amount: total(gas) };
-  const signedAtBlock = opts.signedAtBlock ?? (await pub.getBlockNumber());
+  const fees = await gasPrice(bundler);
+  // The paymaster requires the fee to cover the maximum; what the operation does not cost returns to the deposit.
+  const fee: Fee = { asset: "0x0000000000000000000000000000000000000000", amount: total(gas) * fees.maxFeePerGas };
+  const validUntil = opts.validUntil ?? (await pub.getBlock()).timestamp + 240n;
   const read = (functionName: string) => pub.readContract({ address: s.paymaster, abi: PAYMASTER_ABI, functionName, args: [s.account] } as never) as Promise<any>;
-  const base = { chainId: 11155111n, account: s.account as Address, signedAtBlock, ttl: BigInt(await read("ttlOf")), feeAsset: fee.asset, feeAmount: fee.amount, gasLimitTotal: total(gas), policyHash: await read("policyHashOf"), body: encodeBody(fee, calls, "0x") };
+  const base = { chainId: 11155111n, account: s.account as Address, validUntil, feeAsset: fee.asset, feeAmount: fee.amount, gasLimitTotal: total(gas), policyHash: await read("policyHashOf"), body: encodeBody(fee, calls, "0x") };
   const { out, hints } = await renderWithChain(base, trust, pub as never);
   const tree = opts.override?.tree ?? out.tree;
   const spec = opts.override?.spec ?? out.spec;
   const treeHash = keccak256(tree);
   const specHash = keccak256(spec);
-  const fees = await gasPrice(bundler);
   const nonce = await pub.readContract({ address: ENTRY_POINT, abi: EP, functionName: "getNonce", args: [s.account, 0n] });
-  const callData = encodeFunctionData({ abi: ACCOUNT_4337_ABI, functionName: "executeVerified", args: [fee, calls, spec, signedAtBlock] });
+  const callData = encodeFunctionData({ abi: ACCOUNT_4337_ABI, functionName: "executeVerified", args: [fee, calls, spec, validUntil] });
   const paymasterData = encodeAbiParameters([{ type: "address[]" }], [hints]);
   const userOperation = { sender: s.account as Address, nonce, callData, callGasLimit: gas.callGasLimit, verificationGasLimit: gas.verificationGasLimit, preVerificationGas: gas.preVerificationGas, maxFeePerGas: fees.maxFeePerGas, maxPriorityFeePerGas: fees.maxPriorityFeePerGas, paymaster: s.paymaster as Address, paymasterVerificationGasLimit: gas.paymasterVerificationGasLimit, paymasterPostOpGasLimit: gas.paymasterPostOpGasLimit, paymasterData, signature: "0x" as Hex };
   const hash = getUserOperationHash({ chainId: 11155111, entryPointAddress: ENTRY_POINT, entryPointVersion: "0.7", userOperation });
-  const td = typedData(11155111n, s.account, hash, treeHash, specHash, signedAtBlock);
+  const td = typedData(11155111n, s.account, hash, treeHash, specHash, validUntil);
   const owners = ["OWNER1_KEY", "OWNER2_KEY"].map((k) => privateKeyToAccount(key(k))).sort((a, b) => (BigInt(a.address) < BigInt(b.address) ? -1 : 1));
   const sigs = await Promise.all(owners.map((o) => o.signTypedData(td as never)));
-  const signature = encodeAbiParameters([{ type: "bytes32" }, { type: "bytes32" }, { type: "uint64" }, { type: "bytes" }], [treeHash, specHash, signedAtBlock, `0x${sigs.map((x) => x.slice(2)).join("")}` as Hex]);
+  const signature = encodeAbiParameters([{ type: "bytes32" }, { type: "bytes32" }, { type: "uint64" }, { type: "bytes" }], [treeHash, specHash, validUntil, `0x${sigs.map((x) => x.slice(2)).join("")}` as Hex]);
   const q = (n: bigint): Hex => `0x${n.toString(16)}`;
   const op = {
     sender: s.account, nonce: q(nonce), callData, callGasLimit: q(gas.callGasLimit), verificationGasLimit: q(gas.verificationGasLimit), preVerificationGas: q(gas.preVerificationGas),
     maxFeePerGas: q(fees.maxFeePerGas), maxPriorityFeePerGas: q(fees.maxPriorityFeePerGas), paymaster: s.paymaster, paymasterVerificationGasLimit: q(gas.paymasterVerificationGasLimit), paymasterPostOpGasLimit: q(gas.paymasterPostOpGasLimit), paymasterData, signature,
   };
-  return { op, hash, tree, spec, treeHash, specHash, risk: out.risk, hints, signedAtBlock };
+  return { op, hash, tree, spec, treeHash, specHash, risk: out.risk, hints, validUntil };
 }
 
 export async function sendOp(bundler: string, op: Record<string, unknown>): Promise<Hex> {

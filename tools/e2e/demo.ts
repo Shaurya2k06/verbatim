@@ -151,7 +151,7 @@ const pause = () => new Promise((r) => setTimeout(r, 9000)); // one block, so ea
 // Beat 1: the swap lie.
 const swap = await ctx.newPage();
 await swap.goto("http://localhost:5175");
-await say(swap, "Bybit, Feb 2025, $1.5B. Drift, April 2026, $285M. Signers approved what a screen told them. Binance was a hacked machine: a different problem, out of scope here.", 7000);
+await say(swap, "Bybit, Feb 2025, $1.5B. Signers approved what a screen told them. Binance was a hacked machine: a different problem, out of scope here.", 7000);
 await say(swap, "Verbatim fixes the human case: the chain checks you signed what you read, then checks it actually happened.", 5000);
 await swap.locator("select").selectOption("lie");
 await say(swap, "Beat 1. An evil frontend says \"swap 1 dWETH for at least 2000 dUSDC\". Its calldata sets minOut = 0 and routes through a hook that skims 99%.", 6000);
@@ -184,6 +184,8 @@ const kit: [string, RegExp][] = [
   ["Drop the renderer frame", /Rejected.*FrameReadFailed/s],
   ["Swap the spec for a weaker one", /Rejected.*SpecHashMismatch/s],
   ["Poison a descriptor", /Rejected.*PolicyRefused/s],
+  ["Router command that may silently fail", /Rejected.*PolicyRefused/s],
+  ["Router command nobody can read", /Rejected.*PolicyRefused/s],
   ["Replay a stale signature", /Mined.*Expired/s],
 ];
 for (const [name, want] of kit) {
@@ -194,6 +196,18 @@ for (const [name, want] of kit) {
   await outcome(evil, want, name.startsWith("The contract") ? `beat 2: ${name}` : `beat 3: ${name}`);
   if (want.source.startsWith("Mined")) await pause();
 }
+
+// The device's own clock: a sentence that would stay valid too long never reaches a signature.
+await evil.getByRole("button", { name: "A signature that never expires" }).click();
+await evil.getByRole("button", { name: "Copy request" }).waitFor({ timeout: 60_000 });
+const farReq = await evil.locator("textarea[readonly]").inputValue();
+await show(device, "A signature that would stay valid for a day: the device refuses, by its own clock.");
+await device.getByPlaceholder("Scan the request").fill(farReq);
+await device.getByRole("button", { name: "Review" }).click();
+const refused = await device.locator(".err").innerText({ timeout: 10_000 });
+results.push({ beat: "beat 3: future-dated sentence refused on the device", pass: /stay valid/.test(refused), text: refused });
+console.log(`${/stay valid/.test(refused) ? "PASS" : "FAIL"} beat 3: future-dated sentence refused on the device: ${refused}`);
+await device.waitForTimeout(PACE);
 
 // The wallet, honestly.
 const wallet = await ctx.newPage();

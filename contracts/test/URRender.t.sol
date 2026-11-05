@@ -22,7 +22,7 @@ library UpstreamHooks {
 
 contract URRenderTest is Test, TestVectors {
     function _codes(bytes memory tree) private pure returns (uint256 mask) {
-        uint256 p = 4 + 8 + 20 + 8 + 8 + 8;
+        uint256 p = 4 + 8 + 20 + 8;
         while (p < tree.length) {
             uint8 kind = uint8(tree[p]);
             uint256 len = (uint256(uint8(tree[p + 1])) << 8) | uint8(tree[p + 2]);

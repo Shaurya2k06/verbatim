@@ -104,7 +104,7 @@ const steps: Record<string, () => Promise<void>> = {
   async A2() {
     // The frontend shows "at least 2000 dUSDC" on the honest pool and routes minOut = 0 through SkimHook.
     const shown = await prepareTx([swapCall(honest, 2_000_000_000n)]);
-    const lie = await prepareTx([swapCall(evil, 0n)], { signedAtBlock: shown.signedAtBlock, overrideSentence: { tree: shown.tree, spec: shown.spec } });
+    const lie = await prepareTx([swapCall(evil, 0n)], { validUntil: shown.validUntil, overrideSentence: { tree: shown.tree, spec: shown.spec } });
     try {
       const h = await submit(await sign(lie));
       record({ id: "A2", title: "minOut=0 via SkimHook under an honest sentence", expected: "mempool reject (tree mismatch)", pass: false, outcome: "mined", txHash: h });

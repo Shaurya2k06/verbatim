@@ -82,6 +82,7 @@ abstract contract TrustStoreLayout {
         ProxyUpdate[] proxies;
         RouterUpdate[] routers;
         bytes32[] hooks;
+        address[] spenders;
         NameUpdate[] names;
     }
 
@@ -93,6 +94,7 @@ abstract contract TrustStoreLayout {
     mapping(bytes32 => uint8) internal _codeKind_;
     mapping(bytes32 => ProxyTemplate) internal _proxyTemplates;
     mapping(bytes32 => bool) internal _attestedHooks;
+    mapping(address => bool) internal _attestedSpenders;
     mapping(address => bytes32) internal _names;
     mapping(address => address) internal _nameResolvers;
 
@@ -112,15 +114,16 @@ abstract contract TrustStoreLayout {
         uint128 pendingWithdraw;
     }
 
-    struct FeeAsset {
-        uint128 ratePerGas;
-        bool allowed;
+    /// A fee prepaid for one nonce of one account, so no two pending transactions can draw on the same money.
+    struct FeeTicket {
+        uint128 amount;
+        uint64 reclaimAt;
     }
 
     mapping(address => Policy) internal _policyOf;
     mapping(address => mapping(address => Deposit)) internal _deposits;
     mapping(address => mapping(address => uint256)) internal _withdrawReadyAt;
-    mapping(address => FeeAsset) internal _feeAssets;
+    mapping(address => mapping(uint256 => FeeTicket)) internal _feeTickets;
     mapping(address => uint256) internal _feesAccrued;
 
     uint256 internal constant WITHDRAW_DELAY_ = 1 hours;
@@ -128,6 +131,7 @@ abstract contract TrustStoreLayout {
     event Deposited(address indexed account, address indexed asset, uint256 amount);
     event WithdrawRequested(address indexed account, address indexed asset, uint256 amount, uint256 readyAt);
     event PolicySet(address indexed account, bytes32 indexed policyHash);
+    event TicketsFunded(address indexed account, uint256 indexed firstNonce, uint256 count, uint256 each);
 
     error WithdrawNotReady(uint256 readyAt);
     error TransferFailed();
@@ -183,6 +187,10 @@ abstract contract TrustStore is DisplayVM, TrustStoreLayout {
 
     function _nameResolver(address a) internal view virtual override returns (address) {
         return _nameResolvers[a];
+    }
+
+    function _spenderIsAttested(address spender) internal view virtual override returns (bool) {
+        return _attestedSpenders[spender];
     }
 
     function _hookIsAttested(bytes32 codehash) internal view virtual override returns (bool) {
@@ -244,6 +252,7 @@ contract TrustAdmin is TrustStoreLayout {
         }
         for (uint256 i = 0; i < u.routers.length; i++) _codeKind_[u.routers[i].codehash] = u.routers[i].legacy ? 3 : 1;
         for (uint256 i = 0; i < u.hooks.length; i++) _attestedHooks[u.hooks[i]] = true;
+        for (uint256 i = 0; i < u.spenders.length; i++) _attestedSpenders[u.spenders[i]] = true;
         for (uint256 i = 0; i < u.names.length; i++) {
             NameUpdate calldata n = u.names[i];
             _checkName(n.addr, n.name, n.resolver);
@@ -308,9 +317,13 @@ contract TrustAdmin is TrustStoreLayout {
         return (d.amount, d.pendingWithdraw);
     }
 
-    function feeAssets(address asset) external view returns (uint128 ratePerGas, bool allowed) {
-        FeeAsset memory f = _feeAssets[asset];
-        return (f.ratePerGas, f.allowed);
+    function feeTicket(address account, uint256 nonce) external view returns (uint128 amount, uint64 reclaimAt) {
+        FeeTicket memory f = _feeTickets[account][nonce];
+        return (f.amount, f.reclaimAt);
+    }
+
+    function attestedSpenders(address a) external view returns (bool) {
+        return _attestedSpenders[a];
     }
 
     function feesAccrued(address asset) external view returns (uint256) {
@@ -359,9 +372,30 @@ contract TrustAdmin is TrustStoreLayout {
         }
     }
 
-    function setPolicy(uint64 ttl, uint64 allowMask) external {
-        _policyOf[msg.sender] = Policy(ttl, allowMask, true);
-        emit PolicySet(msg.sender, keccak256(abi.encode(ttl, allowMask)));
+    function setPolicy(uint64 maxTtl, uint64 allowMask) external {
+        _policyOf[msg.sender] = Policy(maxTtl, allowMask, true);
+        emit PolicySet(msg.sender, keccak256(abi.encode(maxTtl, allowMask)));
+    }
+
+    /// Anyone may prepay an account's next fees. The value is split evenly over `count` nonces.
+    function fundTickets(address account, uint256 firstNonce, uint256 count) external payable {
+        uint256 each = msg.value / count;
+        for (uint256 i = 0; i < count; i++) _feeTickets[account][firstNonce + i].amount += uint128(each);
+        emit TicketsFunded(account, firstNonce, count, each);
+    }
+
+    /// A ticket stops validating as soon as this is called, and pays out only after a delay longer than any signature
+    /// can live, so its reclaim cannot race a transaction that is already pending.
+    function requestReclaim(uint256 nonce) external {
+        _feeTickets[msg.sender][nonce].reclaimAt = uint64(block.timestamp + WITHDRAW_DELAY_);
+    }
+
+    function reclaim(uint256 nonce) external {
+        FeeTicket memory f = _feeTickets[msg.sender][nonce];
+        if (f.reclaimAt == 0 || block.timestamp < f.reclaimAt) revert WithdrawNotReady(f.reclaimAt);
+        delete _feeTickets[msg.sender][nonce];
+        (bool ok, ) = msg.sender.call{value: f.amount}("");
+        if (!ok) revert TransferFailed();
     }
 
     /// Leg A has no ENS and caches no names.

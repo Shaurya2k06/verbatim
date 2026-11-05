@@ -120,8 +120,8 @@ ${all.filter((p) => !LEG_B.test(p.id)).map((p) => row(p, devnetLink)).join("\n")
 **What the "plain EOA" row shows:** \`A2-eoa\` is the same evil route sent from an ordinary wallet. Received \`${proofs["A2-eoa"]?.extra?.victimReceivedRaw}\` raw dUSDC, while the hook's
 beneficiary took \`${proofs["A2-eoa"]?.extra?.hookTookRaw}\`. That is the loss Verbatim's rejections prevent.
 
-**Revocation (\`INVALIDATION\`):** of 5 signed transactions, an unrelated \`refreshTrust\` invalidated none, and revoking one descriptor invalidated exactly the one using it
-(${JSON.stringify(proofs.INVALIDATION?.extra?.afterRevocation)}). Measured by re-running validation through \`ethrex_simulateFrameTransaction\`, the call the sidecar itself makes. They share a
+**Revocation (\`A15\`):** of 5 signed transactions, an unrelated \`refreshTrust\` invalidated none, and revoking one descriptor invalidated exactly the one using it
+(${JSON.stringify(proofs.A15?.extra?.afterRevocation)}). Measured by re-running validation through \`ethrex_simulateFrameTransaction\`, the call the sidecar itself makes. They share a
 sender, so they were not all held pending at once.
 
 **Explorer links** name the miner's node (\`?node=...\`), because the explorer otherwise asks the gateway, which did not see these. There each honest row shows "On chain" and "Every rule passed", with the admission report for frame 0 (sender) and frame 1 (payer).

@@ -17,6 +17,7 @@ export const TRUST_UPDATE_TUPLE = {
     { name: "proxies", type: "tuple[]", components: [{ name: "codehash", type: "bytes32" }, { name: "template", type: "tuple", components: [{ name: "upgrader", type: "address" }, { name: "logicCodehash", type: "bytes32" }, { name: "impl", type: "address" }, { name: "getter", type: "bytes4" }] }] },
     { name: "routers", type: "tuple[]", components: [{ name: "codehash", type: "bytes32" }, { name: "legacy", type: "bool" }] },
     { name: "hooks", type: "bytes32[]" },
+    { name: "spenders", type: "address[]" },
     { name: "names", type: "tuple[]", components: [{ name: "addr", type: "address" }, { name: "name", type: "bytes32" }, { name: "resolver", type: "address" }] },
   ],
 } as const;
@@ -33,10 +34,11 @@ export interface TrustUpdate {
   proxies: { codehash: Hex; template: { upgrader: Address; logicCodehash: Hex; impl: Address; getter: Hex } }[];
   routers: { codehash: Hex; legacy: boolean }[];
   hooks: Hex[];
+  spenders: Address[];
   names: { addr: Address; name: Hex; resolver: Address }[];
 }
 
-export const emptyUpdate = (epoch: bigint): TrustUpdate => ({ epoch, descriptors: [], revocations: [], tokens: [], proxies: [], routers: [], hooks: [], names: [] });
+export const emptyUpdate = (epoch: bigint): TrustUpdate => ({ epoch, descriptors: [], revocations: [], tokens: [], proxies: [], routers: [], hooks: [], spenders: [], names: [] });
 
 /** keccak256(abi.encode(chainid, address(this), u)), as TrustAdmin computes it. */
 export const updateHash = (chainId: bigint, paymaster: Address, u: TrustUpdate): Hex =>

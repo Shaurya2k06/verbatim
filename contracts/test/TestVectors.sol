@@ -46,8 +46,7 @@ abstract contract TestVectors is Test {
     function baseIn(bytes memory body, address[] memory hints) internal pure returns (DisplayVM.In memory i) {
         i.chainId = 1337;
         i.account = ACCOUNT;
-        i.signedAtBlock = 1000;
-        i.ttl = 25;
+        i.validUntil = 1_800_000_000;
         i.feeAsset = address(0);
         i.feeAmount = 1e9;
         i.gasLimitTotal = 3_000_000;

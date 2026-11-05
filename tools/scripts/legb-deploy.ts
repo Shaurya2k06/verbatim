@@ -41,7 +41,7 @@ if (!readS().checker) {
 if (!readS().paymaster) {
   const nonce = BigInt(await pub.getTransactionCount({ address: me }));
   const predicted = getContractAddress({ from: me, nonce: nonce + 1n });
-  const acc = await deploy("VerbatimAccount4337.sol", "VerbatimAccount4337", [ENTRY_POINT, predicted, 200n, owners, 2]);
+  const acc = await deploy("VerbatimAccount4337.sol", "VerbatimAccount4337", [ENTRY_POINT, predicted, owners, 2]);
   const ch = await chOf(acc.address);
   const pm = await deploy("RendererPaymaster4337.sol", "RendererPaymaster4337", [ENTRY_POINT, ch, me, readS().trustAdmin, UNI.permit2, WETH_SEPOLIA, packedUniswap, attestors, 2]);
   if (pm.address.toLowerCase() !== predicted.toLowerCase()) throw new Error("prediction missed");
@@ -82,6 +82,7 @@ if (!s().attested) {
   u.descriptors = [...erc20.map((d) => ({ codehash: tokenCode, selector: d.selector, vdesc: d.vdesc, publisher: PUBLISHER })), ...permit2.map((d) => ({ codehash: p2Code, selector: d.selector, vdesc: d.vdesc, publisher: PUBLISHER }))];
   u.tokens = [tokenEntry(s().tokenA, "dUSDC", 6), tokenEntry(s().tokenB, "dWETH", 18)];
   u.routers = [{ codehash: await chOf(UNI.router), legacy: true }];
+  u.spenders = [UNI.permit2, UNI.router];
   u.names = [{ addr: ens().nameAddress, name: PUBLISHER, resolver: ens().resolver }];
   const r = await attest(s().paymaster, u, 11155111n, async (data: Hex) => {
     const w = wallet();
@@ -94,8 +95,7 @@ if (!s().attested) {
 }
 
 if (!s().feeSet) {
-  await tx({ address: s().paymaster, abi: PM_ABI, functionName: "setFeeAsset", args: ["0x0000000000000000000000000000000000000000", 1n, true] });
-  await tx({ address: s().paymaster, abi: ADMIN, functionName: "deposit", args: [s().account, "0x0000000000000000000000000000000000000000", 0n], value: parseEther("0.01") });
+  await tx({ address: s().paymaster, abi: ADMIN, functionName: "deposit", args: [s().account, "0x0000000000000000000000000000000000000000", 0n], value: parseEther("0.06") });
   await tx({ address: s().tokenA, abi: ERC20, functionName: "mint", args: [s().account, 1_000_000_000_000n] });
   await tx({ address: s().tokenB, abi: ERC20, functionName: "mint", args: [s().account, parseEther("100")] });
   writeS({ feeSet: true });

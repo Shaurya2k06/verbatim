@@ -13,6 +13,7 @@ export const RISK_TEXT: Record<number, string> = {
   [RISK.NO_POST_CHECK]: "NOT CHECKED AFTER SIGNING",
   [RISK.RECIPIENT_HAS_CODE]: "RECIPIENT IS A CONTRACT",
   [RISK.RECIPIENT_NOT_SELF]: "OUTPUT GOES TO ANOTHER ADDRESS",
+  [RISK.SPENDER_UNATTESTED]: "SPENDER IS NOT ATTESTED",
   [RISK.NO_MIN_OUT]: "NO MINIMUM OUTPUT",
   [RISK.HOOK_CAN_TAKE_INPUT]: "HOOK CAN TAKE YOUR INPUT",
   [RISK.HOOK_CAN_TAKE_OUTPUT]: "HOOK CAN TAKE YOUR OUTPUT",
@@ -21,12 +22,11 @@ export const RISK_TEXT: Record<number, string> = {
   [RISK.SWEEP_TO_OTHER]: "FUNDS SWEPT TO ANOTHER ADDRESS",
   [RISK.PERMIT2_ALLOWANCE_CHANGE]: "CHANGES PERMIT2 ALLOWANCE",
   [RISK.UR_ALLOW_REVERT]: "COMMAND MAY PARTIALLY FAIL",
-  [RISK.TTL_LONG]: "SIGNATURE VALID FOR A LONG TIME",
   [RISK.TOKEN_UNSAFE]: "REBASING OR FEE-ON-TRANSFER TOKEN",
 };
 
 export type TreeNode =
-  | { type: "CALL_BEGIN"; target: Address; codehash: Hex; selector: Hex; descHash: Hex; intent: string; publisher: string; attestStatus: number }
+  | { type: "CALL_BEGIN"; target: Address; codehash: Hex; selector: Hex; descHash: Hex; intent: string; publisher: string; attestStatus: number; version: bigint }
   | { type: "CALL_END" }
   | { type: "FIELD_ADDRESS"; label: string; addr: Address; nameSource: number; name: string; hasCode: boolean; isSelf: boolean }
   | { type: "FIELD_AMOUNT"; label: string; token: Address; symbol: string; decimals: number; raw: bigint }
@@ -40,15 +40,13 @@ export type TreeNode =
   | { type: "RISK"; code: number; args: Hex }
   | { type: "BLIND"; label: string; keccak: Hex; len: number; boundBy: number }
   | { type: "FEE"; token: Address; symbol: string; decimals: number; amount: bigint; gasLimitTotal: bigint }
-  | { type: "VALID_UNTIL"; block: bigint }
+  | { type: "VALID_UNTIL"; timestamp: bigint }
   | { type: "POLICY"; policyHash: Hex };
 
 export interface DecodedTree {
   chainId: bigint;
   account: Address;
-  signedAtBlock: bigint;
-  validUntilBlock: bigint;
-  trustEpoch: bigint;
+  validUntil: bigint;
   nodes: TreeNode[];
 }
 
@@ -98,7 +96,7 @@ export function decodeTree(tree: Hex): DecodedTree {
   const d = hexToBytes(tree);
   const h = new Reader(d, d.length);
   if (h.be(4) !== 0x56540001n) throw new Error("VTREE: bad magic");
-  const out: DecodedTree = { chainId: h.be(8), account: h.hex(20) as Address, signedAtBlock: h.be(8), validUntilBlock: h.be(8), trustEpoch: h.be(8), nodes: [] };
+  const out: DecodedTree = { chainId: h.be(8), account: h.hex(20) as Address, validUntil: h.be(8), nodes: [] };
   while (h.p < d.length) {
     const type = h.u8();
     const len = Number(h.be(2));
@@ -115,7 +113,7 @@ export function decodeTree(tree: Hex): DecodedTree {
 function decodeNode(type: number, r: Reader): TreeNode {
   switch (type) {
     case NODE.CALL_BEGIN:
-      return { type: "CALL_BEGIN", target: r.hex(20) as Address, codehash: r.hex(32), selector: r.hex(4), descHash: r.hex(32), intent: r.str(), publisher: r.str(), attestStatus: r.u8() };
+      return { type: "CALL_BEGIN", target: r.hex(20) as Address, codehash: r.hex(32), selector: r.hex(4), descHash: r.hex(32), intent: r.str(), publisher: r.str(), attestStatus: r.u8(), version: r.be(8) };
     case NODE.CALL_END:
       return { type: "CALL_END" };
     case NODE.FIELD_ADDRESS: {
@@ -157,7 +155,7 @@ function decodeNode(type: number, r: Reader): TreeNode {
     case NODE.FEE:
       return { type: "FEE", token: r.hex(20) as Address, symbol: r.str(), decimals: r.u8(), amount: r.be(32), gasLimitTotal: r.be(8) };
     case NODE.VALID_UNTIL:
-      return { type: "VALID_UNTIL", block: r.be(8) };
+      return { type: "VALID_UNTIL", timestamp: r.be(8) };
     case NODE.POLICY:
       return { type: "POLICY", policyHash: r.hex(32) };
     default:
@@ -241,7 +239,7 @@ export function formatForDevice(t: DecodedTree): DeviceLine[] {
         push(`Fee: ${formatAmount(n.amount, n.decimals, n.symbol)} (gas limit ${n.gasLimitTotal})`);
         break;
       case "VALID_UNTIL":
-        push(`Valid until block ${n.block}`);
+        push(`Valid until ${new Date(Number(n.timestamp) * 1000).toISOString().replace("T", " ").slice(0, 19)} UTC`);
         break;
       case "POLICY":
         push(`Policy ${n.policyHash}`);

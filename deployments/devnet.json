@@ -1,53 +1,54 @@
 {
   "network": "frames-devnet",
   "chainId": 1337,
-  "mempool": "https://altmempoolgateway.forshtat.com/rpc",
+  "mempool": "https://altmempool.forshtat.com/rpc",
+  "gateway": "https://altmempoolgateway.forshtat.com/rpc",
   "node": "https://altmempool.forshtat.com",
   "explorer": "https://explorer.altmempool.wtf/",
   "stakingRegistry": "0xd51c04d7a0b01124e84de152f4e56d9eecb22d2f",
-  "frameReader": "0xd0d73854916c7bed37313fd14e7292749da75922",
-  "trustAdmin": "0x0b713622f1e05ec27bf134c703a624342af28cd9",
-  "account": "0xd797194917479e6072bf5a91d057ddf7a61292db",
-  "emptyDepositAccount": "0x6d4c32c95f54a5ef3144eedd634df3f5f71026b6",
-  "paymaster": "0xee656b20237fbadf51ba251a2512ef1bd2494382",
-  "accountCodehash": "0xa5d350eee50014d374f414565470369c77335310479e46f9d36d0dd5f5b127b7",
+  "frameReader": "0x4aba42118852b2f02b0fa849ebc2cb15de7dedbb",
+  "trustAdmin": "0x2dd3c48c38002a6a594df4c4eca5ecef67926376",
+  "account": "0x093b7e3254c65e5b4eded70188e3e251b0cd3943",
+  "emptyDepositAccount": "0x0712ca65d3ac5b7e0a3bf4343b50cbd39b2de925",
+  "paymaster": "0xef1620187ebbda9ac4d9696f6c7c377d101fdbec",
+  "accountCodehash": "0x624ee7c7f2b0ca54bc906de2089a21f9f6bcebc8d81dd0bcae8be824e6bafea8",
   "deployTxs": {
-    "admin": "0x3fa5df35e6772a019668ed0f75c5e1b29ddb58adf7ab2eb18b23614953d6e799",
-    "account": "0xb064a7c8ec52f5e8d019573edbb87fd8675c95f3c56931153f52637fd5e28dc8",
-    "paymaster": "0xd17727235102005d9a4fc10c6d1fd3ae352f91b717487f807bf9070785bb1cc4"
+    "admin": "0x616f30b38528e9de4bdce25c2f150558fbf82fd9a475bc643fd2b1243ba2d547",
+    "account": "0x31d99356b79d3d60d81e7c39f7a48ee27072f12cc7d820bf0bf27a18a5bc60f8",
+    "paymaster": "0xd480f3f182bdecd07337b285bf5dbedf74877026020916d478643d57a38d6c7b"
   },
-  "stakeTx": "0x3e8cf277c88bebae8360382c87ef70c789fa79ca213bdcba90f5e736835b2863",
-  "refreshTrustTx": "0x57187e93ceca35cd817e217a54d3eded4bd26ed32f0ab8a5575b6bfb7e42db69",
+  "stakeTx": "0xfca67078a6f5876fba46dd2d777636f4966cb9df93867756cb4732620cca3614",
+  "refreshTrustTx": "0x4269fbbeda2b473cda5affff0f7921436bca05fac21777f2826e9379326f6c67",
   "tokens": {
-    "dUSDC": "0x4dfef81b27f0d4241b279f93bc3ba822d93235b6",
-    "dWETH": "0xf0447975d6fe039a027029891c1b08191fd267c9"
+    "dUSDC": "0x498f955645d30408e7b59d2ace92f7f7989f256d",
+    "dWETH": "0x7de0208a1f460a6230c89a0f16bf1fc5cc53cb7e"
   },
-  "evilVault": "0x1bd44ce016e484235c91d2327ed1aa775989c4c0",
+  "evilVault": "0xbfc4b83b5b0484fa178453d646599153e24b149f",
   "skimHook": "0x5922EaBd0E54cAb41215937A531C71562e748044",
-  "gasBurner": "0xf3d1b8483a89df572935b76d591e20b4e04e5206",
-  "reenterer": "0xf59de55d290a1ae3f3ecee7c6a560944bb868e97",
+  "gasBurner": "0x987711cf76fe267792337d30f2c993fde48f8499",
+  "reenterer": "0x038c404c81e8283719b745daccf556fb0611da33",
   "pools": {
     "honest": {
       "key": {
-        "currency0": "0x4dfef81b27f0d4241b279f93bc3ba822d93235b6",
-        "currency1": "0xf0447975d6fe039a027029891c1b08191fd267c9",
+        "currency0": "0x498f955645d30408e7b59d2ace92f7f7989f256d",
+        "currency1": "0x7de0208a1f460a6230c89a0f16bf1fc5cc53cb7e",
         "fee": 3000,
         "tickSpacing": 60,
         "hooks": "0x0000000000000000000000000000000000000000"
       },
-      "init": "0x8b969f5cc58b8e6622a2663fdec3ead31f865de3dd665d27246952d3151e31e3",
-      "liquidity": "0xd3cf88652047cdcaaaa9705e054842ec6bd749a3da54e00099df0657fd3178fc"
+      "init": "0xe815a7744b6e2da248ef0f111926f08b79d402f5e144e8e4d03760e77f2f0989",
+      "liquidity": "0x25a5510d32820244cd4e389317c6f0f096fc1ebedcc709937654dade7bc609a2"
     },
     "evil": {
       "key": {
-        "currency0": "0x4dfef81b27f0d4241b279f93bc3ba822d93235b6",
-        "currency1": "0xf0447975d6fe039a027029891c1b08191fd267c9",
+        "currency0": "0x498f955645d30408e7b59d2ace92f7f7989f256d",
+        "currency1": "0x7de0208a1f460a6230c89a0f16bf1fc5cc53cb7e",
         "fee": 3000,
         "tickSpacing": 60,
         "hooks": "0x5922EaBd0E54cAb41215937A531C71562e748044"
       },
-      "init": "0x7e6c5b4e2fc2097cba540d7ccb1ed7297f9758ec609c3aed062163fcc45ce511",
-      "liquidity": "0x34d4e6839c60663aee7b149e2c2e288a4c6638170c82c419cfcf75deccc69c1f"
+      "init": "0xf3a1b6c077cbbbadca2971098ed87056da7caefcdb65705b63349552074cb220",
+      "liquidity": "0xb85f8e266f1780096300e304a538eb5a46c854ba6c3859429bc1d3668f714270"
     }
   },
   "uniswap": {

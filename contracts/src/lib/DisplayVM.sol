@@ -22,7 +22,7 @@ abstract contract DisplayVM {
     uint256 internal constant MAX_DEPTH = 3;
     uint256 internal constant MAX_TREE = 6144;
     uint256 internal constant MAX_OTHER = 2048;
-    uint64 internal constant DEFAULT_TTL = 25;
+    uint64 internal constant DEFAULT_MAX_TTL = 300;
     bytes32 private constant EMPTY_CODE = keccak256("");
 
     uint8 internal constant ATTEST_NONE = 0;
@@ -30,8 +30,8 @@ abstract contract DisplayVM {
     struct In {
         uint64 chainId;
         address account;
-        uint64 signedAtBlock;
-        uint64 ttl;
+        /// Unix seconds. The device checks it against its own clock, the account at execution.
+        uint64 validUntil;
         address feeAsset;
         uint256 feeAmount;
         uint64 gasLimitTotal;
@@ -58,7 +58,6 @@ abstract contract DisplayVM {
 
     struct Host {
         address[] hints;
-        uint64 maxEpoch;
         bool trustChange;
     }
 
@@ -72,6 +71,7 @@ abstract contract DisplayVM {
     /// The resolver a cached name was verified against; only read when `_nameOf` returned a name.
     function _nameResolver(address a) internal view virtual returns (address);
     function _hookIsAttested(bytes32 codehash) internal view virtual returns (bool);
+    function _spenderIsAttested(address spender) internal view virtual returns (bool);
     /// 0 plain, 1 Universal Router, 2 known proxy, 3 Universal Router with the older params layout.
     function _codeKind(bytes32 codehash) internal view virtual returns (uint8);
     function _routerConfig() internal view virtual returns (address permit2, address weth, bytes32 publisher);
@@ -81,7 +81,7 @@ abstract contract DisplayVM {
 
     function _render(In memory i) internal view returns (Out memory o) {
         Buf.B memory t = Buf.alloc(MAX_TREE);
-        Host memory h = Host(i.hints, 0, false);
+        Host memory h = Host(i.hints, false);
         URRender.Ctx memory c;
         c.cfg.account = i.account;
         c.fn = URRender.Lookups(_urAmount, _urHookAttested, _urAddressField);
@@ -93,10 +93,7 @@ abstract contract DisplayVM {
         t.be(VTree.MAGIC, 4);
         t.be(i.chainId, 8);
         t.addr(i.account);
-        t.be(i.signedAtBlock, 8);
-        t.be(i.signedAtBlock + i.ttl, 8);
-        uint256 epochAt = t.len;
-        t.be(0, 8);
+        t.be(i.validUntil, 8);
 
         uint256 at = t.begin(VTree.FEE);
         t.addr(i.feeAsset);
@@ -105,12 +102,8 @@ abstract contract DisplayVM {
         t.end(at);
 
         at = t.begin(VTree.VALID_UNTIL);
-        t.be(i.signedAtBlock + i.ttl, 8);
+        t.be(i.validUntil, 8);
         t.end(at);
-        if (i.ttl > DEFAULT_TTL) {
-            t.risk(Risk.TTL_LONG);
-            c.risk |= Risk.BIT_TTL_LONG;
-        }
 
         // body: [fee.asset, fee.amount, calls ptr, spec ptr]
         bytes memory b = i.body;
@@ -131,7 +124,6 @@ abstract contract DisplayVM {
         t.word(uint256(i.policyHash));
         t.end(at);
 
-        t.patchBe(epochAt, h.maxEpoch, 8);
         o.tree = t.toBytes();
         o.spec = c.effects.finish(h.trustChange);
         o.risk = c.risk;
@@ -149,7 +141,7 @@ abstract contract DisplayVM {
         e.noCode(a);
     }
 
-    function _callBegin(Buf.B memory t, address target, bytes32 ch, bytes4 sel, bytes32 descHash, bytes memory label, uint256 lOff, uint256 lLen, bytes32 publisher, uint8 status) private pure {
+    function _callBegin(Buf.B memory t, address target, bytes32 ch, bytes4 sel, bytes32 descHash, bytes memory label, uint256 lOff, uint256 lLen, bytes32 publisher, uint8 status, uint64 version) private pure {
         uint256 at = t.begin(VTree.CALL_BEGIN);
         t.addr(target);
         t.word(uint256(ch));
@@ -158,6 +150,7 @@ abstract contract DisplayVM {
         t.strFrom(label, lOff, lLen);
         t.strPacked(publisher);
         t.u8(status);
+        t.be(version, 8);
         t.end(at);
     }
 
@@ -170,7 +163,7 @@ abstract contract DisplayVM {
 
         if (ch == bytes32(0)) {
             bytes memory l = "Send ETH";
-            _callBegin(t, target, ch, bytes4(0), bytes32(0), l, 0, l.length, bytes32(0), ATTEST_NONE);
+            _callBegin(t, target, ch, bytes4(0), bytes32(0), l, 0, l.length, bytes32(0), ATTEST_NONE, 0);
             t.fieldEth(value);
             _addressField(t, "To", target, VDesc.ROLE_RECIPIENT, c, h);
             if (data.length != 0) _blindCall(t, c, data);
@@ -187,7 +180,7 @@ abstract contract DisplayVM {
             c.cfg.legacyParams = kind == 3;
             (address permit2, address weth, bytes32 publisher) = _routerConfig();
             bytes memory l = "Uniswap swap";
-            _callBegin(t, target, ch, sel, bytes32(0), l, 0, l.length, publisher, 2);
+            _callBegin(t, target, ch, sel, bytes32(0), l, 0, l.length, publisher, 2, 0);
             if (value > 0) t.fieldEth(value);
             c.cfg.router = target;
             c.cfg.permit2 = permit2;
@@ -208,14 +201,13 @@ abstract contract DisplayVM {
         }
         if (d.blob.length == 0) {
             bytes memory l = "Unverified call";
-            _callBegin(t, target, ch, sel, bytes32(0), l, 0, l.length, bytes32(0), ATTEST_NONE);
+            _callBegin(t, target, ch, sel, bytes32(0), l, 0, l.length, bytes32(0), ATTEST_NONE, 0);
             if (value > 0) t.fieldEth(value);
             if (kind == 2) t.riskAddr(Risk.UPGRADEABLE_TARGET, upgrader);
             _blindCall(t, c, data);
             t.callEnd();
             return;
         }
-        if (d.epoch > h.maxEpoch) h.maxEpoch = d.epoch;
         _renderDesc(t, c, h, target, ch, sel, value, data, d, depth, kind == 2, upgrader);
     }
 
@@ -229,7 +221,7 @@ abstract contract DisplayVM {
         bytes memory d = desc.blob;
         if (d.rdBe(0, 4) != VDesc.MAGIC) revert VDesc.BadDescriptor();
         uint256 labelLen = d.rdU8(4);
-        _callBegin(t, target, ch, sel, keccak256(d), d, 5, labelLen, desc.publisher, desc.status);
+        _callBegin(t, target, ch, sel, keccak256(d), d, 5, labelLen, desc.publisher, desc.status, desc.epoch);
         if (value > 0) t.fieldEth(value);
         if (isProxy) t.riskAddr(Risk.UPGRADEABLE_TARGET, upgrader);
 
@@ -371,7 +363,7 @@ abstract contract DisplayVM {
         return p;
     }
 
-    function _effect(Buf.B memory t, URRender.Ctx memory c, address target, bytes memory cd, bytes memory d, uint256 p, uint256 flags) private pure returns (uint256) {
+    function _effect(Buf.B memory t, URRender.Ctx memory c, address target, bytes memory cd, bytes memory d, uint256 p, uint256 flags) private view returns (uint256) {
         uint256 kind = d.rdU8(p++);
         address token;
         (token, p) = _src(d, p, target, cd);
@@ -394,6 +386,7 @@ abstract contract DisplayVM {
         } else if (kind == VDesc.E_APPROVE_SET) {
             // (spender, amount)
             e.allowLe(token, address(uint160(v1)), v2);
+            if (v2 != 0) _spenderCheck(t, c, address(uint160(v1)));
             if (flags & VDesc.F_UNLIMITED_IF != 0 && v2 >> 255 != 0) {
                 t.risk(Risk.UNLIMITED_APPROVAL);
                 c.risk |= Risk.BIT_UNLIMITED;
@@ -402,6 +395,7 @@ abstract contract DisplayVM {
             // (operator, approved)
             if (v2 > 1) revert BadCalldata();
             e.operatorEq(token, address(uint160(v1)), v2 == 1);
+            if (v2 == 1) _spenderCheck(t, c, address(uint160(v1)));
             if (flags & VDesc.F_OPERATOR != 0 && v2 == 1) t.risk(Risk.OPERATOR_APPROVAL);
         } else if (kind == VDesc.E_NFT_OUT) {
             // (id, to)
@@ -410,6 +404,7 @@ abstract contract DisplayVM {
             // token is the path's token field; (spender, amount), the call's target is Permit2.
             if (v2 >> 160 != 0) revert BadCalldata();
             e.p2AllowLe(target, token, address(uint160(v1)), VSpec.P2_ABSOLUTE, v2);
+            if (v2 != 0) _spenderCheck(t, c, address(uint160(v1)));
             t.risk(Risk.PERMIT2_ALLOWANCE_CHANGE);
             if (v2 >= type(uint160).max) {
                 t.risk(Risk.UNLIMITED_APPROVAL);
@@ -419,6 +414,14 @@ abstract contract DisplayVM {
             revert VDesc.BadDescriptor();
         }
         return p;
+    }
+
+    /// D17: standing permission only goes to spenders the attestors know.
+    function _spenderCheck(Buf.B memory t, URRender.Ctx memory c, address spender) private view {
+        if (!_spenderIsAttested(spender)) {
+            t.risk(Risk.SPENDER_UNATTESTED);
+            c.risk |= Risk.BIT_SPENDER_UNATTESTED;
+        }
     }
 
     function _addressField(Buf.B memory t, bytes memory label, address a, uint8 role, URRender.Ctx memory c, Host memory h) private view {

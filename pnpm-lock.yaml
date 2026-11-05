@@ -314,6 +314,9 @@ importers:
       '@verbatim/frames-sdk':
         specifier: workspace:*
         version: link:../../packages/frames-sdk
+      '@verbatim/signer':
+        specifier: workspace:*
+        version: link:../../packages/signer
       '@verbatim/urrender':
         specifier: workspace:*
         version: link:../../packages/urrender

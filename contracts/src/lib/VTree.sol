@@ -291,6 +291,7 @@ library Risk {
     uint16 internal constant NO_POST_CHECK = 0x0006;
     uint16 internal constant RECIPIENT_HAS_CODE = 0x0007;
     uint16 internal constant RECIPIENT_NOT_SELF = 0x0008;
+    uint16 internal constant SPENDER_UNATTESTED = 0x0009;
     uint16 internal constant NO_MIN_OUT = 0x0101;
     uint16 internal constant HOOK_CAN_TAKE_INPUT = 0x0102;
     uint16 internal constant HOOK_CAN_TAKE_OUTPUT = 0x0103;
@@ -299,7 +300,6 @@ library Risk {
     uint16 internal constant SWEEP_TO_OTHER = 0x0106;
     uint16 internal constant PERMIT2_ALLOWANCE_CHANGE = 0x0107;
     uint16 internal constant UR_ALLOW_REVERT = 0x0108;
-    uint16 internal constant TTL_LONG = 0x0201;
     uint16 internal constant TOKEN_UNSAFE = 0x0202;
 
     // Seen-set bits, kept separate from wire codes so policy checks are one mask test.
@@ -309,9 +309,10 @@ library Risk {
     uint256 internal constant BIT_NO_MIN_OUT = 1 << 3;
     uint256 internal constant BIT_HOOK_TAKE = 1 << 4;
     uint256 internal constant BIT_HOOK_UNVERIFIED = 1 << 5;
-    uint256 internal constant BIT_TTL_LONG = 1 << 6;
+    uint256 internal constant BIT_SPENDER_UNATTESTED = 1 << 6;
     uint256 internal constant BIT_TOKEN_UNSAFE = 1 << 7;
     uint256 internal constant BIT_TRUST_CHANGE = 1 << 8;
+    uint256 internal constant BIT_ALLOW_REVERT = 1 << 9;
 }
 
 /// VSPEC v1 (docs/VSPEC.md): collects effects during a render and serialises them deterministically.

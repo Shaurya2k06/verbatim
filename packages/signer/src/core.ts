@@ -56,8 +56,15 @@ export class FrameCollector {
   }
 }
 
-export function review(r: Request): Reviewed {
+/** The longest a device will sign for, in seconds. A signature that outlives this is durable authority. */
+export const DEVICE_MAX_TTL = 600;
+
+/** `now` is the device's own clock: the host cannot move it. */
+export function review(r: Request, now: number = Math.floor(Date.now() / 1000)): Reviewed {
   const decoded = decodeTree(r.tree);
+  const until = Number(decoded.validUntil);
+  if (until > now + DEVICE_MAX_TTL) throw new Error(`this signature would stay valid for ${until - now} seconds, and the limit is ${DEVICE_MAX_TTL}`);
+  if (until <= now) throw new Error("this sentence has already expired");
   const treeHash = keccak256(r.tree);
   const digest = hashTypedData(typedData(decoded, r, treeHash));
   return { ...r, decoded, lines: formatForDevice(decoded), treeHash, digest };
@@ -66,9 +73,9 @@ export function review(r: Request): Reviewed {
 export function typedData(d: DecodedTree, r: Request, treeHash: Hex) {
   return {
     domain: { name: "Verbatim", version: "1", chainId: d.chainId, verifyingContract: d.account },
-    types: { VerbatimTx: [{ name: "txCommit", type: "bytes32" }, { name: "treeHash", type: "bytes32" }, { name: "specHash", type: "bytes32" }, { name: "signedAtBlock", type: "uint64" }] },
+    types: { VerbatimTx: [{ name: "txCommit", type: "bytes32" }, { name: "treeHash", type: "bytes32" }, { name: "specHash", type: "bytes32" }, { name: "validUntil", type: "uint64" }] },
     primaryType: "VerbatimTx" as const,
-    message: { txCommit: r.txCommit, treeHash, specHash: r.specHash, signedAtBlock: d.signedAtBlock },
+    message: { txCommit: r.txCommit, treeHash, specHash: r.specHash, validUntil: d.validUntil },
   };
 }
 

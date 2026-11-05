@@ -16,7 +16,7 @@ const cases: [string, any][] = [
   ["v4 swap", { target: ROUTER, value: 0n, data: v4SwapCall({ key: s.poolHonest.key, zeroForOne, amountIn: parseEther("1"), amountOutMinimum: 2_000_000_000n }, BigInt(Math.floor(Date.now() / 1000) + 3600)) }],
 ];
 for (const [name, c] of cases) {
-  const p = await prepareTx([c], { gas: big });
+  const p = await prepareTx([c], { gas: big, fee: { asset: "0x0000000000000000000000000000000000000000", amount: 999_000_000_000n } });
   const sim = await simulate(await sign(p));
-  console.log(name, sim.frames?.map((f: any) => parseInt(f.gasUsed, 16)), sim.executionError ?? "", "tree", (p.tree.length - 2) / 2, "spec", (p.spec.length - 2) / 2);
+  console.log(name, sim.frames?.map((f: any) => parseInt(f.gasUsed, 16)), (sim.executionError ?? "").slice(-70), sim.revertData ?? "", "maxCost", sim.maxCost, "tree", (p.tree.length - 2) / 2, "spec", (p.spec.length - 2) / 2);
 }

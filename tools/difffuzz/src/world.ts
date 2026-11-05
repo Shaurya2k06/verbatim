@@ -98,6 +98,7 @@ const TOKENS: Record<string, TokenInfo & { text: string; len: number }> = {
 export const worldTokens = () => Object.entries(TOKENS).map(([token, t]) => ({ token: token as Address, symbol: t.text, len: t.len, decimals: t.decimals, flags: t.flags }));
 
 export const worldProxy = { codehash: ch("proxy"), upgrader: UPGRADER, logic: LOGIC, impl: IMPL, getter: "0x5c60da1b" as Hex };
+export const worldSpenders: Address[] = [BOB, PERMIT2];
 export const worldHooks = [ch("inputhook"), ch("plainhook")];
 export const worldRouterCode = ch("router");
 export const worldLegacyRouterCode = ch("legacy router");
@@ -116,6 +117,7 @@ export function tsTrust(): Trust {
     nameOf: (a) => worldNames[a.toLowerCase()] ?? ZERO32,
     nameResolver: () => NAME_RESOLVER,
     hookIsAttested: (c) => worldHooks.includes(c),
+    spenderIsAttested: (a) => worldSpenders.includes(a.toLowerCase() as Address),
     codeKind: (c) => (c === worldRouterCode ? 1 : c === worldLegacyRouterCode ? 3 : c === worldProxy.codehash ? 2 : 0),
     routerConfig: () => ({ permit2: PERMIT2, weth: WETH, publisher: ROUTER_PUBLISHER }),
     proxyTemplate: () => ({ upgrader: UPGRADER, logicCodehash: LOGIC, impl: IMPL, getter: worldProxy.getter }),
@@ -291,8 +293,7 @@ export function makeCase(seed: number): RenderIn {
   return {
     chainId: 1337n,
     account: ACCOUNT,
-    signedAtBlock: BigInt(r.int(1e8)),
-    ttl: BigInt(r.pick([5, 25, 25, 25, 200])),
+    validUntil: BigInt(1_800_000_000 + r.int(1e6)),
     feeAsset,
     feeAmount,
     gasLimitTotal: BigInt(r.int(5e6)),

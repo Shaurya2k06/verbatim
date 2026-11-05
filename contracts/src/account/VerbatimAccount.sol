@@ -8,7 +8,8 @@ import {Buf, VSpec} from "../lib/VTree.sol";
 interface IRendererPaymaster {
     function charge(address asset, uint256 amount) external;
     function policyHashOf(address account) external view returns (bytes32);
-    function ttlOf(address account) external view returns (uint64);
+    function maxTtlOf(address account) external view returns (uint64);
+    function chargeTicket(uint256 nonce, uint256 amount) external;
 }
 
 /// Owner-set, EIP-712, assertion and execution logic shared by the frame account (Leg A) and the 4337 account (Leg B).
@@ -34,7 +35,7 @@ abstract contract VerbatimCore {
     uint256 internal constant SECP256K1N_HALF = 0x7fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a0;
 
     bytes32 internal constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
-    bytes32 internal constant TX_TYPEHASH = keccak256("VerbatimTx(bytes32 txCommit,bytes32 treeHash,bytes32 specHash,uint64 signedAtBlock)");
+    bytes32 internal constant TX_TYPEHASH = keccak256("VerbatimTx(bytes32 txCommit,bytes32 treeHash,bytes32 specHash,uint64 validUntil)");
     bytes32 internal constant NAME_HASH = keccak256("Verbatim");
     bytes32 internal constant VERSION_HASH = keccak256("1");
 
@@ -43,7 +44,6 @@ abstract contract VerbatimCore {
     uint8 internal constant PHASE_PROTECTED = 2;
 
     address public immutable RENDERER_PAYMASTER;
-    uint64 public immutable TTL_BLOCKS_MAX;
 
     address[] internal _owners;
     mapping(address => bool) public isOwner;
@@ -62,7 +62,8 @@ abstract contract VerbatimCore {
     error NotSelf();
     error Reentrant();
     error NotLocked();
-    error Expired(uint256 blockNumber, uint256 lastValid);
+    error Expired(uint256 timestamp, uint256 validUntil);
+    error TtlTooLong(uint256 remaining, uint256 maxTtl);
     error SpecMismatch();
     error CodeChanged(address target);
     error CodeAppeared(address target);
@@ -76,9 +77,8 @@ abstract contract VerbatimCore {
 
     event VerbatimResult(bool indexed ok, bytes err);
 
-    constructor(address renderer, uint64 ttlMax, address[] memory owners_, uint8 threshold_) {
+    constructor(address renderer, address[] memory owners_, uint8 threshold_) {
         RENDERER_PAYMASTER = renderer;
-        TTL_BLOCKS_MAX = ttlMax;
         if (threshold_ == 0 || threshold_ > owners_.length) revert BadThreshold();
         for (uint256 i = 0; i < owners_.length; i++) {
             address o = owners_[i];
@@ -104,9 +104,9 @@ abstract contract VerbatimCore {
 
     // ----------------------------------------------------------------------- signatures ---------
 
-    function digestOf(bytes32 txCommit, bytes32 treeHash, bytes32 specHash, uint64 signedAtBlock) public view returns (bytes32) {
+    function digestOf(bytes32 txCommit, bytes32 treeHash, bytes32 specHash, uint64 validUntil) public view returns (bytes32) {
         bytes32 domain = keccak256(abi.encode(DOMAIN_TYPEHASH, NAME_HASH, VERSION_HASH, block.chainid, address(this)));
-        bytes32 structHash = keccak256(abi.encode(TX_TYPEHASH, txCommit, treeHash, specHash, signedAtBlock));
+        bytes32 structHash = keccak256(abi.encode(TX_TYPEHASH, txCommit, treeHash, specHash, validUntil));
         return keccak256(abi.encodePacked(hex"1901", domain, structHash));
     }
 
@@ -136,27 +136,28 @@ abstract contract VerbatimCore {
 
     /// Fee first; its failure reverts the frame and nothing protected runs. An assertion failure reverts the inner
     /// call only, so the fee stays paid (I4, I5).
-    function _execute(Fee calldata fee, Call[] calldata calls, bytes calldata spec, bytes32 specHash, uint64 signedAtBlock) internal {
+    function _execute(Fee calldata fee, Call[] calldata calls, bytes calldata spec, bytes32 specHash, uint64 validUntil) internal {
         if (_phase != PHASE_IDLE) revert Reentrant();
         _phase = PHASE_LOCKED;
-        IRendererPaymaster(RENDERER_PAYMASTER).charge(fee.asset, fee.amount);
+        _chargeFee(fee);
         uint256 left = gasleft();
         if (left <= OUTER_RESERVE) revert NoGasReserve();
-        (bool ok, bytes memory err) = address(this).call{gas: left - OUTER_RESERVE}(abi.encodeCall(this.protectedBatch, (calls, spec, specHash, signedAtBlock)));
+        (bool ok, bytes memory err) = address(this).call{gas: left - OUTER_RESERVE}(abi.encodeCall(this.protectedBatch, (calls, spec, specHash, validUntil)));
         emit VerbatimResult(ok, err);
         _phase = PHASE_IDLE;
     }
 
-    /// The inner self-call: TTL, live re-checks, snapshot, calls, assertions.
-    function protectedBatch(Call[] calldata calls, bytes calldata spec, bytes32 specHash, uint64 signedAtBlock) external onlySelf {
+    function _chargeFee(Fee calldata fee) internal virtual;
+
+    /// The inner self-call: expiry, live re-checks, snapshot, calls, assertions.
+    function protectedBatch(Call[] calldata calls, bytes calldata spec, bytes32 specHash, uint64 validUntil) external onlySelf {
         if (_phase != PHASE_LOCKED) revert NotLocked();
         _phase = PHASE_PROTECTED;
         if (keccak256(spec) != specHash) revert SpecMismatch();
 
-        uint64 ttl = IRendererPaymaster(RENDERER_PAYMASTER).ttlOf(address(this));
-        if (ttl > TTL_BLOCKS_MAX) ttl = TTL_BLOCKS_MAX;
-        uint256 lastValid = uint256(signedAtBlock) + ttl;
-        if (block.number > lastValid) revert Expired(block.number, lastValid);
+        if (block.timestamp > validUntil) revert Expired(block.timestamp, validUntil);
+        uint256 maxTtl = IRendererPaymaster(RENDERER_PAYMASTER).maxTtlOf(address(this));
+        if (validUntil - block.timestamp > maxTtl) revert TtlTooLong(validUntil - block.timestamp, maxTtl);
 
         bytes memory s = spec;
         _liveChecks(s);
@@ -454,22 +455,23 @@ abstract contract VerbatimAccountBase is VerbatimCore, FrameIntrospection {
     error BadLayout(uint256 check);
     error BadSignatureEntry();
 
-    constructor(address renderer, uint64 ttlMax, address[] memory owners_, uint8 threshold_) VerbatimCore(renderer, ttlMax, owners_, threshold_) {}
+    constructor(address renderer, address[] memory owners_, uint8 threshold_) VerbatimCore(renderer, owners_, threshold_) {}
 
-    /// Frame 0. Data: treeHash, specHash, signedAtBlock. Owners sign in protocol-validated SECP256K1 entries with an
+    /// Frame 0. Data: treeHash, specHash, validUntil. Owners sign in protocol-validated SECP256K1 entries with an
     /// explicit `msg`: the deployed sidecar refuses calls to the ecrecover precompile, so the protocol recovers them.
     /// An explicit `msg` cannot contain `sig_hash`, so `_txCommit` covers what it would have: see docs/DECISIONS.md.
-    function verifyFrame(bytes32 treeHash, bytes32 specHash, uint64 signedAtBlock) external {
+    function verifyFrame(bytes32 treeHash, bytes32 specHash, uint64 validUntil) external {
         if (msg.sender != ENTRY_POINT) revert NotEntryPoint();
         Layout memory l = _layoutLock();
-        uint256 digest = uint256(digestOf(_txCommit(l), treeHash, specHash, signedAtBlock));
+        uint256 digest = uint256(digestOf(_txCommit(l), treeHash, specHash, validUntil));
         uint256 k = threshold;
         // Zero only in a 7702 delegator's empty storage: such a sender must not approve without signatures.
         if (k == 0 || l.sigCount != k) revert BadSignatureEntry();
         address last;
         for (uint256 i = 0; i < k; i++) {
-            if (_sigparam(i, SP_SCHEME) != SCHEME_SECP256K1 || _sigparam(i, SP_MSG) != digest) revert BadSignatureEntry();
-            address signer = address(uint160(_sigparam(i, SP_SIGNER)));
+            (uint256 scheme, uint256 signed, uint256 who) = _sigEntry(i);
+            if (scheme != SCHEME_SECP256K1 || signed != digest) revert BadSignatureEntry();
+            address signer = address(uint160(who));
             if (signer <= last || !isOwner[signer]) revert SignersNotSortedOrUnknown();
             last = signer;
         }
@@ -500,12 +502,17 @@ abstract contract VerbatimAccountBase is VerbatimCore, FrameIntrospection {
         if (bytes4(bytes32(_framedataload(0, 2))) != this.executeVerified.selector) revert BadLayout(6);
     }
 
-    /// Frame 2. `specHash` and `signedAtBlock` are re-read from frame 0, which the signatures bind.
+    function _chargeFee(Fee calldata fee) internal override {
+        (uint256 nonce, ) = _nonceAndMaxCost();
+        IRendererPaymaster(RENDERER_PAYMASTER).chargeTicket(nonce, fee.amount);
+    }
+
+    /// Frame 2. `specHash` and `validUntil` are re-read from frame 0, which the signatures bind.
     function executeVerified(Fee calldata fee, Call[] calldata calls, bytes calldata spec) external onlySelf {
         _execute(fee, calls, spec, bytes32(_framedataload(36, 0)), uint64(_framedataload(68, 0)));
     }
 }
 
 contract VerbatimAccount is VerbatimAccountBase, DevnetFrames {
-    constructor(address renderer, uint64 ttlMax, address[] memory owners_, uint8 threshold_, address frameReader) VerbatimAccountBase(renderer, ttlMax, owners_, threshold_) DevnetFrames(frameReader) {}
+    constructor(address renderer, address[] memory owners_, uint8 threshold_, address frameReader) VerbatimAccountBase(renderer, owners_, threshold_) DevnetFrames(frameReader) {}
 }

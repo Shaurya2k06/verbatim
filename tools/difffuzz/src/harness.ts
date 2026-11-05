@@ -7,7 +7,7 @@ import { createPublicClient, createTestClient, createWalletClient, http, type Ab
 import { privateKeyToAccount } from "viem/accounts";
 import { foundry } from "viem/chains";
 import type { RenderIn } from "@verbatim/displayvm-ts";
-import { CODE, NAME_RESOLVER, PERMIT2, ROUTER_PUBLISHER, WETH, worldDescriptors, worldHooks, worldLegacyRouterCode, worldNames, worldProxy, worldRouterCode, worldTokens } from "./world";
+import { CODE, NAME_RESOLVER, PERMIT2, ROUTER_PUBLISHER, WETH, worldDescriptors, worldHooks, worldLegacyRouterCode, worldNames, worldProxy, worldRouterCode, worldSpenders, worldTokens } from "./world";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"; // anvil's well-known first key
@@ -42,11 +42,12 @@ export async function boot(port = 18545) {
   for (const [a, n] of Object.entries(worldNames)) await send("setName", [a, n, NAME_RESOLVER]);
   await send("setProxy", [worldProxy.codehash, worldProxy.upgrader, worldProxy.logic, worldProxy.impl, worldProxy.getter]);
   for (const h of worldHooks) await send("setHook", [h, true]);
+  for (const a of worldSpenders) await send("setSpender", [a, true]);
   void createTestClient;
 
   const render = async (i: RenderIn): Promise<{ tree: Hex; spec: Hex; risk: number } | { error: string }> => {
     try {
-      const [tree, spec, risk] = (await pub.readContract({ address, abi, functionName: "render", args: [{ chainId: i.chainId, account: i.account, signedAtBlock: i.signedAtBlock, ttl: i.ttl, feeAsset: i.feeAsset, feeAmount: i.feeAmount, gasLimitTotal: i.gasLimitTotal, policyHash: i.policyHash, body: i.body, hints: i.hints }] })) as [Hex, Hex, bigint];
+      const [tree, spec, risk] = (await pub.readContract({ address, abi, functionName: "render", args: [{ chainId: i.chainId, account: i.account, validUntil: i.validUntil, feeAsset: i.feeAsset, feeAmount: i.feeAmount, gasLimitTotal: i.gasLimitTotal, policyHash: i.policyHash, body: i.body, hints: i.hints }] })) as [Hex, Hex, bigint];
       return { tree, spec, risk: Number(risk) };
     } catch (e) {
       return { error: String((e as Error).message).split("\n")[0].slice(0, 160) };

@@ -29,23 +29,25 @@ export const PAYMASTER_ABI = parseAbi([
   "function PERMIT2() view returns (address)",
   "function WETH() view returns (address)",
   "function policyHashOf(address) view returns (bytes32)",
-  "function ttlOf(address) view returns (uint64)",
+  "function maxTtlOf(address) view returns (uint64)",
   "function deposit(address account, address asset, uint256 amount) payable",
   "function deposits(address, address) view returns (uint128 amount, uint128 pendingWithdraw)",
   "function trustEpoch() view returns (uint64)",
-  "function feeAssets(address) view returns (uint128 ratePerGas, bool allowed)",
-  "function setFeeAsset(address asset, uint128 ratePerGas, bool allowed)",
+  "function feesAccrued(address) view returns (uint256)",
+  "function feeTicket(address, uint256) view returns (uint128 amount, uint64 reclaimAt)",
+  "function fundTickets(address account, uint256 firstNonce, uint256 count) payable",
+  "function attestedSpenders(address) view returns (bool)",
   "function stake(address registry, uint32 delay) payable",
   "function requestWithdraw(address asset, uint256 amount)",
   "function setPolicy(uint64 ttl, uint64 allowMask)",
 ]);
 
 export const ACCOUNT_ABI = parseAbi([
-  "function verifyFrame(bytes32 treeHash, bytes32 specHash, uint64 signedAtBlock)",
+  "function verifyFrame(bytes32 treeHash, bytes32 specHash, uint64 validUntil)",
   "struct Fee { address asset; uint256 amount; }",
   "struct Call { address target; uint256 value; bytes data; }",
   "function executeVerified(Fee fee, Call[] calls, bytes spec)",
-  "function digestOf(bytes32 sigHash, bytes32 treeHash, bytes32 specHash, uint64 signedAtBlock) view returns (bytes32)",
+  "function digestOf(bytes32 txCommit, bytes32 treeHash, bytes32 specHash, uint64 validUntil) view returns (bytes32)",
   "function threshold() view returns (uint8)",
   "function owners() view returns (address[])",
   "event VerbatimResult(bool indexed ok, bytes err)",
@@ -111,6 +113,9 @@ export class ChainTrust implements Trust {
   }
   /** Leg A renders no names (no ENS on the frames devnet). */
   legB = false;
+  spenderIsAttested(spender: Address) {
+    return this.get(`sp:${spender}`, () => this.read("attestedSpenders", [spender]));
+  }
   hookIsAttested(codehash: Hex) {
     return this.get(`h:${codehash}`, () => this.read("attestedHooks", [codehash]));
   }
@@ -185,7 +190,7 @@ export const PUBLIC_GATEWAY_GAS: GasPlan = { frame0: 20_500n, frame1: 73_700n, f
 export interface Sentence {
   account: Address;
   chainId: bigint;
-  signedAtBlock: bigint;
+  validUntil: bigint;
   tree: Hex;
   spec: Hex;
   treeHash: Hex;
@@ -209,16 +214,27 @@ export interface PrepareArgs {
   account: Address;
   paymaster: Address;
   calls: Call[];
-  fee: Fee;
-  signedAtBlock?: bigint;
+  /** Defaults to the most this transaction can cost, which the paymaster requires it to cover. */
+  fee?: Fee;
+  /** Unix seconds. Defaults to a few minutes from now. */
+  validUntil?: bigint;
   gas?: GasPlan;
   maxFeePerGas?: bigint;
   maxPriorityFeePerGas?: bigint;
+  /** Scripts: do not top up fee tickets first (the ticket attacks need that). */
+  skipTickets?: boolean;
   /** Lets an attack render something other than what the transaction carries. */
   overrideSentence?: { tree: Hex; spec: Hex };
 }
 
 const totalGas = (g: GasPlan) => g.frame0 + g.frame1 + g.frame2 + g.frame2State;
+
+const ZERO_ADDRESS: Address = "0x0000000000000000000000000000000000000000";
+export const DEFAULT_VALIDITY_S = 240;
+/** The devnet's base fee is 7 wei. */
+export const DEFAULT_MAX_FEE = 10_000n;
+/** Twice the frame limits' cost, because the protocol's maximum also counts intrinsic gas. */
+export const feeFor = (g: GasPlan, maxFeePerGas: bigint) => totalGas(g) * maxFeePerGas * 2n;
 
 export const EXECUTE_SELECTOR = encodeFunctionData({ abi: ACCOUNT_ABI, functionName: "executeVerified", args: [{ asset: "0x0000000000000000000000000000000000000000", amount: 0n }, [], "0x"] }).slice(0, 10) as Hex;
 
@@ -227,31 +243,31 @@ export const frame2Data = (fee: Fee, calls: Call[], spec: Hex): Hex => `${EXECUT
 export async function prepare(a: PrepareArgs): Promise<Prepared> {
   const gas = a.gas ?? PUBLIC_GATEWAY_GAS;
   const chainId = BigInt(await a.client.getChainId());
-  const signedAtBlock = a.signedAtBlock ?? (await a.client.getBlockNumber());
+  const validUntil = a.validUntil ?? BigInt(Math.floor(Date.now() / 1000) + DEFAULT_VALIDITY_S);
+  const maxFee = a.maxFeePerGas ?? DEFAULT_MAX_FEE;
+  const fee = a.fee ?? { asset: ZERO_ADDRESS, amount: feeFor(gas, maxFee) };
   const read = (functionName: string, args: unknown[]) => a.client.readContract({ address: a.paymaster, abi: PAYMASTER_ABI, functionName, args } as never) as Promise<any>;
   const policyHash: Hex = await read("policyHashOf", [a.account]);
-  const ttl: bigint = BigInt(await read("ttlOf", [a.account]));
   const base = {
     chainId,
     account: a.account,
-    signedAtBlock,
-    ttl,
-    feeAsset: a.fee.asset,
-    feeAmount: a.fee.amount,
+    validUntil,
+    feeAsset: fee.asset,
+    feeAmount: fee.amount,
     gasLimitTotal: totalGas(gas),
     policyHash,
-    body: encodeBody(a.fee, a.calls, "0x"),
+    body: encodeBody(fee, a.calls, "0x"),
   };
   const { out, hints } = await renderWithChain(base, a.trust, a.client);
   const sentence = a.overrideSentence ? { ...out, tree: a.overrideSentence.tree, spec: a.overrideSentence.spec, treeHash: keccak256(a.overrideSentence.tree), specHash: keccak256(a.overrideSentence.spec) } : out;
-  return assemble({ ...a, gas, chainId, signedAtBlock, sentence, realSpec: sentence.spec, hints });
+  return assemble({ ...a, fee, maxFeePerGas: maxFee, gas, chainId, validUntil, sentence, realSpec: sentence.spec, hints });
 }
 
-function assemble(a: PrepareArgs & { gas: GasPlan; chainId: bigint; signedAtBlock: bigint; sentence: RenderOut; realSpec: Hex; hints: Address[] }): Promise<Prepared> {
+function assemble(a: PrepareArgs & { fee: Fee; maxFeePerGas: bigint; gas: GasPlan; chainId: bigint; validUntil: bigint; sentence: RenderOut; realSpec: Hex; hints: Address[] }): Promise<Prepared> {
   return (async () => {
     const nonce = BigInt(await a.client.getTransactionCount({ address: a.account }));
     const frames = [
-      frame({ mode: Mode.VERIFY, flags: Scope.EXECUTION, target: a.account, execution: a.gas.frame0, data: encodeFunctionData({ abi: ACCOUNT_ABI, functionName: "verifyFrame", args: [a.sentence.treeHash, a.sentence.specHash, a.signedAtBlock] }) }),
+      frame({ mode: Mode.VERIFY, flags: Scope.EXECUTION, target: a.account, execution: a.gas.frame0, data: encodeFunctionData({ abi: ACCOUNT_ABI, functionName: "verifyFrame", args: [a.sentence.treeHash, a.sentence.specHash, a.validUntil] }) }),
       frame({ mode: Mode.VERIFY, flags: Scope.PAYMENT, target: a.paymaster, execution: a.gas.frame1, data: encodeFunctionData({ abi: PAYMASTER_ABI, functionName: "verifyFrame", args: [a.hints] }) }),
       frame({ mode: Mode.SENDER, target: a.account, execution: a.gas.frame2, state: a.gas.frame2State, data: frame2Data(a.fee, a.calls, a.realSpec) }),
     ];
@@ -260,15 +276,15 @@ function assemble(a: PrepareArgs & { gas: GasPlan; chainId: bigint; signedAtBloc
       sender: a.account,
       nonce,
       frames,
-      maxFeePerGas: a.maxFeePerGas ?? 1_000_000_000n,
-      maxPriorityFeePerGas: a.maxPriorityFeePerGas ?? 1_000n,
+      maxFeePerGas: a.maxFeePerGas,
+      maxPriorityFeePerGas: a.maxPriorityFeePerGas ?? 100n,
     });
     const sh = txCommit(tx);
-    const typed = typedData(a.chainId, a.account, sh, a.sentence.treeHash, a.sentence.specHash, a.signedAtBlock);
+    const typed = typedData(a.chainId, a.account, sh, a.sentence.treeHash, a.sentence.specHash, a.validUntil);
     return {
       account: a.account,
       chainId: a.chainId,
-      signedAtBlock: a.signedAtBlock,
+      validUntil: a.validUntil,
       tree: a.sentence.tree,
       spec: a.sentence.spec,
       treeHash: a.sentence.treeHash,
@@ -292,12 +308,12 @@ export function txCommit(tx: FrameTx): Hex {
   return keccak256(encodeAbiParameters([...uints.map(() => ({ type: "uint256" })), { type: "bytes32" }, { type: "bytes32" }], [...uints, keccak256(f1.data), keccak256(f2.data)] as never));
 }
 
-export function typedData(chainId: bigint, account: Address, txCommitValue: Hex, treeHash: Hex, specHash: Hex, signedAtBlock: bigint) {
+export function typedData(chainId: bigint, account: Address, txCommitValue: Hex, treeHash: Hex, specHash: Hex, validUntil: bigint) {
   return {
     domain: { name: "Verbatim", version: "1", chainId, verifyingContract: account },
-    types: { VerbatimTx: [{ name: "txCommit", type: "bytes32" }, { name: "treeHash", type: "bytes32" }, { name: "specHash", type: "bytes32" }, { name: "signedAtBlock", type: "uint64" }] },
+    types: { VerbatimTx: [{ name: "txCommit", type: "bytes32" }, { name: "treeHash", type: "bytes32" }, { name: "specHash", type: "bytes32" }, { name: "validUntil", type: "uint64" }] },
     primaryType: "VerbatimTx" as const,
-    message: { txCommit: txCommitValue, treeHash, specHash, signedAtBlock },
+    message: { txCommit: txCommitValue, treeHash, specHash, validUntil },
   };
 }
 

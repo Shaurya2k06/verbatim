@@ -64,7 +64,10 @@ export function renderUR(t: Buf, data: Uint8Array, c: URCtx) {
     const len = rdWord(data, elem);
     const inp = elem + 32n;
     if (inp + len > BigInt(data.length)) fail("MalformedUR");
-    if (raw & CMD.FLAG_ALLOW_REVERT) VT.risk(t, RISK.UR_ALLOW_REVERT);
+    if (raw & CMD.FLAG_ALLOW_REVERT) {
+      VT.risk(t, RISK.UR_ALLOW_REVERT);
+      c.risk |= BIT.ALLOW_REVERT;
+    }
     command(t, data, raw & CMD.MASK, inp, len, c);
   }
 }

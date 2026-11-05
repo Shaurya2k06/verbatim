@@ -28,7 +28,7 @@ async function go() {
   try {
     const shownCall = mode.value === "truth" ? call(evil, 0n) : call(honest, min);
     const shown = await prepareCalls([shownCall]);
-    const p = mode.value === "lie" ? await prepareCalls([call(evil, 0n)], { signedAtBlock: shown.signedAtBlock, overrideSentence: { tree: shown.tree, spec: shown.spec } }) : shown;
+    const p = mode.value === "lie" ? await prepareCalls([call(evil, 0n)], { validUntil: shown.validUntil, overrideSentence: { tree: shown.tree, spec: shown.spec } }) : shown;
     flow.replaceChildren(
       el("div", { class: "panel" }, el("h2", {}, "What the device will show"), sentence(p.tree)),
       signingPanel({ tree: p.tree, specHash: p.specHash, txCommit: p.txCommit }, d.threshold, (sigs) => sendAndReport(withSignatures(p.tx, p.digest, sigs), d.account, result)),

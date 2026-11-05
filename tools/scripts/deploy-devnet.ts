@@ -38,7 +38,7 @@ if (!s.paymaster) {
   // The account pins the paymaster's address and the paymaster pins the account's code hash, so predict.
   const nonce = BigInt(await pub.getTransactionCount({ address: me }));
   const predicted = getContractAddress({ from: me, nonce: nonce + 1n });
-  const account = await deploy(deployer, "VerbatimAccount.sol", "VerbatimAccount", { args: [predicted, 200n, owners, 2, s.frameReader], approve: true });
+  const account = await deploy(deployer, "VerbatimAccount.sol", "VerbatimAccount", { args: [predicted, owners, 2, s.frameReader], approve: true });
   const code = (await pub.getCode({ address: account.address })) as Hex;
   const ch = keccak256(code);
   console.log("VerbatimAccount", account.address, account.hash, "gas", account.gasUsed, "codehash", ch);
@@ -56,13 +56,6 @@ if (!s.staked) {
   const r = await send(deployer, s.paymaster, encodeFunctionData({ abi: PAYMASTER_ABI, functionName: "stake", args: [STAKING_REGISTRY, 86400] }), parseEther("0.012"));
   console.log("staked", r.transactionHash);
   writeState({ staked: r.transactionHash });
-  s = readState();
-}
-
-if (!s.feeRateSet) {
-  // Above the devnet's base fee plus our tip, so a fee covers the worst case the paymaster can be charged.
-  await send(deployer, s.paymaster, encodeFunctionData({ abi: PAYMASTER_ABI, functionName: "setFeeAsset", args: ["0x0000000000000000000000000000000000000000", 1100n, true] }));
-  writeState({ feeRateSet: true });
   s = readState();
 }
 
@@ -85,7 +78,7 @@ if (!s.reenterer) {
   s = readState();
 }
 if (!s.account2) {
-  const a = await deploy(deployer, "VerbatimAccount.sol", "VerbatimAccount", { args: [s.paymaster, 200n, owners, 2, s.frameReader], approve: true });
+  const a = await deploy(deployer, "VerbatimAccount.sol", "VerbatimAccount", { args: [s.paymaster, owners, 2, s.frameReader], approve: true });
   writeState({ account2: a.address });
   s = readState();
 }
@@ -105,6 +98,7 @@ if (!s.trustEpoch) {
   ];
   u.tokens = [tokenEntry(s.tokenA, "dUSDC", 6), tokenEntry(s.tokenB, "dWETH", 18), tokenEntry(WETH9, "WETH", 18)];
   u.routers = [{ codehash: await chOf(ROUTER), legacy: false }];
+  u.spenders = [PERMIT2, ROUTER, s.evilVault];
   const r = await attest(s.paymaster, u);
   console.log("refreshTrust", r.transactionHash, "gas", r.gasUsed);
   writeState({ trustEpoch: 1, refreshTx: r.transactionHash });
@@ -112,8 +106,8 @@ if (!s.trustEpoch) {
 }
 
 if (!s.funded) {
-  await send(deployer, s.paymaster, encodeFunctionData({ abi: PAYMASTER_ABI, functionName: "deposit", args: [s.account, "0x0000000000000000000000000000000000000000", 0n] }), parseEther("0.05"));
-  await send(deployer, s.paymaster, encodeFunctionData({ abi: PAYMASTER_ABI, functionName: "deposit", args: [s.account2, "0x0000000000000000000000000000000000000000", 0n] }), 1n);
+  // The paymaster fronts each transaction's maximum cost, and tickets pay it back.
+  await send(deployer, s.paymaster, "0x", parseEther("0.02"), 200_000n);
   await send(deployer, s.tokenA, encodeFunctionData({ abi: artifact("TestTokens.sol", "TestToken").abi, functionName: "mint", args: [s.account, 1_000_000_000_000n] }));
   await send(deployer, s.tokenB, encodeFunctionData({ abi: artifact("TestTokens.sol", "TestToken").abi, functionName: "mint", args: [s.account, parseEther("100")] }));
   writeState({ funded: true });

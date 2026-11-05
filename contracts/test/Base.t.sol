@@ -12,11 +12,15 @@ import {EvilVault, GasBurner, Reenterer} from "../src/demo/EvilVault.sol";
 import {SkimHook} from "../src/demo/SkimHook.sol";
 
 contract TestAccount is VerbatimAccountBase, MockFrames {
-    constructor(address r, address[] memory o, uint8 t, FrameEnv env) VerbatimAccountBase(r, 200, o, t) MockFrames(env) {}
+    constructor(address r, address[] memory o, uint8 t, FrameEnv env) VerbatimAccountBase(r, o, t) MockFrames(env) {}
 }
 
 contract TestPaymaster is RendererPaymasterBase, MockFrames {
     constructor(bytes32 ch, address owner_, address admin, address p2, address weth, bytes32 pub_, address[] memory a, uint8 t, FrameEnv env) RendererPaymasterBase(ch, owner_, admin, p2, weth, pub_, a, t) MockFrames(env) {}
+
+    function setTicketForTest(address a, uint256 nonce, uint128 amount) external {
+        _feeTickets[a][nonce].amount = amount;
+    }
 
     function renderView(DisplayVM.In memory i) external view returns (bytes memory tree, bytes memory spec, uint256 risk) {
         DisplayVM.Out memory o = _render(i);
@@ -97,12 +101,12 @@ abstract contract Base is Test {
         bytes spec;
         bytes tree;
         address[] hints;
-        uint64 signedAt;
+        uint64 validUntil;
         uint256 risk;
     }
 
     function setUp() public virtual {
-        vm.roll(1000);
+        vm.warp(T0);
         env = new FrameEnv();
         admin = new TrustAdmin();
         address[] memory owners = new address[](3);
@@ -122,8 +126,8 @@ abstract contract Base is Test {
         account = new TestAccount(vm.computeCreateAddress(address(this), vm.getNonce(address(this)) + 1), owners, 2, env);
         rpm = new TestPaymaster(address(account).codehash, address(this), address(admin), address(p2), address(0x9090), PUBLISHER, attestors, 2, env);
         assertEq(account.RENDERER_PAYMASTER(), address(rpm));
-        rpm.setFeeAsset(address(0), 1, true);
-        admin_().deposit{value: 1 ether}(address(account), address(0), 0);
+        vm.deal(address(this), 100 ether);
+        admin_().fundTickets{value: 1 ether}(address(account), 1, 100);
         vm.deal(address(account), 1 ether);
 
         usdc = new TestToken("Demo USD", "dUSDC", 6);
@@ -142,6 +146,9 @@ abstract contract Base is Test {
         u.tokens = new TrustStoreLayout.TokenUpdate[](2);
         u.tokens[0] = TrustStoreLayout.TokenUpdate(address(usdc), bytes11("dUSDC"), 5, 6, 0);
         u.tokens[1] = TrustStoreLayout.TokenUpdate(address(weth), bytes11("dWETH"), 5, 18, 0);
+        u.spenders = new address[](2);
+        u.spenders[0] = address(vault);
+        u.spenders[1] = address(p2);
         u.routers = new TrustStoreLayout.RouterUpdate[](1);
         u.routers[0] = TrustStoreLayout.RouterUpdate(address(router).codehash, false);
         refresh(u);
@@ -221,11 +228,14 @@ abstract contract Base is Test {
     uint256 internal constant GAS_F1 = 1_000_000;
     uint256 internal constant GAS_F2 = 5_000_000;
     uint256 internal constant GAS_TOTAL = GAS_F0 + GAS_F1 + GAS_F2;
+    uint256 internal constant FEE = 1000;
+    uint256 internal nonceNow = 1;
+    uint64 internal constant T0 = 1_800_000_000;
 
-    function plan(VerbatimCore.Call[] memory calls, uint64 signedAt) internal view returns (Plan memory p) {
-        p.fee = VerbatimCore.Fee(address(0), GAS_TOTAL);
+    function plan(VerbatimCore.Call[] memory calls, uint64 validUntil) internal view returns (Plan memory p) {
+        p.fee = VerbatimCore.Fee(address(0), FEE);
         p.calls = calls;
-        p.signedAt = signedAt;
+        p.validUntil = validUntil;
         p.hints = allHints(calls);
         DisplayVM.In memory i = input(p);
         (p.tree, p.spec, p.risk) = rpm.renderView(i);
@@ -234,8 +244,7 @@ abstract contract Base is Test {
     function input(Plan memory p) internal view returns (DisplayVM.In memory i) {
         i.chainId = uint64(block.chainid);
         i.account = address(account);
-        i.signedAtBlock = p.signedAt;
-        i.ttl = rpm.ttlOf(address(account));
+        i.validUntil = p.validUntil;
         i.feeAsset = p.fee.asset;
         i.feeAmount = p.fee.amount;
         i.gasLimitTotal = uint64(GAS_TOTAL);
@@ -263,8 +272,9 @@ abstract contract Base is Test {
     /// Loads the transaction into the mock protocol, with owners O1 and O2 signing what `treeHash` and `specHash` say.
     function load(Plan memory p, bytes32 treeHash, bytes32 specHash) internal {
         env.reset();
-        env.setTx(address(account), 1, 1, 100);
-        bytes memory f0 = abi.encodeCall(VerbatimAccountBase.verifyFrame, (treeHash, specHash, p.signedAt));
+        env.setTx(address(account), nonceNow, 1, 100);
+        env.setMaxCost(FEE);
+        bytes memory f0 = abi.encodeCall(VerbatimAccountBase.verifyFrame, (treeHash, specHash, p.validUntil));
         bytes memory f1 = abi.encodeCall(RendererPaymasterBase.verifyFrame, (p.hints));
         bytes memory f2 = abi.encodeCall(VerbatimAccountBase.executeVerified, (p.fee, p.calls, p.spec));
         env.pushFrame(FrameEnv.Frame(1, 2, address(account), GAS_F0, 0, 0, f0));
@@ -278,7 +288,7 @@ abstract contract Base is Test {
     }
 
     function signWith(Plan memory p, bytes32 treeHash, bytes32 specHash, uint256 k1, uint256 k2) internal {
-        bytes32 d = account.digestOf(txCommit(), treeHash, specHash, p.signedAt);
+        bytes32 d = account.digestOf(txCommit(), treeHash, specHash, p.validUntil);
         address a1 = vm.addr(k1);
         address a2 = vm.addr(k2);
         if (a1 > a2) (a1, a2) = (a2, a1);
@@ -358,7 +368,9 @@ abstract contract Base is Test {
         load(p);
         frame0();
         frame1();
-        return frame2();
+        (bool ok, bytes memory err) = frame2();
+        nonceNow++;
+        return (ok, err);
     }
 
     function _bubble(bool ok, bytes memory ret) internal pure {

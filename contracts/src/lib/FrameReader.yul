@@ -22,8 +22,9 @@ object "FrameReader" {
                 // Everything validation wants about the transaction, in one call: 3 frames or nothing.
                 // txCount, current, sender, sigCount, then for frames 0-2: target, mode, flags, value, gas, stateGas, dataLen
                 let count := verbatim_1i_1o(hex"b0", 0x09)
-                if iszero(eq(count, 3)) { revert(0, 0) }
                 mstore(0x00, count)
+                // Only the count: the account reports the wrong layout itself, as BadLayout.
+                if iszero(eq(count, 3)) { return(0, 0x20) }
                 mstore(0x20, verbatim_1i_1o(hex"b0", 0x0a))
                 mstore(0x40, verbatim_1i_1o(hex"b0", 0x02))
                 mstore(0x60, verbatim_1i_1o(hex"b0", 0x0b))
@@ -48,6 +49,21 @@ object "FrameReader" {
                 mstore(0x80, verbatim_1i_1o(hex"b0", 0x0e))
                 mstore(0xa0, verbatim_1i_1o(hex"b0", 0x10))
                 return(0, 0xc0)
+            }
+            case 9 {
+                // Signature entry a: scheme, msg, signer. An ARBITRARY entry has no signer to ask for.
+                let scheme := verbatim_2i_1o(hex"b4", a, 0x01)
+                mstore(0x00, scheme)
+                mstore(0x20, verbatim_2i_1o(hex"b4", a, 0x02))
+                mstore(0x40, 0)
+                if scheme { mstore(0x40, verbatim_2i_1o(hex"b4", a, 0x00)) }
+                return(0, 0x60)
+            }
+            case 8 {
+                // nonce, maximum cost in wei (ethrex answers TXPARAM 0x06 with it)
+                mstore(0x00, verbatim_1i_1o(hex"b0", 0x01))
+                mstore(0x20, verbatim_1i_1o(hex"b0", 0x06))
+                return(0, 0x40)
             }
             default { revert(0, 0) }
         }

@@ -35,6 +35,10 @@ contract RenderHarness is RendererCore {
         _proxyTemplates[ch] = ProxyTemplate(upgrader, logic, impl, getter);
     }
 
+    function setSpender(address a, bool v) external {
+        _attestedSpenders[a] = v;
+    }
+
     function setHook(bytes32 ch, bool v) external {
         _attestedHooks[ch] = v;
     }

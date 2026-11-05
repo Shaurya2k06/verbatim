@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { decodeTree, formatAmount, formatForDevice } from "./device";
 
-const HEADER = "0x56540001" + "0000000000000539" + "00".repeat(19) + "01" + "00000000000003e8" + "0000000000000401" + "0000000000000000";
+const HEADER = "0x56540001" + "0000000000000539" + "00".repeat(19) + "01" + "000000006b49d200";
 
 describe("device decoder", () => {
   it("formats amounts exactly, never rounded", () => {
@@ -22,10 +22,39 @@ describe("device decoder", () => {
   it("refuses control characters in strings", () => expect(() => decodeTree((HEADER + "200002" + "010a") as `0x${string}`)).toThrow(/character/));
   it("refuses a backslash in strings", () => expect(() => decodeTree((HEADER + "200002" + "015c") as `0x${string}`)).toThrow(/character/));
   it("lifts risks to the top", () => {
-    const t = decodeTree((HEADER + "410008" + "0000000000000401" + "300002" + "0101") as `0x${string}`);
+    const t = decodeTree((HEADER + "410008" + "000000006b49d200" + "300002" + "0101") as `0x${string}`);
     const lines = formatForDevice(t);
     expect(lines[0].risk).toBe(true);
     expect(lines[0].text).toContain("NO MINIMUM OUTPUT");
     expect(lines[1].text).toContain("Valid until");
+  });
+});
+
+describe("decoder fuzz", () => {
+  // A strict decoder may refuse anything, but it must never accept garbage by accident or crash some other way.
+  it("mutated trees either decode strictly or throw a decode error", () => {
+    let seed = 12345;
+    const next = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff);
+    const base = (HEADER + "200002" + "0141" + "210000" + "300002" + "0101" + "410008" + "000000006b49d200").slice(2);
+    for (let i = 0; i < 5000; i++) {
+      const bytes = base.match(/../g)!.slice();
+      const flips = 1 + (next() % 4);
+      for (let f = 0; f < flips; f++) bytes[next() % bytes.length] = (next() % 256).toString(16).padStart(2, "0");
+      if (next() % 5 === 0) bytes.length = next() % bytes.length;
+      const hex = `0x${bytes.join("")}` as `0x${string}`;
+      try {
+        const t = decodeTree(hex);
+        // What decoded must display, and every string in it must be in the charset.
+        for (const l of formatForDevice(t)) expect(l.text).toMatch(/^[\x20-\x7e]*$/);
+      } catch (e) {
+        expect((e as Error).message).toMatch(/^VTREE:|RangeError|Invalid/);
+      }
+    }
+  });
+  it("over-length strings refuse", () => expect(() => decodeTree((HEADER + "200032" + "31" + "41".repeat(49)) as `0x${string}`)).toThrow(/too long/));
+  it("every risk code has display text", async () => {
+    const { RISK } = await import("@verbatim/urrender");
+    const { RISK_TEXT } = await import("./device");
+    for (const code of Object.values(RISK)) expect(RISK_TEXT[code as number]).toBeTruthy();
   });
 });

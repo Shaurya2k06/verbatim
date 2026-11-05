@@ -32,6 +32,7 @@ contract FrameEnv {
     uint256 public nonceKeyCount = 1;
     uint256 public nonceKey0;
     uint256 public lastApproved;
+    uint256 public maxCost = 1;
 
     function reset() external {
         delete frames;
@@ -57,6 +58,10 @@ contract FrameEnv {
         nonce = n;
         maxPriorityFee = p;
         maxFee = m;
+    }
+
+    function setMaxCost(uint256 c) external {
+        maxCost = c;
     }
 
     function setBlobs(uint256 b) external {
@@ -166,9 +171,9 @@ abstract contract MockFrames is FrameIntrospection {
     }
 
     function _layout() internal view override returns (Layout memory l) {
-        // The real reader halts unless there are exactly 3 frames.
-        if (ENV.frameCount() != 3) revert("mock: not 3 frames");
-        l.frameCount = 3;
+        // Like the real reader: with anything but 3 frames, only the count.
+        l.frameCount = ENV.frameCount();
+        if (l.frameCount != 3) return l;
         l.current = ENV.current();
         l.sender = uint160(ENV.sender());
         l.sigCount = ENV.sigCount();
@@ -182,6 +187,15 @@ abstract contract MockFrames is FrameIntrospection {
 
     function _txFields() internal view override returns (TxFields memory t) {
         t = TxFields(ENV.nonce(), ENV.maxPriorityFee(), ENV.maxFee(), ENV.blobCount(), ENV.nonceKeyCount(), ENV.nonceKey0());
+    }
+
+    function _sigEntry(uint256 i) internal view override returns (uint256, uint256, uint256) {
+        FrameEnv.Sig memory s = ENV.sig(i);
+        return (s.scheme, uint256(s.msgHash), uint160(s.signer));
+    }
+
+    function _nonceAndMaxCost() internal view override returns (uint256, uint256) {
+        return (ENV.nonce(), ENV.maxCost());
     }
 
     /// APPROVE ends the frame.

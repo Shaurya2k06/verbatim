@@ -133,7 +133,7 @@ function open(text: string) {
   }
   const meta = el("div", { class: "panel" },
     el("div", { class: "mono" }, `Account ${r.decoded.account}`),
-    el("div", { class: "mono" }, `Chain ${r.decoded.chainId}, signed at block ${r.decoded.signedAtBlock}`),
+    el("div", { class: "mono" }, `Chain ${r.decoded.chainId}, ${Number(r.decoded.validUntil) - Math.floor(Date.now() / 1000)} seconds left to run`),
     el("div", { class: "mono" }, `Sentence hash ${r.treeHash}`),
   );
   app.replaceChildren(lines, meta, el("div", { class: "row" },

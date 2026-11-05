@@ -17,11 +17,6 @@ abstract contract RendererCore is TrustStore {
     using Buf for bytes;
 
     // Policy `allowMask` bits lift the matching default refusal; they use the Risk.BIT_* positions.
-    uint256 public constant TOLERANCE_BPS = 2000;
-    /// The sidecar lets one sender have 4 linear transactions pending, and a VERIFY frame cannot reserve. A deposit
-    /// covering every pending fee keeps `charge` from failing after validation (A9).
-    uint256 public constant FEE_HEADROOM = 4;
-
     address public immutable OWNER;
     address public immutable TRUST_ADMIN;
     address public immutable PERMIT2;
@@ -34,9 +29,9 @@ abstract contract RendererCore is TrustStore {
     error SpecHashMismatch(bytes32 expected, bytes32 actual);
     error FeeAssetNotAllowed(address asset);
     error FeeTooLow(uint256 min, uint256 amount);
+    error NoTicket(uint256 nonce, uint256 needed);
     error InsufficientDeposit(uint256 available, uint256 needed);
 
-    event Charged(address indexed account, address indexed asset, uint256 amount);
 
     constructor(address owner_, address trustAdmin, address permit2, address weth, bytes32 routerPublisher, address[] memory attestors_, uint8 threshold) {
         OWNER = owner_;
@@ -45,7 +40,6 @@ abstract contract RendererCore is TrustStore {
         WETH = weth;
         ROUTER_PUBLISHER = routerPublisher;
         _setAttestors(attestors_, threshold);
-        _feeAssets[address(0)] = FeeAsset(1, true);
     }
 
     modifier onlyOwner() {
@@ -75,35 +69,16 @@ abstract contract RendererCore is TrustStore {
         bytes32 argSpec = b.hashRange(sp + 32, b.rdWord(sp));
         if (argSpec != specHash) revert SpecHashMismatch(specHash, argSpec);
         _applyPolicy(o.risk, _policyOf[i.account].allowMask);
-        _checkFee(i.account, i.feeAsset, i.feeAmount, i.gasLimitTotal);
     }
 
     /// §9.3, failing closed on the refused set.
     function _applyPolicy(uint256 risk, uint256 allow) internal pure {
-        uint256 refused = Risk.BIT_UNVERIFIED | Risk.BIT_BLIND | Risk.BIT_UNLIMITED | Risk.BIT_TTL_LONG | Risk.BIT_TOKEN_UNSAFE;
+        uint256 refused = Risk.BIT_UNVERIFIED | Risk.BIT_BLIND | Risk.BIT_UNLIMITED | Risk.BIT_SPENDER_UNATTESTED | Risk.BIT_TOKEN_UNSAFE | Risk.BIT_ALLOW_REVERT;
         if (risk & refused & ~allow != 0) revert PolicyRefused(risk);
         if (risk & Risk.BIT_HOOK_TAKE != 0 && allow & Risk.BIT_HOOK_TAKE == 0 && risk & (Risk.BIT_NO_MIN_OUT | Risk.BIT_HOOK_UNVERIFIED) != 0) revert PolicyRefused(risk);
     }
 
-    function _checkFee(address account, address asset, uint256 amount, uint256 gasLimitTotal) internal view {
-        FeeAsset memory f = _feeAssets[asset];
-        if (!f.allowed) revert FeeAssetNotAllowed(asset);
-        uint256 min = (gasLimitTotal * f.ratePerGas * (10_000 - TOLERANCE_BPS)) / 10_000;
-        if (amount < min) revert FeeTooLow(min, amount);
-        Deposit memory d = _deposits[account][asset];
-        uint256 available = d.amount > d.pendingWithdraw ? d.amount - d.pendingWithdraw : 0;
-        if (available < amount * FEE_HEADROOM) revert InsufficientDeposit(available, amount * FEE_HEADROOM);
-    }
-
     // ----------------------------------------------------- deposits (the rest is in TrustAdmin) ----
-
-    function charge(address asset, uint256 amount) external virtual {
-        Deposit storage d = _deposits[msg.sender][asset];
-        if (d.amount < amount) revert InsufficientDeposit(d.amount, amount);
-        d.amount -= uint128(amount);
-        _feesAccrued[asset] += amount;
-        emit Charged(msg.sender, asset, amount);
-    }
 
     function withdrawFees(address asset, address to, uint256 amount) external onlyOwner {
         _feesAccrued[asset] -= amount;
@@ -115,20 +90,15 @@ abstract contract RendererCore is TrustStore {
         }
     }
 
-    function setFeeAsset(address asset, uint128 ratePerGas, bool allowed) external onlyOwner {
-        _feeAssets[asset] = FeeAsset(ratePerGas, allowed);
-    }
-
-    // ------------------------------------------------------------------------------ policies ----
-
-    function ttlOf(address account) public view returns (uint64) {
+    /// The longest a signature may still have to run when it executes, in seconds.
+    function maxTtlOf(address account) public view returns (uint64) {
         Policy memory p = _policyOf[account];
-        return p.set ? p.ttl : DEFAULT_TTL;
+        return p.set ? p.ttl : DEFAULT_MAX_TTL;
     }
 
     function policyHashOf(address account) public view returns (bytes32) {
         Policy memory p = _policyOf[account];
-        return keccak256(abi.encode(p.set ? p.ttl : DEFAULT_TTL, p.allowMask));
+        return keccak256(abi.encode(p.set ? p.ttl : DEFAULT_MAX_TTL, p.allowMask));
     }
 
     receive() external payable {}
@@ -155,6 +125,7 @@ abstract contract RendererPaymasterBase is RendererCore, FrameIntrospection {
     error NotEntryPoint();
     error NotCanonicalSender(bytes32 codehash);
     error BadFrame();
+    event TicketCharged(address indexed account, uint256 indexed nonce, uint256 amount);
 
     constructor(bytes32 accountCodehash, address owner_, address trustAdmin, address permit2, address weth, bytes32 routerPublisher, address[] memory attestors_, uint8 threshold) RendererCore(owner_, trustAdmin, permit2, weth, routerPublisher, attestors_, threshold) {
         VERBATIM_ACCOUNT_CODEHASH = accountCodehash;
@@ -177,8 +148,7 @@ abstract contract RendererPaymasterBase is RendererCore, FrameIntrospection {
         DisplayVM.In memory i;
         i.chainId = uint64(block.chainid);
         i.account = sender;
-        i.signedAtBlock = uint64(f0.rdWord(64));
-        i.ttl = ttlOf(sender);
+        i.validUntil = uint64(f0.rdWord(64));
         i.feeAsset = body.rdAddr(0);
         i.feeAmount = body.rdWord(32);
         i.gasLimitTotal = uint64(gasTotal);
@@ -186,7 +156,28 @@ abstract contract RendererPaymasterBase is RendererCore, FrameIntrospection {
         i.body = body;
         i.hints = hints;
         _validateTx(i, bytes32(f0.rdWord(0)), bytes32(f0.rdWord(32)));
+        _checkTicket(sender, i.feeAsset, i.feeAmount);
         _approve(SCOPE_PAYMENT);
+    }
+
+    /// The fee must cover the most this transaction can cost, and a ticket for this very nonce must hold it. Tickets
+    /// are per nonce, so pending transactions cannot overcommit one balance (A14).
+    function _checkTicket(address sender, address asset, uint256 amount) private view {
+        if (asset != address(0)) revert FeeAssetNotAllowed(asset);
+        (uint256 nonce, uint256 maxCost) = _nonceAndMaxCost();
+        if (amount < maxCost) revert FeeTooLow(maxCost, amount);
+        FeeTicket memory t = _feeTickets[sender][nonce];
+        if (t.reclaimAt != 0 || t.amount < amount) revert NoTicket(nonce, amount);
+    }
+
+    /// Frame 2's first act. The ticket is spent whole; anything above the fee goes back to the account's deposit.
+    function chargeTicket(uint256 nonce, uint256 amount) external virtual {
+        FeeTicket memory t = _feeTickets[msg.sender][nonce];
+        if (t.amount < amount) revert NoTicket(nonce, amount);
+        delete _feeTickets[msg.sender][nonce];
+        _feesAccrued[address(0)] += amount;
+        _deposits[msg.sender][address(0)].amount += uint128(t.amount - amount);
+        emit TicketCharged(msg.sender, nonce, amount);
     }
 
     function stake(address registry, uint32 delay) external payable onlyOwner {
@@ -205,7 +196,7 @@ contract FeeFailPaymaster is RendererPaymaster {
 
     constructor(bytes32 accountCodehash, address owner_, address trustAdmin, address permit2, address weth, bytes32 routerPublisher, address[] memory attestors_, uint8 threshold, address frameReader) RendererPaymaster(accountCodehash, owner_, trustAdmin, permit2, weth, routerPublisher, attestors_, threshold, frameReader) {}
 
-    function charge(address, uint256) external pure override {
+    function chargeTicket(uint256, uint256) external pure override {
         revert ChargeForcedToFail();
     }
 }

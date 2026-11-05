@@ -35,7 +35,7 @@ abstract contract FrameIntrospection {
     function _framedatacopy(uint256 offset, uint256 length, uint256 frameIndex) internal view virtual returns (bytes memory);
     function _sigparam(uint256 sigIndex, uint256 param) internal view virtual returns (uint256);
     function _sigdatacopy(uint256 offset, uint256 length, uint256 sigIndex) internal view virtual returns (bytes memory);
-    /// The whole frame layout in one read. Fails unless there are exactly 3 frames.
+    /// The whole frame layout in one read. With anything but 3 frames, only `frameCount` is set.
     struct Layout {
         uint256 frameCount;
         uint256 current;
@@ -76,6 +76,8 @@ abstract contract FrameIntrospection {
     }
 
     function _txFields() internal view virtual returns (TxFields memory);
+    function _nonceAndMaxCost() internal view virtual returns (uint256 nonce, uint256 maxCost);
+    function _sigEntry(uint256 index) internal view virtual returns (uint256 scheme, uint256 msgHash, uint256 signer);
 
     /// Ends the frame on success, like RETURN.
     function _approve(uint256 scope) internal virtual;
@@ -136,7 +138,7 @@ abstract contract DevnetFrames is FrameIntrospection {
         assembly ("memory-safe") {
             mstore(0x00, 6)
             ok := staticcall(gas(), reader, 0, 0x80, l, 0x320)
-            ok := and(ok, eq(returndatasize(), 0x320))
+            ok := and(ok, or(eq(returndatasize(), 0x320), and(eq(returndatasize(), 0x20), iszero(eq(mload(l), 3)))))
         }
         if (!ok) revert FrameReadFailed();
     }
@@ -172,6 +174,37 @@ abstract contract DevnetFrames is FrameIntrospection {
             mstore(0x00, 7)
             ok := staticcall(gas(), reader, 0, 0x80, f, 0xc0)
             ok := and(ok, eq(returndatasize(), 0xc0))
+        }
+        if (!ok) revert FrameReadFailed();
+    }
+
+    function _sigEntry(uint256 index) internal view override returns (uint256 scheme, uint256 msgHash, uint256 signer) {
+        address reader = FRAME_READER;
+        bool ok;
+        assembly ("memory-safe") {
+            let m := mload(0x40)
+            mstore(m, 9)
+            mstore(add(m, 0x20), index)
+            mstore(add(m, 0x40), 0)
+            mstore(add(m, 0x60), 0)
+            ok := staticcall(gas(), reader, m, 0x80, m, 0x60)
+            ok := and(ok, eq(returndatasize(), 0x60))
+            scheme := mload(m)
+            msgHash := mload(add(m, 0x20))
+            signer := mload(add(m, 0x40))
+        }
+        if (!ok) revert FrameReadFailed();
+    }
+
+    function _nonceAndMaxCost() internal view override returns (uint256 nonce, uint256 maxCost) {
+        address reader = FRAME_READER;
+        bool ok;
+        assembly ("memory-safe") {
+            mstore(0x00, 8)
+            ok := staticcall(gas(), reader, 0, 0x80, 0, 0x40)
+            ok := and(ok, eq(returndatasize(), 0x40))
+            nonce := mload(0)
+            maxCost := mload(0x20)
         }
         if (!ok) revert FrameReadFailed();
     }

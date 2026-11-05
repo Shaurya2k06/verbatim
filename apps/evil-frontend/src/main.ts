@@ -3,7 +3,7 @@ import { encodeFunctionData, parseAbi, parseEther, type Address, type Hex } from
 import { ERC20, client, d, el, nav, prepareCalls, sendAndReport, sentence, signingPanel, txCommit, typedData, withSignatures, hashTypedData, type Prepared } from "@verbatim/app-kit";
 import { frame2Data } from "@verbatim/client";
 import { Scope, newTx, type FrameTx } from "@verbatim/frames-sdk";
-import { v4SwapCall } from "@verbatim/urrender";
+import { CMD, executeData, v4ExactInSingleInput, v4SwapCall } from "@verbatim/urrender";
 
 const app = document.getElementById("app")!;
 const usdc: Address = d.tokens.dUSDC;
@@ -19,7 +19,7 @@ interface Attack {
   claim: string;
   expected: string;
   /** What goes to the device and, after signing, what goes to the mempool. */
-  build(): Promise<{ device: Prepared; finish: (sigs: { signer: Address; sig: Hex }[]) => FrameTx }>;
+  build(): Promise<{ device: Prepared; finish: (sigs: { signer: Address; sig: Hex }[]) => FrameTx; holdUntil?: bigint }>;
 }
 
 const sends = (p: Prepared) => ({ device: p, finish: (s: { signer: Address; sig: Hex }[]) => withSignatures(p.tx, p.digest, s) });
@@ -31,7 +31,7 @@ const attacks: Attack[] = [
     expected: "Mempool rejects: tree mismatch",
     async build() {
       const shown = await prepareCalls([transfer(bob)]);
-      const lie = await prepareCalls([transfer(thief)], { signedAtBlock: shown.signedAtBlock, overrideSentence: { tree: shown.tree, spec: shown.spec } });
+      const lie = await prepareCalls([transfer(thief)], { validUntil: shown.validUntil, overrideSentence: { tree: shown.tree, spec: shown.spec } });
       return sends(lie);
     },
   },
@@ -41,7 +41,7 @@ const attacks: Attack[] = [
     expected: "Mempool rejects: tree mismatch",
     async build() {
       const shown = await prepareCalls([swap(d.pools.honest.key, 2_000_000_000n)]);
-      const lie = await prepareCalls([swap(d.pools.evil.key, 0n)], { signedAtBlock: shown.signedAtBlock, overrideSentence: { tree: shown.tree, spec: shown.spec } });
+      const lie = await prepareCalls([swap(d.pools.evil.key, 0n)], { validUntil: shown.validUntil, overrideSentence: { tree: shown.tree, spec: shown.spec } });
       return sends(lie);
     },
   },
@@ -80,7 +80,7 @@ const attacks: Attack[] = [
       const f2 = { ...p.tx.frames[2], data: frame2Data(p.fee, p.calls, weak) };
       const tx = { ...p.tx, frames: [p.tx.frames[0], p.tx.frames[1], f2] };
       const c = txCommit(tx);
-      const typed = typedData(p.chainId, p.account, c, p.treeHash, p.specHash, p.signedAtBlock);
+      const typed = typedData(p.chainId, p.account, c, p.treeHash, p.specHash, p.validUntil);
       const device = { ...p, tx, txCommit: c, digest: hashTypedData(typed), digestTypedData: typed };
       return sends(device);
     },
@@ -103,11 +103,38 @@ const attacks: Attack[] = [
   },
   {
     name: "Replay a stale signature",
-    claim: `Send 1 dUSDC to ${bob}, signed 40 blocks ago`,
+    claim: `Send 1 dUSDC to ${bob}, with a signature this page holds until it expires`,
     expected: "Admitted, then the batch reverts: Expired. The fee is kept.",
     async build() {
-      const now = await client.getBlockNumber();
-      return sends(await prepareCalls([transfer(bob)], { signedAtBlock: now - 40n }));
+      const now = (await client.getBlock()).timestamp;
+      const validUntil = now + 40n;
+      return { ...sends(await prepareCalls([transfer(bob)], { validUntil })), holdUntil: validUntil + 2n };
+    },
+  },
+  {
+    name: "A signature that never expires",
+    claim: `Send 1 dUSDC to ${bob}`,
+    expected: "The device refuses, by its own clock. Signed anyway, the policy cap reverts the batch.",
+    async build() {
+      const now = (await client.getBlock()).timestamp;
+      return sends(await prepareCalls([transfer(bob)], { validUntil: now + 86_400n }));
+    },
+  },
+  {
+    name: "Router command that may silently fail",
+    claim: "Swap 1 dWETH for at least 2000 dUSDC",
+    expected: "The device shows COMMAND MAY PARTIALLY FAIL; policy refuses",
+    async build() {
+      const input = v4ExactInSingleInput({ key: d.pools.honest.key, zeroForOne, amountIn: parseEther("1"), amountOutMinimum: 2_000_000_000n });
+      return sends(await prepareCalls([{ target: d.uniswap.router, value: 0n, data: executeData([CMD.V4_SWAP | CMD.FLAG_ALLOW_REVERT], [input], BigInt(Math.floor(Date.now() / 1000) + 600)) }]));
+    },
+  },
+  {
+    name: "Router command nobody can read",
+    claim: "Swap with a gasless permit",
+    expected: "Rendered BLIND; policy refuses",
+    async build() {
+      return sends(await prepareCalls([{ target: d.uniswap.router, value: 0n, data: executeData([0x0a], ["0x1234"], BigInt(Math.floor(Date.now() / 1000) + 600)) }]));
     },
   },
   {
@@ -129,10 +156,16 @@ async function select(a: Attack, btn: HTMLElement) {
   stage.replaceChildren(el("div", { class: "line" }, "Building the attack..."));
   const result = el("div");
   try {
-    const { device, finish } = await a.build();
+    const { device, finish, holdUntil } = await a.build();
     stage.replaceChildren(
       el("div", { class: "panel" }, el("h2", {}, "This page claims"), el("div", { class: "claim" }, a.claim), el("h2", { style: "margin-top:14px" }, "The device shows"), sentence(device.tree), el("h2", { style: "margin-top:14px" }, "Expected"), el("div", { class: "line" }, a.expected)),
-      signingPanel({ tree: device.tree, specHash: device.specHash, txCommit: device.txCommit }, d.threshold, (sigs) => sendAndReport(finish(sigs as never), d.account, result)),
+      signingPanel({ tree: device.tree, specHash: device.specHash, txCommit: device.txCommit }, d.threshold, async (sigs) => {
+        if (holdUntil) {
+          result.replaceChildren(el("div", { class: "line" }, "Holding the signature until it expires..."));
+          while ((await client.getBlock()).timestamp <= holdUntil) await new Promise((r) => setTimeout(r, 2000));
+        }
+        await sendAndReport(finish(sigs as never), d.account, result);
+      }),
       el("div", { class: "panel" }, el("h2", {}, "What the chain did"), result),
     );
   } catch (e) {

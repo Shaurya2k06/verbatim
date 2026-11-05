@@ -14,7 +14,7 @@ for (const seed of seeds) {
   const input = makeCase(seed);
   try {
     const o = render(input, trust);
-    vectors.push({ seed, input: { ...input, chainId: String(input.chainId), signedAtBlock: String(input.signedAtBlock), ttl: String(input.ttl), feeAmount: String(input.feeAmount), gasLimitTotal: String(input.gasLimitTotal) }, tree: o.tree, spec: o.spec, risk: o.risk });
+    vectors.push({ seed, input: { ...input, chainId: String(input.chainId), validUntil: String(input.validUntil), feeAmount: String(input.feeAmount), gasLimitTotal: String(input.gasLimitTotal) }, tree: o.tree, spec: o.spec, risk: o.risk });
   } catch {
     continue;
   }

@@ -73,7 +73,7 @@ const steps: Record<string, () => Promise<void>> = {
   async B_LIE() {
     const honest = await buildOp([transfer(named, 1_000_000n)], env.BUNDLER_URL);
     const thief = "0x000000000000000000000000000000000000bad1" as Address;
-    const lie = await buildOp([transfer(thief, 1_000_000n)], env.BUNDLER_URL, { signedAtBlock: honest.signedAtBlock, override: { tree: honest.tree, spec: honest.spec } });
+    const lie = await buildOp([transfer(thief, 1_000_000n)], env.BUNDLER_URL, { validUntil: honest.validUntil, override: { tree: honest.tree, spec: honest.spec } });
     // Bundlers surface this only as an opaque error, so ask the paymaster itself, called as the EntryPoint would.
     const op = lie.op as any;
     const packed = {

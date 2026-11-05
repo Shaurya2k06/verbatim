@@ -11,7 +11,7 @@ import {FrameEnv} from "./MockFrames.sol";
 /// I1 to I10 (§15). I8's full form is tools/difffuzz; here it is the golden vectors.
 contract InvariantsTest is Base {
     function test_I1_success_means_executed_calls_render_to_signed_tree() public {
-        Plan memory p = plan(transferCall(BOB, 5e6), 1000);
+        Plan memory p = plan(transferCall(BOB, 5e6), T0 + 100);
         bytes32 signed = keccak256(p.tree);
         (bool ok, ) = run(p);
         assertTrue(ok);
@@ -32,7 +32,7 @@ contract InvariantsTest is Base {
     }
 
     function test_I2_success_means_spec_held_and_hash_matches() public {
-        Plan memory p = plan(transferCall(BOB, 5e6), 1000);
+        Plan memory p = plan(transferCall(BOB, 5e6), T0 + 100);
         uint256 before = usdc.balanceOf(address(account));
         (bool ok, ) = run(p);
         assertTrue(ok);
@@ -46,7 +46,7 @@ contract InvariantsTest is Base {
     }
 
     function test_I3_only_the_canonical_layout_gets_approval() public {
-        Plan memory p = plan(transferCall(BOB, 1), 1000);
+        Plan memory p = plan(transferCall(BOB, 1), T0 + 100);
         // Other renderer.
         load(p);
         env.setFrameTarget(1, address(0x1234));
@@ -70,15 +70,14 @@ contract InvariantsTest is Base {
         // Frame count.
         load(p);
         env.popFrame();
-        (bool ok, ) = callFrame(0, address(account), address(0xaa));
-        assertFalse(ok);
+        expectFrame0(abi.encodeWithSelector(VerbatimAccountBase.BadLayout.selector, uint256(0)));
     }
 
     function test_I3_signature_binds_fees_gas_and_frames() public {
-        Plan memory p = plan(transferCall(BOB, 1), 1000);
+        Plan memory p = plan(transferCall(BOB, 1), T0 + 100);
         // A relayer raising the priority fee after signing changes txCommit.
         load(p);
-        env.setTx(address(account), 1, 999, 100);
+        env.setTx(address(account), nonceNow, 999, 100);
         expectFrame0(abi.encodeWithSelector(VerbatimAccountBase.BadSignatureEntry.selector));
         // So does changing the renderer's hints.
         load(p);
@@ -87,12 +86,12 @@ contract InvariantsTest is Base {
     }
 
     function test_I3_needs_threshold_of_owners_sorted() public {
-        Plan memory p = plan(transferCall(BOB, 1), 1000);
+        Plan memory p = plan(transferCall(BOB, 1), T0 + 100);
         load(p);
         env.reset();
         // Reload frames with a non-owner signing.
         load(p);
-        bytes32 d = account.digestOf(txCommit(), keccak256(p.tree), keccak256(p.spec), p.signedAt);
+        bytes32 d = account.digestOf(txCommit(), keccak256(p.tree), keccak256(p.spec), p.validUntil);
         _resign(d, vm.addr(O1), vm.addr(0xDEAD));
         (bool ok, ) = callFrame(0, address(account), address(0xaa));
         assertFalse(ok, "non-owner");
@@ -114,14 +113,12 @@ contract InvariantsTest is Base {
 
 
     function test_I4_fee_failure_means_no_protected_call() public {
-        Plan memory p = plan(transferCall(BOB, 5e6), 1000);
+        Plan memory p = plan(transferCall(BOB, 5e6), T0 + 100);
         load(p);
         frame0();
         frame1();
-        // The deposit disappears between validation and execution, which the real deposit rules prevent.
-        (uint128 amount, ) = admin_().deposits(address(account), address(0));
-        vm.prank(address(account));
-        rpm.charge(address(0), amount);
+        // The ticket disappears between validation and execution, which the real rules prevent.
+        rpm.setTicketForTest(address(account), nonceNow, 0);
         (bool ok, ) = callFrame(2, address(account), address(account));
         assertFalse(ok, "frame 2 reverts");
         assertEq(usdc.balanceOf(BOB), 0, "nothing ran");
@@ -129,27 +126,26 @@ contract InvariantsTest is Base {
 
     function test_I5_assert_failure_undoes_everything_and_fee_is_paid() public {
         // A token that moves less than the sentence said: it underdelivers the output, so DELTA_GE fails.
-        (uint128 before, ) = admin_().deposits(address(account), address(0));
+        uint256 before = admin_().feesAccrued(address(0));
         uint256 usdcBefore = usdc.balanceOf(BOB);
         vm.prank(address(account));
         usdc.approve(address(p2), 1);
-        Plan memory p = plan(transferCall(BOB, 5e6), 1000);
+        Plan memory p = plan(transferCall(BOB, 5e6), T0 + 100);
         p.spec[12] = bytes1(uint8(p.spec[12]) ^ 1); // an honest render would refuse this; go in below validation
         load(p, keccak256(p.tree), keccak256(p.spec));
         (bool ok, ) = callFrame(2, address(account), address(account));
         assertTrue(ok, "the frame itself succeeds");
         assertEq(usdc.balanceOf(BOB), usdcBefore, "no effect persists");
-        (uint128 afterDep, ) = admin_().deposits(address(account), address(0));
-        assertEq(before - afterDep, p.fee.amount, "fee paid");
+        assertEq(admin_().feesAccrued(address(0)) - before, p.fee.amount, "fee paid");
     }
 
-    function test_I6_ttl_boundary() public {
-        Plan memory p = plan(transferCall(BOB, 1e6), 1000);
-        vm.roll(1025);
+    function test_I6_expiry_boundary() public {
+        Plan memory p = plan(transferCall(BOB, 1e6), T0 + 100);
+        vm.warp(T0 + 100);
         (bool ok, ) = run(p);
-        assertTrue(ok, "last valid block");
-        Plan memory q = plan(transferCall(BOB, 1e6), 1000);
-        vm.roll(1026);
+        assertTrue(ok, "the last valid second");
+        Plan memory q = plan(transferCall(BOB, 1e6), T0 + 100);
+        vm.warp(T0 + 101);
         (bool ok2, bytes memory err) = run(q);
         assertFalse(ok2);
         assertEq(errorName(err), VerbatimCore.Expired.selector);
@@ -189,7 +185,7 @@ contract InvariantsTest is Base {
         vm.expectRevert(VerbatimCore.NotSelf.selector);
         account.addOwner(BOB);
 
-        Plan memory p = plan(one(address(account), abi.encodeCall(VerbatimCore.addOwner, (BOB))), 1000);
+        Plan memory p = plan(one(address(account), abi.encodeCall(VerbatimCore.addOwner, (BOB))), T0 + 100);
         assertTrue(_hasRisk(p.tree, 0x0005), "TRUST_CHANGE in the sentence");
         (bool ok, ) = run(p);
         assertTrue(ok);
@@ -197,8 +193,8 @@ contract InvariantsTest is Base {
     }
 
     function _hasRisk(bytes memory tree, uint16 code) private pure returns (bool) {
-        // Walk the nodes after the 56-byte header.
-        uint256 p = 4 + 8 + 20 + 8 + 8 + 8;
+        // Walk the nodes after the header.
+        uint256 p = 4 + 8 + 20 + 8;
         while (p < tree.length) {
             uint8 kind = uint8(tree[p]);
             uint256 len = (uint256(uint8(tree[p + 1])) << 8) | uint8(tree[p + 2]);
@@ -209,7 +205,7 @@ contract InvariantsTest is Base {
     }
 
     function test_I9_validation_reads_only_own_storage() public {
-        Plan memory p = plan(transferCall(BOB, 1e6), 1000);
+        Plan memory p = plan(transferCall(BOB, 1e6), T0 + 100);
         load(p);
         env.setCurrent(0);
         bytes memory f0 = env.frame(0).data;
@@ -237,7 +233,7 @@ contract InvariantsTest is Base {
     }
 
     function test_I9_unrelated_trust_refresh_leaves_pending_tree_valid() public {
-        Plan memory p = plan(transferCall(BOB, 1e6), 1000);
+        Plan memory p = plan(transferCall(BOB, 1e6), T0 + 100);
         // A descriptor for something else: the tree must not change, so nothing pending is invalidated.
         TrustStoreLayout.TrustUpdate memory u = emptyUpdate();
         u.descriptors = new TrustStoreLayout.DescUpdate[](1);
@@ -248,8 +244,8 @@ contract InvariantsTest is Base {
     }
 
     function test_I9_revocation_invalidates_only_dependents() public {
-        Plan memory dep = plan(transferCall(BOB, 1e6), 1000);
-        Plan memory other = plan(one(address(usdc), abi.encodeWithSelector(0x095ea7b3, BOB, uint256(1))), 1000);
+        Plan memory dep = plan(transferCall(BOB, 1e6), T0 + 100);
+        Plan memory other = plan(one(address(usdc), abi.encodeWithSelector(0x095ea7b3, BOB, uint256(1))), T0 + 100);
         TrustStoreLayout.TrustUpdate memory u = emptyUpdate();
         u.revocations = new TrustStoreLayout.Revocation[](1);
         u.revocations[0] = TrustStoreLayout.Revocation(address(usdc).codehash, 0xa9059cbb);
@@ -294,6 +290,100 @@ contract InvariantsTest is Base {
         }
         rpm.applyPolicyView(8, 0); // NO_MIN_OUT alone is shown, not refused
         rpm.applyPolicyView(16, 0); // an attested hook with a minimum is shown, not refused
+    }
+
+    // --- signature transport (D-A5): each is refused on its own
+
+    function _sigFrame0Fails(Plan memory p, FrameEnv.Sig memory a, FrameEnv.Sig memory b, bytes4 err) private {
+        FrameEnv.Frame memory f0 = env.frame(0);
+        FrameEnv.Frame memory f1 = env.frame(1);
+        FrameEnv.Frame memory f2 = env.frame(2);
+        env.reset();
+        env.pushFrame(f0);
+        env.pushFrame(f1);
+        env.pushFrame(f2);
+        env.pushSig(a);
+        if (b.signer != address(0)) env.pushSig(b);
+        p;
+        expectFrame0(abi.encodeWithSelector(err));
+    }
+
+    function _setup() private returns (Plan memory p, bytes32 d, address lo, address hi) {
+        p = plan(transferCall(BOB, 1), T0 + 100);
+        load(p);
+        d = account.digestOf(txCommit(), keccak256(p.tree), keccak256(p.spec), p.validUntil);
+        lo = vm.addr(O1);
+        hi = vm.addr(O2);
+        if (lo > hi) (lo, hi) = (hi, lo);
+    }
+
+    function test_sig_duplicate_signer_refused() public {
+        (Plan memory p, bytes32 d, address lo, ) = _setup();
+        _sigFrame0Fails(p, FrameEnv.Sig(1, lo, d), FrameEnv.Sig(1, lo, d), VerbatimCore.SignersNotSortedOrUnknown.selector);
+    }
+
+    function test_sig_unsorted_refused() public {
+        (Plan memory p, bytes32 d, address lo, address hi) = _setup();
+        _sigFrame0Fails(p, FrameEnv.Sig(1, hi, d), FrameEnv.Sig(1, lo, d), VerbatimCore.SignersNotSortedOrUnknown.selector);
+    }
+
+    function test_sig_wrong_scheme_refused() public {
+        (Plan memory p, bytes32 d, address lo, address hi) = _setup();
+        _sigFrame0Fails(p, FrameEnv.Sig(0, lo, d), FrameEnv.Sig(1, hi, d), VerbatimAccountBase.BadSignatureEntry.selector);
+    }
+
+    function test_sig_non_owner_refused() public {
+        (Plan memory p, bytes32 d, address lo, ) = _setup();
+        address stranger = address(type(uint160).max);
+        _sigFrame0Fails(p, FrameEnv.Sig(1, lo, d), FrameEnv.Sig(1, stranger, d), VerbatimCore.SignersNotSortedOrUnknown.selector);
+    }
+
+    function test_sig_below_threshold_refused() public {
+        (Plan memory p, bytes32 d, address lo, ) = _setup();
+        _sigFrame0Fails(p, FrameEnv.Sig(1, lo, d), FrameEnv.Sig(1, address(0), d), VerbatimAccountBase.BadSignatureEntry.selector);
+    }
+
+    function test_sig_extra_entry_refused() public {
+        (, bytes32 d, , address hi) = _setup();
+        env.pushSig(FrameEnv.Sig(1, hi, d));
+        expectFrame0(abi.encodeWithSelector(VerbatimAccountBase.BadSignatureEntry.selector));
+    }
+
+    function test_sig_other_chain_refused() public {
+        (Plan memory p, , address lo, address hi) = _setup();
+        uint256 here = block.chainid;
+        vm.chainId(here + 1);
+        bytes32 foreign = account.digestOf(txCommit(), keccak256(p.tree), keccak256(p.spec), p.validUntil);
+        vm.chainId(here);
+        _sigFrame0Fails(p, FrameEnv.Sig(1, lo, foreign), FrameEnv.Sig(1, hi, foreign), VerbatimAccountBase.BadSignatureEntry.selector);
+    }
+
+    function test_refused_fields_blobs_and_keyed_nonces() public {
+        Plan memory p = plan(transferCall(BOB, 1), T0 + 100);
+        load(p);
+        env.setBlobs(1);
+        expectFrame0(abi.encodeWithSelector(VerbatimAccountBase.BadLayout.selector, uint256(7)));
+        env.setBlobs(0);
+        env.setKeys(2, 0);
+        expectFrame0(abi.encodeWithSelector(VerbatimAccountBase.BadLayout.selector, uint256(7)));
+        env.setKeys(1, 5);
+        expectFrame0(abi.encodeWithSelector(VerbatimAccountBase.BadLayout.selector, uint256(7)));
+        env.setKeys(1, 0);
+    }
+
+    function test_txCommit_covers_every_committed_field() public {
+        Plan memory p = plan(transferCall(BOB, 1), T0 + 100);
+        load(p);
+        env.setTx(address(account), 2, 1, 100); // nonce
+        expectFrame0(abi.encodeWithSelector(VerbatimAccountBase.BadSignatureEntry.selector));
+        load(p);
+        env.setTx(address(account), nonceNow, 1, 101); // max fee
+        expectFrame0(abi.encodeWithSelector(VerbatimAccountBase.BadSignatureEntry.selector));
+        load(p);
+        bytes memory f2 = env.frame(2).data;
+        f2[f2.length - 1] = 0x01;
+        env.setFrameData(2, f2); // frame 2 data
+        expectFrame0(abi.encodeWithSelector(VerbatimAccountBase.BadSignatureEntry.selector));
     }
 
     function test_isValidSignature_is_off() public view {

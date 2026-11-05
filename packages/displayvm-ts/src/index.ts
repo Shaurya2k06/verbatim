@@ -9,7 +9,7 @@ export * from "./device";
 const MAX_DEPTH = 3;
 const MAX_TREE = 6144;
 const MAX_OTHER = 2048;
-export const DEFAULT_TTL = 25n;
+export const DEFAULT_MAX_TTL = 300n;
 const EMPTY_CODE = "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470";
 const ZERO32 = `0x${"00".repeat(32)}` as Hex;
 const ZERO: Address = "0x0000000000000000000000000000000000000000";
@@ -45,6 +45,7 @@ export interface Trust {
   nameOf(a: Address): Hex;
   nameResolver(a: Address): Address;
   hookIsAttested(codehash: Hex): boolean;
+  spenderIsAttested(spender: Address): boolean;
   codeKind(codehash: Hex): number;
   routerConfig(): { permit2: Address; weth: Address; publisher: Hex };
   proxyTemplate(codehash: Hex): { upgrader: Address; logicCodehash: Hex; impl: Address; getter: Hex };
@@ -53,8 +54,8 @@ export interface Trust {
 export interface RenderIn {
   chainId: bigint;
   account: Address;
-  signedAtBlock: bigint;
-  ttl: bigint;
+  /** Unix seconds. The device checks it against its own clock, the account at execution. */
+  validUntil: bigint;
   feeAsset: Address;
   feeAmount: bigint;
   gasLimitTotal: bigint;
@@ -80,7 +81,6 @@ const hexWord = (v: bigint): Hex => `0x${v.toString(16).padStart(64, "0")}` as H
 
 interface Ctx extends URCtx {
   hints: Address[];
-  maxEpoch: bigint;
   trustChange: boolean;
   trust: Trust;
 }
@@ -96,7 +96,6 @@ export function render(i: RenderIn, trust: Trust): RenderOut {
     effects: new Effects(MAX_OTHER),
     risk: 0,
     hints: i.hints,
-    maxEpoch: 0n,
     trustChange: false,
     trust,
     amount: (b, label, token, raw, ctx) => amountField(b, label, token, raw, ctx as Ctx),
@@ -113,10 +112,7 @@ export function render(i: RenderIn, trust: Trust): RenderOut {
   t.be(0x56540001, 4);
   t.be(i.chainId, 8);
   t.addr(i.account);
-  t.be(i.signedAtBlock, 8);
-  t.be(i.signedAtBlock + i.ttl, 8);
-  const epochAt = t.len;
-  t.be(0, 8);
+  t.be(i.validUntil, 8);
 
   let at = VT.begin(t, NODE.FEE);
   t.addr(i.feeAsset);
@@ -125,12 +121,8 @@ export function render(i: RenderIn, trust: Trust): RenderOut {
   VT.end(t, at);
 
   at = VT.begin(t, NODE.VALID_UNTIL);
-  t.be(i.signedAtBlock + i.ttl, 8);
+  t.be(i.validUntil, 8);
   VT.end(t, at);
-  if (i.ttl > DEFAULT_TTL) {
-    VT.risk(t, RISK.TTL_LONG);
-    c.risk |= BIT.TTL_LONG;
-  }
 
   const b = hexToBytes(i.body);
   const arr = rdWord(b, 64n);
@@ -150,7 +142,6 @@ export function render(i: RenderIn, trust: Trust): RenderOut {
   t.word(hexToBigInt(i.policyHash));
   VT.end(t, at);
 
-  t.patchBe(epochAt, c.maxEpoch, 8);
   const tree = t.toHex();
   const spec = bytesToHex(c.effects.finish(c.trustChange));
   return { tree, spec, treeHash: keccak256(tree), specHash: keccak256(spec), risk: c.risk };
@@ -171,7 +162,7 @@ function hinted(c: Ctx, a: Address): bigint {
   return 0n;
 }
 
-function callBegin(t: Buf, target: string, ch: bigint, sel: bigint, descHash: bigint, label: Uint8Array, lOff: number, lLen: number, publisher: bigint, status: number) {
+function callBegin(t: Buf, target: string, ch: bigint, sel: bigint, descHash: bigint, label: Uint8Array, lOff: number, lLen: number, publisher: bigint, status: number, version: bigint) {
   const at = VT.begin(t, NODE.CALL_BEGIN);
   t.addr(target);
   t.word(ch);
@@ -180,6 +171,7 @@ function callBegin(t: Buf, target: string, ch: bigint, sel: bigint, descHash: bi
   VT.strFrom(t, label, lOff, lLen);
   VT.strPacked(t, publisher);
   t.u8(status);
+  t.be(version, 8);
   VT.end(t, at);
 }
 
@@ -194,7 +186,7 @@ function renderCall(t: Buf, c: Ctx, target: Address, value: bigint, data: Uint8A
 
   if (ch === 0n) {
     const l = txt("Send ETH");
-    callBegin(t, target, 0n, 0n, 0n, l, 0, l.length, 0n, 0);
+    callBegin(t, target, 0n, 0n, 0n, l, 0, l.length, 0n, 0, 0n);
     VT.fieldEth(t, value);
     addressField(t, "To", target, ROLE_RECIPIENT, c);
     if (data.length !== 0) blindCall(t, c, data);
@@ -213,7 +205,7 @@ function renderCall(t: Buf, c: Ctx, target: Address, value: bigint, data: Uint8A
     c.legacyParams = kind === 3;
     const r = c.trust.routerConfig();
     const l = txt("Uniswap swap");
-    callBegin(t, target, ch, sel, 0n, l, 0, l.length, hexToBigInt(r.publisher), 2);
+    callBegin(t, target, ch, sel, 0n, l, 0, l.length, hexToBigInt(r.publisher), 2, 0n);
     if (value > 0n) VT.fieldEth(t, value);
     c.router = target;
     c.permit2 = r.permit2;
@@ -232,14 +224,13 @@ function renderCall(t: Buf, c: Ctx, target: Address, value: bigint, data: Uint8A
   }
   if (d === null) {
     const l = txt("Unverified call");
-    callBegin(t, target, ch, sel, 0n, l, 0, l.length, 0n, 0);
+    callBegin(t, target, ch, sel, 0n, l, 0, l.length, 0n, 0, 0n);
     if (value > 0n) VT.fieldEth(t, value);
     if (kind === 2) VT.riskAddr(t, RISK.UPGRADEABLE_TARGET, upgrader);
     blindCall(t, c, data);
     VT.callEnd(t);
     return;
   }
-  if (d.epoch > c.maxEpoch) c.maxEpoch = d.epoch;
   renderDesc(t, c, target, ch, sel, value, data, d, depth, kind === 2, upgrader);
 }
 
@@ -253,7 +244,7 @@ function renderDesc(t: Buf, c: Ctx, target: Address, ch: bigint, sel: bigint, va
   const d = hexToBytes(desc.blob);
   if (rdBe(d, 0, 4) !== VDESC_MAGIC) fail("BadDescriptor");
   const labelLen = rdU8(d, 4);
-  callBegin(t, target, ch, sel, hexToBigInt(keccak256(d)), d, 5, labelLen, hexToBigInt(desc.publisher), desc.status);
+  callBegin(t, target, ch, sel, hexToBigInt(keccak256(d)), d, 5, labelLen, hexToBigInt(desc.publisher), desc.status, desc.epoch);
   if (value > 0n) VT.fieldEth(t, value);
   if (isProxy) VT.riskAddr(t, RISK.UPGRADEABLE_TARGET, upgrader);
 
@@ -409,6 +400,7 @@ function effect(t: Buf, c: Ctx, target: Address, cd: Uint8Array, d: Uint8Array, 
     e.addDelta(c.account, token, toInt(v1), true);
   } else if (kind === E.APPROVE_SET) {
     e.allowLe(token, toAddr(v1), v2);
+    if (v2 !== 0n) spenderCheck(t, c, toAddr(v1));
     if (flags & F.UNLIMITED_IF && v2 >> 255n !== 0n) {
       VT.risk(t, RISK.UNLIMITED_APPROVAL);
       c.risk |= BIT.UNLIMITED;
@@ -416,12 +408,14 @@ function effect(t: Buf, c: Ctx, target: Address, cd: Uint8Array, d: Uint8Array, 
   } else if (kind === E.OPERATOR_SET) {
     if (v2 > 1n) fail("BadCalldata");
     e.operatorEq(token, toAddr(v1), v2 === 1n);
+    if (v2 === 1n) spenderCheck(t, c, toAddr(v1));
     if (flags & F.OPERATOR && v2 === 1n) VT.risk(t, RISK.OPERATOR_APPROVAL);
   } else if (kind === E.NFT_OUT) {
     e.ownerEq(token, v1, toAddr(v2));
   } else if (kind === E.P2_APPROVE_SET) {
     if (v2 >> 160n !== 0n) fail("BadCalldata");
     e.p2AllowLe(target, token, toAddr(v1), 0, v2);
+    if (v2 !== 0n) spenderCheck(t, c, toAddr(v1));
     VT.risk(t, RISK.PERMIT2_ALLOWANCE_CHANGE);
     if (v2 >= (1n << 160n) - 1n) {
       VT.risk(t, RISK.UNLIMITED_APPROVAL);
@@ -431,6 +425,13 @@ function effect(t: Buf, c: Ctx, target: Address, cd: Uint8Array, d: Uint8Array, 
     fail("BadDescriptor");
   }
   return p;
+}
+
+function spenderCheck(t: Buf, c: Ctx, spender: Address) {
+  if (!c.trust.spenderIsAttested(spender)) {
+    VT.risk(t, RISK.SPENDER_UNATTESTED);
+    c.risk |= BIT.SPENDER_UNATTESTED;
+  }
 }
 
 function addressField(t: Buf, label: string | Uint8Array, a: Address, role: number, c: Ctx) {
@@ -484,7 +485,7 @@ function amountField(t: Buf, label: string | Uint8Array, token: Address, raw: bi
 
 /** The policy decision the paymaster will take, for wallets that want to warn early. */
 export function policyRefuses(risk: number, allow = 0): boolean {
-  const refused = BIT.UNVERIFIED | BIT.BLIND | BIT.UNLIMITED | BIT.TTL_LONG | BIT.TOKEN_UNSAFE;
+  const refused = BIT.UNVERIFIED | BIT.BLIND | BIT.UNLIMITED | BIT.SPENDER_UNATTESTED | BIT.TOKEN_UNSAFE | BIT.ALLOW_REVERT;
   if (risk & refused & ~allow) return true;
   return !!(risk & BIT.HOOK_TAKE) && !(allow & BIT.HOOK_TAKE) && !!(risk & (BIT.NO_MIN_OUT | BIT.HOOK_UNVERIFIED));
 }
