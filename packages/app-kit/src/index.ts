@@ -183,7 +183,7 @@ export async function sendAndReport(tx: FrameTx, account: Address, box: HTMLElem
   box.replaceChildren(el("div", { class: "ok" }, "Admitted by the mempool. Waiting for a block..."), el("div", { class: "mono" }, hash));
   const r = await waitReceipt(hash);
   const out = batchOutcome(r, account);
-  const link = el("a", { href: `${d.explorer}tx/${hash}`, target: "_blank" }, "Open in the explorer");
+  const link = el("a", { href: `${d.explorer}tx/${hash}?node=${encodeURIComponent(d.mempool)}`, target: "_blank" }, "Open in the explorer");
   const frames = (r.frameReceipts ?? []).map((f, i) => `frame ${i}: ${f.status === "0x1" ? "ok" : "failed"}`).join(", ");
   if (out.ok) {
     box.replaceChildren(el("div", { class: "ok" }, `Landed in block ${Number(r.blockNumber)}. The sentence happened.`), el("div", { class: "mono" }, hash), el("div", { class: "mono" }, frames), link);

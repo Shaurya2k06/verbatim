@@ -3,8 +3,8 @@
 // networking blocked.
 // Reads owner keys from the git-ignored .env; types them into the pages' local key fields only.
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync } from "node:fs";
-import { homedir } from "node:os";
+import { createHash } from "node:crypto";
+import { copyFileSync, mkdirSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium, type BrowserContext, type Page } from "playwright";
@@ -112,6 +112,8 @@ const results: { beat: string; pass: boolean; text: string }[] = [];
 /** Takes a page's request to the offline device, reads it there, and brings back the signature. */
 async function signFlow(page: Page) {
   await page.getByRole("button", { name: "Copy request" }).waitFor({ timeout: 60_000 });
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(PACE);
   const req = await page.locator("textarea[readonly]").inputValue();
   await show(device, "On the offline device: it decodes the sentence itself and signs only what it shows.");
   await device.getByPlaceholder("Scan the request").fill(req);
@@ -135,6 +137,7 @@ async function signFlow(page: Page) {
 async function outcome(page: Page, want: RegExp, beat: string) {
   const box = page.locator(".ok, .bad").filter({ hasText: /Rejected|Landed|Mined/ }).first();
   await box.waitFor({ timeout: 120_000 });
+  await box.scrollIntoViewIfNeeded();
   const parent = await box.locator("..").innerText();
   const pass = want.test(parent);
   results.push({ beat, pass, text: parent.replace(/\s+/g, " ").slice(0, 200) });
@@ -208,13 +211,28 @@ await ctx.close();
 await browser.close();
 if (RECORD) {
   mkdirSync(resolve(ROOT, "docs/demo"), { recursive: true });
-  const frames = readdirSync(VIDEO).filter((f) => f.endsWith(".jpg")).length;
-  const cache = resolve(homedir(), "Library/Caches/ms-playwright");
-  const bundled = existsSync(cache) ? readdirSync(cache).filter((d) => d.startsWith("ffmpeg")).map((d) => resolve(cache, d, "ffmpeg-mac")).find(existsSync) : undefined;
+  // Most of the raw take is waiting for blocks. Cap every static stretch, then speed up to fit the 3-minute limit.
+  const FPS = 5;
+  const MAX_STATIC = 5 * FPS;
+  const LIMIT_S = 176;
+  const names = readdirSync(VIDEO).filter((f) => f.endsWith(".jpg")).sort();
+  const kept = resolve(VIDEO, "kept");
+  mkdirSync(kept, { recursive: true });
+  let last = "";
+  let run = 0;
+  let n = 0;
+  for (const f of names) {
+    const h = createHash("md5").update(readFileSync(resolve(VIDEO, f))).digest("hex");
+    run = h === last ? run + 1 : 0;
+    last = h;
+    if (run < MAX_STATIC) copyFileSync(resolve(VIDEO, f), resolve(kept, `k${String(n++).padStart(6, "0")}.jpg`));
+  }
+  const raw = n / FPS;
+  const speed = Math.max(1, raw / LIMIT_S);
   const out = resolve(ROOT, "docs/demo/verbatim-demo.mp4");
-  const ff = spawnSync("ffmpeg", ["-y", "-framerate", "5", "-i", resolve(VIDEO, "f%06d.jpg"), "-c:v", "libx264", "-pix_fmt", "yuv420p", "-r", "25", out], { stdio: "ignore" });
-  if (ff.status === 0) console.log(`saved ${out} (${frames} frames, about ${Math.round(frames / 5)} s)`);
-  else console.log(`no ffmpeg on PATH${bundled ? ` (Playwright's has no H.264)` : ""}: ${frames} frames kept in tools/e2e/.video. Encode with: ffmpeg -framerate 5 -i tools/e2e/.video/f%06d.jpg -pix_fmt yuv420p docs/demo/verbatim-demo.mp4`);
+  const ff = spawnSync("ffmpeg", ["-y", "-v", "error", "-framerate", String(FPS), "-i", resolve(kept, "k%06d.jpg"), "-vf", `setpts=PTS/${speed.toFixed(3)}`, "-c:v", "libx264", "-pix_fmt", "yuv420p", "-r", "25", out], { stdio: "inherit" });
+  if (ff.status === 0) console.log(`saved ${out}: ${names.length} raw frames, ${Math.round(raw)} s after trimming idle time, ${Math.round(raw / speed)} s at ${speed.toFixed(2)}x`);
+  else console.log(`no ffmpeg on PATH: frames are in ${kept}. Encode them with ffmpeg at ${FPS} fps.`);
 }
 console.log(`${results.length - failed.length}/${results.length} beats passed`);
 for (const f of failed) console.log("FAILED", f.beat, f.text);

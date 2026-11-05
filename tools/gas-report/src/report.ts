@@ -84,7 +84,7 @@ Bundler limits met (F8): Alchemy requires at least 40% of the verification limit
 `;
 writeFileSync(resolve(ROOT, "docs/GAS.md"), gas);
 
-const devnetLink = (h: string) => `[\`${h.slice(0, 14)}...\`](https://explorer.altmempool.wtf/tx/${h})`;
+const devnetLink = (h: string) => `[\`${h.slice(0, 14)}...\`](https://explorer.altmempool.wtf/tx/${h}?node=https%3A%2F%2Faltmempool.forshtat.com%2Frpc)`;
 const sepLink = (h: string) => `[\`${h.slice(0, 14)}...\`](https://sepolia.etherscan.io/tx/${h})`;
 const short = (m?: string) => (m ? m.replace(/^.*=> /s, "").replace(/\s+/g, " ").slice(0, 88) : "");
 const row = (p: any, link: (h: string) => string) => `| ${p.id} | ${p.title} | ${p.expected} | ${p.pass ? "yes" : "**NO**"} | ${p.txHash ? link(p.txHash) : "rejected, no tx"} | \`${short(p.message) || "as expected"}\` |`;
@@ -118,6 +118,8 @@ beneficiary took \`${proofs["A2-eoa"]?.extra?.hookTookRaw}\`. That is the loss V
 **Revocation (\`INVALIDATION\`):** of 5 signed transactions, an unrelated \`refreshTrust\` invalidated none, and revoking one descriptor invalidated exactly the one using it
 (${JSON.stringify(proofs.INVALIDATION?.extra?.afterRevocation)}). Measured by re-running validation through \`ethrex_simulateFrameTransaction\`, the call the sidecar itself makes. They share a
 sender, so they were not all held pending at once.
+
+**Explorer links** name the miner's node (\`?node=...\`), because the explorer otherwise asks the gateway, which did not see these. There each honest row shows "On chain" and "Every rule passed", with the admission report for frame 0 (sender) and frame 1 (payer).
 
 **Which endpoint:** the docs' gateway and the miner's sidecar run the same rules. On the night of 5 to 6 November the gateway lost its gossip link to the miner
 (\`skandha_connectedPeers\` returned \`[]\`, and every sender's transactions stayed \`New\`), so these were submitted to the miner's sidecar. Rule-enforcing admission is identical; earlier runs

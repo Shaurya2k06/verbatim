@@ -192,4 +192,4 @@ export function explainRejection(message: string): { rule: string; message: stri
   return { rule: "UNKNOWN", message };
 }
 
-export const explorerLink = (hash: Hex) => `${EXPLORER}tx/${hash}`;
+export const explorerLink = (hash: Hex) => `${EXPLORER}tx/${hash}?node=${encodeURIComponent(DEVNET.mempool)}`;
