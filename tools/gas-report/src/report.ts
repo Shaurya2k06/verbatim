@@ -79,6 +79,8 @@ paymaster took about 34M gas.
 |---|---|---:|---|
 ${legB.join("\n")}
 
+**Read that column with care.** \`actualGasUsed\` is what the EntryPoint bills: it includes \`preVerificationGas\` and the 10% penalty on unused call gas, and our limits are deliberately generous. The bundle transactions themselves used far less: 344,611 and 344,587 gas for the two transfers, and 479,515 for the swap (checked against each receipt and its \`UserOperationEvent\`).
+
 Bundler limits met (F8): Alchemy requires at least 40% of the verification limits to be used, which rejected a generous first plan
 (33%). The plan in \`tools/scripts/lib/userop.ts\` passes both Alchemy and Pimlico.
 `;

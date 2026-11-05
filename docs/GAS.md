@@ -50,5 +50,7 @@ paymaster took about 34M gas.
 | Honest transfer on Sepolia via Alchemy | alchemy | 1,062,488 | [tx](https://sepolia.etherscan.io/tx/0x3fbd70ec1b765f101fc8227552811bee19f8b7c28fd4a55c2d33a921e13357a1) |
 | v4 swap through Uniswap's official Sepolia Universal Router and PoolManager | pimlico | 1,178,313 | [tx](https://sepolia.etherscan.io/tx/0xa2f20f89961206408f5b0832d55fb79f7f9c75ce50c48a1e2494569cb2728052) |
 
+**Read that column with care.** `actualGasUsed` is what the EntryPoint bills: it includes `preVerificationGas` and the 10% penalty on unused call gas, and our limits are deliberately generous. The bundle transactions themselves used far less: 344,611 and 344,587 gas for the two transfers, and 479,515 for the swap (checked against each receipt and its `UserOperationEvent`).
+
 Bundler limits met (F8): Alchemy requires at least 40% of the verification limits to be used, which rejected a generous first plan
 (33%). The plan in `tools/scripts/lib/userop.ts` passes both Alchemy and Pimlico.
