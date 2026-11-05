@@ -45,3 +45,8 @@ contract Reenterer {
         require(ok, "reentry failed as designed");
     }
 }
+
+/// Does nothing, for the invalidation test: a descriptor that can be revoked without touching the rest of the demo.
+contract Noop {
+    function ping() external {}
+}

@@ -134,7 +134,13 @@ export interface Endpoints {
   node: string;
 }
 
-export const DEVNET: Endpoints = { mempool: "https://altmempoolgateway.forshtat.com/rpc", node: "https://altmempool.forshtat.com" };
+/**
+ * The gateway sidecar normally gossips to the miner's sidecar, but its peer link can drop (seen 5-6 Nov: `peers: []`, with
+ * everything stuck in `New`). The miner's sidecar applies the same rules and relays directly, so it is the default.
+ */
+export const GATEWAY = "https://altmempoolgateway.forshtat.com/rpc";
+export const MINER_SIDECAR = "https://altmempool.forshtat.com/rpc";
+export const DEVNET: Endpoints = { mempool: MINER_SIDECAR, node: "https://altmempool.forshtat.com" };
 export const EXPLORER = "https://explorer.altmempool.wtf/";
 export const STAKING_REGISTRY: Address = "0xd51c04d7a0b01124e84de152f4e56d9eecb22d2f";
 

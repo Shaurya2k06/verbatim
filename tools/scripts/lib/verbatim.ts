@@ -26,6 +26,7 @@ export async function sign(p: Prepared, ownerKeys: string[] = OWNER_KEYS) {
 
 export async function prepareTx(calls: Call[], opts: Partial<PrepareArgs> = {}) {
   const s = state();
+  // A pending transaction at the current nonce must clear first; the mempool will not replace it at the same fee.
   const gas = opts.gas ?? (await import("@verbatim/client")).PUBLIC_GATEWAY_GAS;
   const total = gas.frame0 + gas.frame1 + gas.frame2 + gas.frame2State;
   return prepare({ client: pub as never, trust: trust(), account: s.account, paymaster: s.paymaster, calls, fee: { asset: ZERO, amount: total * FEE_RATE }, ...opts, gas });

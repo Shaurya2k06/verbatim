@@ -11,3 +11,4 @@ json.dump({k:d[k] for k in d if k.startswith('probe') or k.startswith('old') or 
 P
 npx tsx deploy-devnet.ts | grep -E "RendererPaymaster |refreshTrust|faucet"
 npx tsx seed-uniswap.ts | grep -E "pools ready"
+npx tsx export-deployment.ts

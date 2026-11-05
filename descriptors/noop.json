@@ -1,0 +1,4 @@
+{
+  "metadata": { "owner": "Verbatim demo attestors" },
+  "display": { "formats": { "ping()": { "intent": "Ping", "x-verbatim": { "exactWords": 0, "fields": [] } } } }
+}

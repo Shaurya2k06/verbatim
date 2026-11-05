@@ -8,7 +8,8 @@ const s = readState();
 const out = {
   network: "frames-devnet",
   chainId: 1337,
-  mempool: "https://altmempoolgateway.forshtat.com/rpc",
+  mempool: "https://altmempool.forshtat.com/rpc",
+  gateway: "https://altmempoolgateway.forshtat.com/rpc",
   node: "https://altmempool.forshtat.com",
   explorer: "https://explorer.altmempool.wtf/",
   stakingRegistry: "0xd51c04d7a0b01124e84de152f4e56d9eecb22d2f",
