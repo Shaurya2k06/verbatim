@@ -27,6 +27,7 @@ library VDesc {
     uint8 internal constant E_SHARES_MIN = 5;
     uint8 internal constant E_NFT_OUT = 6;
     uint8 internal constant E_P2_APPROVE_SET = 7;
+    uint8 internal constant E_IN_VALUE = 8;
 
     uint8 internal constant SRC_TARGET = 0;
     uint8 internal constant SRC_FIELD = 1;
@@ -98,8 +99,9 @@ library VDesc {
         uint256 nEffects = d.rdU8(p++);
         for (uint256 i = 0; i < nEffects; i++) {
             uint256 kind = d.rdU8(p++);
-            if (kind == 0 || kind > E_P2_APPROVE_SET) revert BadDescriptor();
+            if (kind == 0 || kind > E_IN_VALUE) revert BadDescriptor();
             p = _src(d, p);
+            if (kind == E_IN_VALUE) continue;
             p = _path(d, p);
             if (kind != E_IN_MIN && kind != E_SHARES_MIN) p = _path(d, p);
         }

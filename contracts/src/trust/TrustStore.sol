@@ -38,11 +38,22 @@ abstract contract TrustStoreLayout {
         bytes4 getter;
     }
 
+    /// An offchain ERC-8176 attestation (EAS offchain v2) over the descriptor's JSON, by one attestor.
+    struct Attestation8176 {
+        uint64 time;
+        uint64 expirationTime;
+        bytes32 salt;
+        bytes signature;
+    }
+
     struct DescUpdate {
         bytes32 codehash;
         bytes4 selector;
         bytes vdesc;
         bytes32 publisher;
+        /// keccak256 of the descriptor's JCS form: ERC-8176's `descriptorHash`. The update's signatures bind it to `vdesc`.
+        bytes32 descriptorHash;
+        Attestation8176[] attestations;
     }
 
     struct TokenUpdate {
@@ -142,6 +153,7 @@ abstract contract TrustStoreLayout {
     error DescriptorRevoked();
     error BadSymbol();
     error NoNamesOnThisLeg();
+    error AttestationInvalid(bytes32 descriptorHash, address attester);
 
     event TrustRefreshed(uint64 indexed epoch, bytes32 indexed updateHash);
 }
@@ -237,6 +249,7 @@ contract TrustAdmin is TrustStoreLayout {
             bytes32 descHash = keccak256(d.vdesc);
             if (_everRevoked[descHash]) revert DescriptorRevoked();
             VDesc.validate(d.vdesc);
+            _checkAttestations(d);
             uint8 status = _checkPublisher(d.publisher, descHash);
             _descOf[d.codehash][d.selector] = DescSlot(SSTORE2.write(d.vdesc), u.epoch, status, false);
             _publisherOf[d.codehash][d.selector] = d.publisher;
@@ -396,6 +409,25 @@ contract TrustAdmin is TrustStoreLayout {
         delete _feeTickets[msg.sender][nonce];
         (bool ok, ) = msg.sender.call{value: f.amount}("");
         if (!ok) revert TransferFailed();
+    }
+
+    // ERC-8176's constants: its canonical schema and EIP-712 domain, fixed to Ethereum mainnet's EAS whatever chain
+    // this runs on. EAS revocations live on mainnet too, so they cannot be read here; `Revocation` above is our path.
+    bytes32 private constant SCHEMA_8176 = 0xe023eef113c1670774801c34b377fdf612dd8a4d2fa92fe382e15bd91fafb5c2;
+    bytes32 private constant EAS_DOMAIN = keccak256(abi.encode(keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"), keccak256("EAS Attestation"), keccak256("0.26"), uint256(1), address(0xA1207F3BBa224E2c9c3c6D5aF63D0eb1582Ce587)));
+    bytes32 private constant ATTEST_TYPEHASH = keccak256("Attest(uint16 version,bytes32 schema,address recipient,uint64 time,uint64 expirationTime,bool revocable,bytes32 refUID,bytes data,bytes32 salt)");
+
+    /// At least the attestor threshold of unexpired ERC-8176 attestations, from distinct attestors, in ascending order.
+    function _checkAttestations(DescUpdate calldata d) private view {
+        if (d.attestations.length < _attestorThreshold) revert NotEnoughAttestors();
+        address last;
+        for (uint256 i = 0; i < d.attestations.length; i++) {
+            Attestation8176 calldata a = d.attestations[i];
+            bytes32 structHash = keccak256(abi.encode(ATTEST_TYPEHASH, uint16(2), SCHEMA_8176, address(0), a.time, a.expirationTime, true, bytes32(0), keccak256(abi.encode(d.descriptorHash)), a.salt));
+            address signer = _recover(keccak256(abi.encodePacked(hex"1901", EAS_DOMAIN, structHash)), a.signature);
+            if (signer <= last || !_isAttestor[signer] || (a.expirationTime != 0 && block.timestamp > a.expirationTime)) revert AttestationInvalid(d.descriptorHash, signer);
+            last = signer;
+        }
     }
 
     /// Leg A has no ENS and caches no names.

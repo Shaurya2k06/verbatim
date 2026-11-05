@@ -21,7 +21,7 @@ const noopCode = keccak256((await pub.getCode({ address: s.noop })) as Hex);
 const ping = { target: s.noop as Address, value: 0n, data: "0x5c36b186" as Hex };
 const EPOCH = BigInt(await pub.readContract({ address: s.paymaster, abi: PAYMASTER_ABI, functionName: "trustEpoch" }));
 
-const attestTx = await attest(s.paymaster, { ...emptyUpdate(EPOCH + 1n), descriptors: descriptorsFor("noop.json", noopCode) });
+const attestTx = await attest(s.paymaster, { ...emptyUpdate(EPOCH + 1n), descriptors: await descriptorsFor("noop.json", noopCode) });
 console.log("attested noop", attestTx.transactionHash);
 await new Promise((r) => setTimeout(r, 7000));
 

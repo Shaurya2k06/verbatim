@@ -202,6 +202,18 @@ const steps: Step[] = [
     },
   },
   {
+    id: "A18",
+    title: "Return bomb",
+    expected: "the batch reverts and the fee stays paid",
+    run: async () => {
+      const feeBefore = await feesTaken();
+      const call: Call = { target: s.returnBomb, value: 0n, data: encodeFunctionData({ abi: parseAbi(["function detonate(uint256)"]), functionName: "detonate", args: [500_000n] }) };
+      const { h, r } = await land(await sign(await prepareTx([call])));
+      const res = batchResult(r, s.account);
+      record({ id: "A18", title: "Return bomb: a call reverts with 500 KB", expected: "batch reverts, fee stays paid", pass: res.ok === false && r.frameReceipts?.[2]?.status === "0x1" && (await feesTaken()) > feeBefore, outcome: "reverted-in-batch", txHash: h, block: Number(r.blockNumber), message: res.err.slice(0, 200), frameGas: frameGas(r) });
+    },
+  },
+  {
     id: "A12",
     title: "Gas griefing",
     expected: "assertion reserve keeps the batch safe",
@@ -302,7 +314,7 @@ const steps: Step[] = [
       }
       if (!st.feeFailAttested) {
         const u = emptyUpdate(1n);
-        u.descriptors = descriptorsFor("erc20.json", keccak256((await pub.getCode({ address: st.tokenA })) as Hex));
+        u.descriptors = await descriptorsFor("erc20.json", keccak256((await pub.getCode({ address: st.tokenA })) as Hex));
         u.tokens = [tokenEntry(st.tokenA, "dUSDC", 6)];
         await attest(st.feeFailPaymaster, u);
         writeState({ feeFailAttested: true });

@@ -9,7 +9,7 @@ import { resolve } from "node:path";
 import { ROOT, addr, key } from "./lib/env";
 import { artifact } from "./lib/chain";
 import { ENS, ENTRY_POINT, KEY, RESOLVER_ABI, UNI, WETH_SEPOLIA, dnsName, me, namedKey, pub, readS, tx, wallet, writeS } from "./lib/sepolia";
-import { attest, emptyUpdate, tokenEntry, type TrustUpdate } from "./lib/trust-update";
+import { attest, descriptorsFor, emptyUpdate, tokenEntry, type TrustUpdate } from "./lib/trust-update";
 
 const LABEL = "verbatim-demo";
 const NAME = `${LABEL}.eth`;
@@ -79,7 +79,7 @@ if (!s().attested) {
   const u: TrustUpdate = emptyUpdate(1n);
   const tokenCode = await chOf(s().tokenA);
   const p2Code = await chOf(UNI.permit2);
-  u.descriptors = [...erc20.map((d) => ({ codehash: tokenCode, selector: d.selector, vdesc: d.vdesc, publisher: PUBLISHER })), ...permit2.map((d) => ({ codehash: p2Code, selector: d.selector, vdesc: d.vdesc, publisher: PUBLISHER }))];
+  u.descriptors = [...(await descriptorsFor("erc20.json", tokenCode, {}, NAME)), ...(await descriptorsFor("permit2.json", p2Code, {}, NAME))];
   u.tokens = [tokenEntry(s().tokenA, "dUSDC", 6), tokenEntry(s().tokenB, "dWETH", 18)];
   u.routers = [{ codehash: await chOf(UNI.router), legacy: true }];
   u.spenders = [UNI.permit2, UNI.router];

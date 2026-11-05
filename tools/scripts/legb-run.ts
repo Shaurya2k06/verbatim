@@ -110,7 +110,7 @@ const steps: Record<string, () => Promise<void>> = {
     const u = emptyUpdate(BigInt(Date.now()));
     const selector = "0xdeadbeef" as Hex;
     const vdesc = ("0x5644000105" + Buffer.from("Spoof").toString("hex") + "ff000000" + "00") as Hex;
-    u.descriptors = [{ codehash: tokenCode, selector, vdesc, publisher: packStr(name) }];
+    u.descriptors = [{ codehash: tokenCode, selector, vdesc, publisher: packStr(name), descriptorHash: keccak256(vdesc), attestations: [] }];
     let refreshMsg = "";
     await attest(s.paymaster, u, 11155111n, async (data: Hex) => {
       refreshMsg = await rawRevert(wallet().account!.address, s.paymaster, data);

@@ -17,7 +17,7 @@ const PACKED_ETH = 0x45544800000000000000000000000000000000000000000000000000000
 const PACKED_UNKNOWN = 0x3f00000000000000000000000000000000000000000000000000000000000001n;
 
 const K = { ADDRESS: 1, TOKEN_AMOUNT: 2, UINT: 3, BOOL: 4, ENUM: 5, BYTES: 6, CALLDATA: 7, ETH_VALUE: 8 } as const;
-const E = { OUT_EXACT: 1, IN_MIN: 2, APPROVE_SET: 3, OPERATOR_SET: 4, SHARES_MIN: 5, NFT_OUT: 6, P2_APPROVE_SET: 7 } as const;
+const E = { OUT_EXACT: 1, IN_MIN: 2, APPROVE_SET: 3, OPERATOR_SET: 4, SHARES_MIN: 5, NFT_OUT: 6, P2_APPROVE_SET: 7, IN_VALUE: 8 } as const;
 const F = { UNLIMITED_IF: 1, OPERATOR: 2, ADMIN: 4 } as const;
 const VDESC_MAGIC = 0x56440001n;
 const ROLE_RECIPIENT = 1;
@@ -255,7 +255,7 @@ function renderDesc(t: Buf, c: Ctx, target: Address, ch: bigint, sel: bigint, va
   for (let i = 0; i < n; i++) p = field(t, c, target, value, data, d, p, depth);
   n = rdU8(d, p++);
   const flags = Number(rdBe(d, d.length - 2, 2));
-  for (let i = 0; i < n; i++) p = effect(t, c, target, data, d, p, flags);
+  for (let i = 0; i < n; i++) p = effect(t, c, target, value, data, d, p, flags);
   if (flags & F.ADMIN) {
     VT.risk(t, RISK.TRUST_CHANGE);
     c.risk |= BIT.TRUST_CHANGE;
@@ -380,10 +380,14 @@ function enumField(t: Buf, label: Uint8Array, v: bigint, d: Uint8Array, start: n
   return p;
 }
 
-function effect(t: Buf, c: Ctx, target: Address, cd: Uint8Array, d: Uint8Array, start: number, flags: number): number {
+function effect(t: Buf, c: Ctx, target: Address, value: bigint, cd: Uint8Array, d: Uint8Array, start: number, flags: number): number {
   let p = start;
   const kind = rdU8(d, p++);
   const [token, afterSrc] = src(d, p, target, cd);
+  if (kind === E.IN_VALUE) {
+    c.effects.addDelta(c.account, token, toInt(value), true);
+    return afterSrc;
+  }
   const [a, nx] = pos(d, afterSrc, cd);
   p = nx;
   const v1 = rdWord(cd, a);

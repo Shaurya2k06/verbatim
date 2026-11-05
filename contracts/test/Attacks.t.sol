@@ -6,7 +6,7 @@ import {FrameEnv} from "./MockFrames.sol";
 import {VerbatimCore, VerbatimAccountBase} from "../src/account/VerbatimAccount.sol";
 import {RendererCore, RendererPaymasterBase} from "../src/paymaster/RendererPaymaster.sol";
 import {AssertionKit} from "../src/lib/AssertionKit.sol";
-import {GasBurner, Reenterer} from "../src/demo/EvilVault.sol";
+import {GasBurner, Reenterer, ReturnBomb} from "../src/demo/EvilVault.sol";
 import {TrustStoreLayout} from "../src/trust/TrustStore.sol";
 import {SkimHook} from "../src/demo/SkimHook.sol";
 
@@ -260,8 +260,8 @@ contract AttacksTest is Base {
         bytes[3] memory data = [abi.encodeWithSelector(0x095ea7b3, stranger, uint256(5)), abi.encodeWithSelector(bytes4(keccak256("setApprovalForAll(address,bool)")), stranger, true), abi.encodeWithSelector(bytes4(keccak256("approve(address,address,uint160,uint48)")), address(usdc), stranger, uint256(5), uint256(9))];
         TrustStoreLayout.TrustUpdate memory u = emptyUpdate();
         u.descriptors = new TrustStoreLayout.DescUpdate[](2);
-        u.descriptors[0] = TrustStoreLayout.DescUpdate(address(usdc).codehash, bytes4(keccak256("setApprovalForAll(address,bool)")), bytes.concat(hex"56440001", hex"03", "All", hex"02", hex"02", hex"0100", hex"01", hex"02", "Op", hex"03", hex"0101", hex"04", hex"02", "On", hex"01", hex"04", hex"00", hex"0100", hex"0101", hex"0002"), ATTESTORS);
-        u.descriptors[1] = TrustStoreLayout.DescUpdate(address(usdc).codehash, bytes4(keccak256("approve(address,address,uint160,uint48)")), bytes.concat(hex"56440001", hex"03", "P2A", hex"04", hex"01", hex"0101", hex"01", hex"02", "Sp", hex"02", hex"01", hex"07", hex"01", hex"0100", hex"0101", hex"0102", hex"0000"), ATTESTORS);
+        u.descriptors[0] = _du(address(usdc).codehash, bytes4(keccak256("setApprovalForAll(address,bool)")), bytes.concat(hex"56440001", hex"03", "All", hex"02", hex"02", hex"0100", hex"01", hex"02", "Op", hex"03", hex"0101", hex"04", hex"02", "On", hex"01", hex"04", hex"00", hex"0100", hex"0101", hex"0002"));
+        u.descriptors[1] = _du(address(usdc).codehash, bytes4(keccak256("approve(address,address,uint160,uint48)")), bytes.concat(hex"56440001", hex"03", "P2A", hex"04", hex"01", hex"0101", hex"01", hex"02", "Sp", hex"02", hex"01", hex"07", hex"01", hex"0100", hex"0101", hex"0102", hex"0000"));
         refresh(u);
         for (uint256 i = 0; i < 3; i++) {
             Plan memory p = plan(one(address(usdc), data[i]), T0 + 100);
@@ -365,7 +365,7 @@ contract AttacksTest is Base {
         // From inside a batch, via a called contract.
         TrustStoreLayout.TrustUpdate memory u = emptyUpdate();
         u.descriptors = new TrustStoreLayout.DescUpdate[](1);
-        u.descriptors[0] = TrustStoreLayout.DescUpdate(address(r).codehash, Reenterer.attack.selector, bytes.concat(hex"56440001", hex"06", "Attack", hex"ff", hex"00", hex"00", hex"0000"), ATTESTORS);
+        u.descriptors[0] = _du(address(r).codehash, Reenterer.attack.selector, bytes.concat(hex"56440001", hex"06", "Attack", hex"ff", hex"00", hex"00", hex"0000"));
         refresh(u);
         (bool ok, bytes memory err) = run(plan(one(address(r), abi.encodeCall(Reenterer.attack, (address(account), inner))), T0 + 100));
         assertFalse(ok);
@@ -385,7 +385,7 @@ contract AttacksTest is Base {
         GasBurner g = new GasBurner();
         TrustStoreLayout.TrustUpdate memory u = emptyUpdate();
         u.descriptors = new TrustStoreLayout.DescUpdate[](1);
-        u.descriptors[0] = TrustStoreLayout.DescUpdate(address(g).codehash, GasBurner.burn.selector, bytes.concat(hex"56440001", hex"04", "Burn", hex"00", hex"00", hex"00", hex"0000"), ATTESTORS);
+        u.descriptors[0] = _du(address(g).codehash, GasBurner.burn.selector, bytes.concat(hex"56440001", hex"04", "Burn", hex"00", hex"00", hex"00", hex"0000"));
         refresh(u);
         Plan memory p = plan(one(address(g), abi.encodeCall(GasBurner.burn, ())), T0 + 100);
         load(p);
@@ -397,5 +397,33 @@ contract AttacksTest is Base {
         (bool ok, ) = address(account).call{gas: 3_000_000}(f2);
         assertTrue(ok, "frame 2 survives");
         assertEq(usdc.balanceOf(BOB), 0);
+    }
+
+    /// A18: a call that reverts with megabytes must not cost the account more than its reserves, or the fee goes with it.
+    function test_A18_return_bomb_does_not_undo_the_fee() public {
+        ReturnBomb b = new ReturnBomb();
+        TrustStoreLayout.TrustUpdate memory u = emptyUpdate();
+        u.descriptors = new TrustStoreLayout.DescUpdate[](1);
+        u.descriptors[0] = _du(address(b).codehash, ReturnBomb.detonate.selector, bytes.concat(hex"56440001", hex"08", "Detonate", hex"01", hex"00", hex"00", hex"0000"));
+        refresh(u);
+        uint256[5] memory sizes = [uint256(10_000), 100_000, 300_000, 500_000, 700_000];
+        uint256 reached;
+        for (uint256 i = 0; i < sizes.length; i++) {
+            uint256 feesBefore = admin_().feesAccrued(address(0));
+            Plan memory p = plan(one(address(b), abi.encodeCall(ReturnBomb.detonate, (sizes[i]))), T0 + 100);
+            load(p);
+            frame0();
+            frame1();
+            env.setCurrent(2);
+            bytes memory f2 = env.frame(2).data;
+            vm.prank(address(account));
+            // The execution gas the client gives frame 2.
+            (bool ok, ) = address(account).call{gas: 1_200_000}(f2);
+            assertTrue(ok, "frame 2 survives the bomb");
+            assertGt(admin_().feesAccrued(address(0)), feesBefore, "the fee stayed paid");
+            nonceNow++;
+            reached++;
+        }
+        assertEq(reached, sizes.length);
     }
 }

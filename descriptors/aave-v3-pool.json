@@ -1,0 +1,7 @@
+{
+  "metadata": { "owner": "Verbatim demo attestors" },
+  "display": { "formats": {
+    "supply(address,uint256,address,uint16)": { "intent": "Supply to lending pool", "x-verbatim": { "exactWords": 4, "fields": [{ "path": "1", "label": "Amount", "format": "tokenAmount", "token": { "kind": "field", "path": "0" } }, { "path": "2", "label": "On behalf of", "format": "address", "role": "recipient" }], "effects": [{ "kind": "OUT_EXACT", "token": { "kind": "field", "path": "0" }, "amount": "1", "to": "2" }] } },
+    "withdraw(address,uint256,address)": { "intent": "Withdraw from lending pool", "x-verbatim": { "exactWords": 3, "fields": [{ "path": "1", "label": "Amount", "format": "tokenAmount", "token": { "kind": "field", "path": "0" } }, { "path": "2", "label": "To", "format": "address", "role": "recipient" }], "effects": [{ "kind": "IN_MIN", "token": { "kind": "field", "path": "0" }, "amount": "1" }] } }
+  } }
+}

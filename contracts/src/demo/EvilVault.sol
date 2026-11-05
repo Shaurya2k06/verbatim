@@ -46,6 +46,15 @@ contract Reenterer {
     }
 }
 
+/// Reverts with as much data as the gas it gets will pay for, to make the account pay for copying it (A18).
+contract ReturnBomb {
+    function detonate(uint256 size) external pure {
+        assembly {
+            revert(0, size)
+        }
+    }
+}
+
 /// Does nothing, for the invalidation test: a descriptor that can be revoked without touching the rest of the demo.
 contract Noop {
     function ping() external {}

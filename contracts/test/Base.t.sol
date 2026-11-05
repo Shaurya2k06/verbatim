@@ -139,10 +139,10 @@ abstract contract Base is Test {
 
         TrustStoreLayout.TrustUpdate memory u = emptyUpdate();
         u.descriptors = new TrustStoreLayout.DescUpdate[](4);
-        u.descriptors[0] = TrustStoreLayout.DescUpdate(address(usdc).codehash, 0xa9059cbb, transferDesc(), ATTESTORS);
-        u.descriptors[1] = TrustStoreLayout.DescUpdate(address(usdc).codehash, 0x095ea7b3, approveDesc(), ATTESTORS);
-        u.descriptors[2] = TrustStoreLayout.DescUpdate(address(vault).codehash, 0xb6b55f25, depositDesc(address(usdc)), ATTESTORS);
-        u.descriptors[3] = TrustStoreLayout.DescUpdate(address(account).codehash, 0x7065cb48, addOwnerDesc(), ATTESTORS);
+        u.descriptors[0] = _du(address(usdc).codehash, 0xa9059cbb, transferDesc());
+        u.descriptors[1] = _du(address(usdc).codehash, 0x095ea7b3, approveDesc());
+        u.descriptors[2] = _du(address(vault).codehash, 0xb6b55f25, depositDesc(address(usdc)));
+        u.descriptors[3] = _du(address(account).codehash, 0x7065cb48, addOwnerDesc());
         u.tokens = new TrustStoreLayout.TokenUpdate[](2);
         u.tokens[0] = TrustStoreLayout.TokenUpdate(address(usdc), bytes11("dUSDC"), 5, 6, 0);
         u.tokens[1] = TrustStoreLayout.TokenUpdate(address(weth), bytes11("dWETH"), 5, 18, 0);
@@ -161,6 +161,34 @@ abstract contract Base is Test {
 
     function emptyUpdate() internal returns (TrustStoreLayout.TrustUpdate memory u) {
         u.epoch = ++epoch;
+    }
+
+    bytes32 internal constant EAS_DOMAIN = keccak256(abi.encode(keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"), keccak256("EAS Attestation"), keccak256("0.26"), uint256(1), address(0xA1207F3BBa224E2c9c3c6D5aF63D0eb1582Ce587)));
+    bytes32 internal constant SCHEMA_8176 = 0xe023eef113c1670774801c34b377fdf612dd8a4d2fa92fe382e15bd91fafb5c2;
+    bytes32 internal constant ATTEST_TYPEHASH = keccak256("Attest(uint16 version,bytes32 schema,address recipient,uint64 time,uint64 expirationTime,bool revocable,bytes32 refUID,bytes data,bytes32 salt)");
+
+    function att8176(uint256 k, bytes32 descriptorHash, uint64 expiry, bytes32 schema) internal pure returns (TrustStoreLayout.Attestation8176 memory a) {
+        a.time = 1;
+        a.expirationTime = expiry;
+        a.salt = keccak256(abi.encode(k));
+        bytes32 h = keccak256(abi.encode(ATTEST_TYPEHASH, uint16(2), schema, address(0), a.time, a.expirationTime, true, bytes32(0), keccak256(abi.encode(descriptorHash)), a.salt));
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(k, keccak256(abi.encodePacked(hex"1901", EAS_DOMAIN, h)));
+        a.signature = abi.encodePacked(r, s, v);
+    }
+
+    /// A descriptor update carrying two valid ERC-8176 attestations, in ascending attester order.
+    function _du(bytes32 ch, bytes4 sel, bytes memory vdesc) internal pure returns (TrustStoreLayout.DescUpdate memory d) {
+        bytes32 dh = keccak256(abi.encode("json of", vdesc));
+        uint256[2] memory keys = [AT1, AT2];
+        if (vm.addr(AT1) > vm.addr(AT2)) keys = [AT2, AT1];
+        d.codehash = ch;
+        d.selector = sel;
+        d.vdesc = vdesc;
+        d.publisher = ATTESTORS;
+        d.descriptorHash = dh;
+        d.attestations = new TrustStoreLayout.Attestation8176[](2);
+        d.attestations[0] = att8176(keys[0], dh, 0, SCHEMA_8176);
+        d.attestations[1] = att8176(keys[1], dh, 0, SCHEMA_8176);
     }
 
     function refresh(TrustStoreLayout.TrustUpdate memory u) internal {

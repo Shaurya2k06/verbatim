@@ -1,0 +1,7 @@
+{
+  "metadata": { "owner": "Verbatim demo attestors" },
+  "display": { "formats": {
+    "deposit(uint256,address)": { "intent": "Deposit into vault", "x-verbatim": { "exactWords": 2, "fields": [{ "path": "0", "label": "Assets", "format": "tokenAmount", "token": { "kind": "const", "address": "$ASSET" } }, { "path": "1", "label": "Shares to", "format": "address", "role": "recipient" }], "effects": [{ "kind": "OUT_EXACT", "token": { "kind": "const", "address": "$ASSET" }, "amount": "0", "to": "1" }] } },
+    "redeem(uint256,address,address)": { "intent": "Redeem from vault", "x-verbatim": { "exactWords": 3, "fields": [{ "path": "0", "label": "Shares", "format": "tokenAmount", "token": { "kind": "target" } }, { "path": "1", "label": "Assets to", "format": "address", "role": "recipient" }, { "path": "2", "label": "Owner", "format": "address" }], "effects": [{ "kind": "OUT_EXACT", "token": { "kind": "target" }, "amount": "0", "to": "1" }] } }
+  } }
+}

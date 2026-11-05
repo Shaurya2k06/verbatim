@@ -232,7 +232,7 @@ abstract contract DisplayVM {
         for (uint256 i = 0; i < n; i++) p = _field(t, c, h, target, value, data, d, p, depth);
         n = d.rdU8(p++);
         uint256 flags = d.rdBe(d.length - 2, 2);
-        for (uint256 i = 0; i < n; i++) p = _effect(t, c, target, data, d, p, flags);
+        for (uint256 i = 0; i < n; i++) p = _effect(t, c, target, value, data, d, p, flags);
         if (flags & VDesc.F_ADMIN != 0) {
             t.risk(Risk.TRUST_CHANGE);
             c.risk |= Risk.BIT_TRUST_CHANGE;
@@ -363,10 +363,15 @@ abstract contract DisplayVM {
         return p;
     }
 
-    function _effect(Buf.B memory t, URRender.Ctx memory c, address target, bytes memory cd, bytes memory d, uint256 p, uint256 flags) private view returns (uint256) {
+    function _effect(Buf.B memory t, URRender.Ctx memory c, address target, uint256 value, bytes memory cd, bytes memory d, uint256 p, uint256 flags) private view returns (uint256) {
         uint256 kind = d.rdU8(p++);
         address token;
         (token, p) = _src(d, p, target, cd);
+        if (kind == VDesc.E_IN_VALUE) {
+            // What the call's ETH buys, one for one: WETH's deposit.
+            c.effects.addDelta(c.cfg.account, token, VSpec.toInt(value), true);
+            return p;
+        }
         (uint256 a, uint256 nx) = _pos(d, p, cd);
         p = nx;
         uint256 v1 = cd.rdWord(a);

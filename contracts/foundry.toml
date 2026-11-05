@@ -16,3 +16,8 @@ fs_permissions = [{ access = "read", path = "./" }, { access = "read", path = ".
 
 [fuzz]
 runs = 256
+
+[invariant]
+runs = 64
+depth = 40
+fail_on_revert = false

@@ -9,7 +9,8 @@
     "@verbatim/displayvm-ts": "workspace:*",
     "@verbatim/vdesc-compiler": "workspace:*",
     "@verbatim/urrender": "workspace:*",
-    "@verbatim/signer": "workspace:*"
+    "@verbatim/signer": "workspace:*",
+    "@verbatim/attestor-cli": "workspace:*"
   },
   "devDependencies": { "tsx": "^4.19.0" }
 }

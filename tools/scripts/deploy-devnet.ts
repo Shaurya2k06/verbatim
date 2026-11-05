@@ -74,7 +74,8 @@ if (!s.evilVault) {
 if (!s.reenterer) {
   const r = await deploy(deployer, "EvilVault.sol", "Reenterer");
   const g = await deploy(deployer, "EvilVault.sol", "GasBurner");
-  writeState({ reenterer: r.address, gasBurner: g.address });
+  const b = await deploy(deployer, "EvilVault.sol", "ReturnBomb");
+  writeState({ reenterer: r.address, gasBurner: g.address, returnBomb: b.address });
   s = readState();
 }
 if (!s.account2) {
@@ -88,13 +89,14 @@ const chOf = async (a: Address) => keccak256((await pub.getCode({ address: a }))
 if (!s.trustEpoch) {
   const u = emptyUpdate(1n);
   u.descriptors = [
-    ...descriptorsFor("erc20.json", await chOf(s.tokenA)),
-    ...descriptorsFor("permit2.json", await chOf(PERMIT2)),
-    ...descriptorsFor("account-admin.json", s.accountCodehash),
-    ...descriptorsFor("renderer-paymaster.json", await chOf(s.paymaster)),
-    ...descriptorsFor("evil-vault.json", await chOf(s.evilVault), { USDC: s.tokenA }),
-    ...descriptorsFor("attack-kit.json", await chOf(s.reenterer)),
-    ...descriptorsFor("attack-kit-burner.json", await chOf(s.gasBurner)),
+    ...(await descriptorsFor("erc20.json", await chOf(s.tokenA))),
+    ...(await descriptorsFor("permit2.json", await chOf(PERMIT2))),
+    ...(await descriptorsFor("account-admin.json", s.accountCodehash)),
+    ...(await descriptorsFor("renderer-paymaster.json", await chOf(s.paymaster))),
+    ...(await descriptorsFor("evil-vault.json", await chOf(s.evilVault), { USDC: s.tokenA })),
+    ...(await descriptorsFor("attack-kit.json", await chOf(s.reenterer))),
+    ...(await descriptorsFor("attack-kit-burner.json", await chOf(s.gasBurner))),
+    ...(await descriptorsFor("attack-kit-bomb.json", await chOf(s.returnBomb))),
   ];
   u.tokens = [tokenEntry(s.tokenA, "dUSDC", 6), tokenEntry(s.tokenB, "dWETH", 18), tokenEntry(WETH9, "WETH", 18)];
   u.routers = [{ codehash: await chOf(ROUTER), legacy: false }];

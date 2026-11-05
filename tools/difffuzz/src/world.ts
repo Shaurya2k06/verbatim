@@ -302,3 +302,61 @@ export function makeCase(seed: number): RenderIn {
     hints,
   };
 }
+
+const BODY_FEE = [ZERO_ADDR(), 1000n] as const;
+function ZERO_ADDR(): Address {
+  return "0x0000000000000000000000000000000000000000";
+}
+
+const named = (calls: Call[]): RenderIn => ({
+  chainId: 1337n,
+  account: ACCOUNT,
+  validUntil: 1_800_000_000n,
+  feeAsset: BODY_FEE[0],
+  feeAmount: BODY_FEE[1],
+  gasLimitTotal: 3_000_000n,
+  policyHash: `0x${"ab".repeat(32)}`,
+  body: encodeAbiParameters(BODY, [[BODY_FEE[0], BODY_FEE[1]], calls.map((c) => [c.target, c.value, c.data]) as never, "0x"]),
+  hints: ALL_HINTS,
+});
+
+/** One deterministic case per supported selector and router command. */
+export function namedCases(): [string, RenderIn][] {
+  const key: PoolKey = { currency0: TOKEN, currency1: TOKEN2, fee: 3000, tickSpacing: 60, hooks: ZERO_ADDR() };
+  const dl = 2_000_000_000n;
+  const fn = (functionName: string, args: unknown[]) => encodeFunctionData({ abi: ABI, functionName, args } as never);
+  const ur = (cmds: number[], inputs: Hex[], value = 0n, target: Address = ROUTER): Call => ({ target, value, data: executeData(cmds, inputs, dl) });
+  const swap = v4ExactInSingleInput({ key, zeroForOne: true, amountIn: 1000n, amountOutMinimum: 900n });
+  const cases: [string, Call][] = [
+    ["erc20.transfer", { target: TOKEN, value: 0n, data: fn("transfer", [BOB, 5n]) }],
+    ["erc20.approve", { target: TOKEN, value: 0n, data: fn("approve", [PERMIT2, 5n]) }],
+    ["erc20.approve unlimited", { target: TOKEN, value: 0n, data: fn("approve", [PERMIT2, (1n << 256n) - 1n]) }],
+    ["erc20.approve unattested spender", { target: TOKEN, value: 0n, data: fn("approve", [CONTRACT_RECIPIENT, 5n]) }],
+    ["erc721.setApprovalForAll", { target: TOKEN, value: 0n, data: fn("setApprovalForAll", [BOB, true]) }],
+    ["erc721.safeTransferFrom", { target: TOKEN, value: 0n, data: fn("safeTransferFrom", [ACCOUNT, BOB, 7n]) }],
+    ["permit2.approve", { target: TOKEN, value: 0n, data: fn("approve", [TOKEN, BOB, 5n, 99]) }],
+    ["vault.deposit", { target: VAULT, value: 0n, data: fn("deposit", [5n, 1]) }],
+    ["vault.note", { target: VAULT, value: 0n, data: fn("note", ["0x1234"]) }],
+    ["vault.setAdmin", { target: VAULT, value: 0n, data: fn("setAdmin", [BOB]) }],
+    ["vault.mint with value", { target: VAULT, value: 5n, data: fn("mint", [5n]) }],
+    ["multi.forward nested", { target: MULTI, value: 0n, data: fn("forward", [TOKEN, 0n, fn("transfer", [BOB, 5n])]) }],
+    ["proxy.transfer", { target: PROXY, value: 0n, data: fn("transfer", [BOB, 5n]) }],
+    ["eth.send", { target: BOB, value: 5n, data: "0x" }],
+    ["unattested", { target: UNATTESTED, value: 0n, data: "0xdeadbeef" }],
+    ["ur.v4_swap", ur([CMD.V4_SWAP], [swap])],
+    ["ur.v4_swap legacy params", ur([CMD.V4_SWAP], [v4ExactInSingleInput({ key, zeroForOne: true, amountIn: 1000n, amountOutMinimum: 900n, legacyParams: true })], 0n, LEGACY_ROUTER)],
+    ["ur.v4_swap skim hook, no minimum", ur([CMD.V4_SWAP], [v4ExactInSingleInput({ key: { ...key, hooks: SKIM_HOOK }, zeroForOne: true, amountIn: 1000n, amountOutMinimum: 0n })])],
+    ["ur.v4_swap attested input hook", ur([CMD.V4_SWAP], [v4ExactInSingleInput({ key: { ...key, hooks: INPUT_HOOK }, zeroForOne: true, amountIn: 1000n, amountOutMinimum: 900n })])],
+    ["ur.v4_swap dynamic fee", ur([CMD.V4_SWAP], [v4ExactInSingleInput({ key: { ...key, fee: 0x800000 }, zeroForOne: true, amountIn: 1000n, amountOutMinimum: 900n })])],
+    ["ur.wrap_eth", ur([CMD.WRAP_ETH], [wrapInput(MSG_SENDER, 5n)], 5n)],
+    ["ur.unwrap_weth", ur([CMD.UNWRAP_WETH], [wrapInput(MSG_SENDER, 5n)])],
+    ["ur.sweep", ur([CMD.SWEEP], [sweepInput(TOKEN, MSG_SENDER, 5n)])],
+    ["ur.sweep elsewhere", ur([CMD.SWEEP], [sweepInput(TOKEN, BOB, 5n)])],
+    ["ur.pay_portion", ur([CMD.PAY_PORTION], [payPortionInput(TOKEN, BOB, 25n)])],
+    ["ur.v3_swap_exact_in", ur([CMD.V3_SWAP_EXACT_IN], [v3Input({ recipient: MSG_SENDER, amountIn: 1000n, amountOutMin: 900n, path: `0x${TOKEN.slice(2)}000bb8${TOKEN2.slice(2)}` as Hex, payerIsUser: true })])],
+    ["ur.allow_revert", ur([CMD.SWEEP | CMD.FLAG_ALLOW_REVERT], [sweepInput(TOKEN, MSG_SENDER, 5n)])],
+    ["ur.unknown command", ur([0x0a], ["0x1234"])],
+    ["ur.command above 0x3f", ur([0x40], ["0x1234"])],
+  ];
+  return cases.map(([n, c]) => [n, named([c])]);
+}

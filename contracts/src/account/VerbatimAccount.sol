@@ -32,6 +32,7 @@ abstract contract VerbatimCore {
     uint256 public constant MAX_WATCH = 32;
     uint256 public constant ASSERT_RESERVE = 200_000;
     uint256 internal constant OUTER_RESERVE = 30_000;
+    uint256 internal constant MAX_RETURN = 256;
     uint256 internal constant SECP256K1N_HALF = 0x7fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a0;
 
     bytes32 internal constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
@@ -142,12 +143,26 @@ abstract contract VerbatimCore {
         _chargeFee(fee);
         uint256 left = gasleft();
         if (left <= OUTER_RESERVE) revert NoGasReserve();
-        (bool ok, bytes memory err) = address(this).call{gas: left - OUTER_RESERVE}(abi.encodeCall(this.protectedBatch, (calls, spec, specHash, validUntil)));
+        (bool ok, bytes memory err) = _callBounded(address(this), 0, left - OUTER_RESERVE, abi.encodeCall(this.protectedBatch, (calls, spec, specHash, validUntil)));
         emit VerbatimResult(ok, err);
         _phase = PHASE_IDLE;
     }
 
     function _chargeFee(Fee calldata fee) internal virtual;
+
+    /// A call that keeps at most MAX_RETURN bytes of what comes back. Copying a target's whole revert data would let it
+    /// spend our reserves, and with them the fee (A18). Solidity's `.call` always copies it all.
+    function _callBounded(address target, uint256 value, uint256 gasLimit, bytes memory data) private returns (bool ok, bytes memory ret) {
+        assembly ("memory-safe") {
+            ok := call(gasLimit, target, value, add(data, 0x20), mload(data), 0, 0)
+            let n := returndatasize()
+            if gt(n, MAX_RETURN) { n := MAX_RETURN }
+            ret := mload(0x40)
+            mstore(ret, n)
+            returndatacopy(add(ret, 0x20), 0, n)
+            mstore(0x40, add(add(ret, 0x20), and(add(n, 31), not(31))))
+        }
+    }
 
     /// The inner self-call: expiry, live re-checks, snapshot, calls, assertions.
     function protectedBatch(Call[] calldata calls, bytes calldata spec, bytes32 specHash, uint64 validUntil) external onlySelf {
@@ -167,7 +182,7 @@ abstract contract VerbatimCore {
         for (uint256 i = 0; i < calls.length; i++) {
             uint256 left = gasleft();
             if (left <= ASSERT_RESERVE) revert NoGasReserve();
-            (bool ok, bytes memory ret) = calls[i].target.call{value: calls[i].value, gas: left - ASSERT_RESERVE}(calls[i].data);
+            (bool ok, bytes memory ret) = _callBounded(calls[i].target, calls[i].value, left - ASSERT_RESERVE, calls[i].data);
             if (!ok) revert CallFailed(i, ret);
         }
 

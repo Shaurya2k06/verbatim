@@ -136,4 +136,47 @@ contract URRenderTest is Test, TestVectors {
         (bytes memory tree, , ) = h.render(_withData(h, abi.encodeWithSelector(0x3593564c, hex"04", inputs, uint256(1)), 0));
         assertEq(_codes(tree) & 32, 32);
     }
+
+    /// Mines a real CREATE2 address per risky flag, exactly as a hook deployer would, and asserts the matching node.
+    function _mine(uint160 flags) private view returns (address hook) {
+        bytes32 initHash = keccak256(hex"600160005260206000f3");
+        for (uint256 salt = 0; salt < 2_000_000; salt++) {
+            hook = vm.computeCreate2Address(bytes32(salt), initHash, address(this));
+            if (uint160(hook) & UpstreamHooks.ALL_HOOK_MASK == flags) return hook;
+        }
+        revert("no salt");
+    }
+
+    function test_mined_hook_each_risky_flag_gets_its_node() public {
+        RenderHarness h = harness();
+        address input = _mine(UpstreamHooks.BEFORE_SWAP_FLAG | UpstreamHooks.BEFORE_SWAP_RETURNS_DELTA_FLAG);
+        address output = _mine(UpstreamHooks.AFTER_SWAP_FLAG | UpstreamHooks.AFTER_SWAP_RETURNS_DELTA_FLAG);
+        address both = _mine(UpstreamHooks.BEFORE_SWAP_FLAG | UpstreamHooks.AFTER_SWAP_FLAG | UpstreamHooks.BEFORE_SWAP_RETURNS_DELTA_FLAG | UpstreamHooks.AFTER_SWAP_RETURNS_DELTA_FLAG);
+        address plain = _mine(UpstreamHooks.BEFORE_SWAP_FLAG | UpstreamHooks.AFTER_SWAP_FLAG);
+        h.setCode(input, keccak256("i"));
+        h.setCode(output, keccak256("o"));
+        h.setCode(both, keccak256("b"));
+        h.setCode(plain, keccak256("p"));
+        (bytes memory t, , ) = h.render(swapIn(h, input, 1e6));
+        assertEq(_codes(t) & 6, 2, "input only");
+        (t, , ) = h.render(swapIn(h, output, 1e6));
+        assertEq(_codes(t) & 6, 4, "output only");
+        (t, , ) = h.render(swapIn(h, both, 1e6));
+        assertEq(_codes(t) & 6, 6, "both");
+        (t, , ) = h.render(swapIn(h, plain, 1e6));
+        assertEq(_codes(t) & 6, 0, "plain hook takes nothing");
+    }
+
+    function test_command_mask_is_0x7f_above_0x3f() public {
+        RenderHarness h = harness();
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = hex"1234";
+        // Under a 0x3f mask, 0x50 would read as V4_SWAP. Under the deployed router's 0x7f it is unknown: blind.
+        (, , uint256 risk) = h.render(_withData(h, abi.encodeWithSelector(0x3593564c, hex"50", inputs, uint256(1)), 0));
+        assertTrue(risk & Risk.BIT_BLIND != 0);
+        // V4_SWAP itself, at 0x10, is still recognised under the flag bit.
+        inputs[0] = hex"";
+        vm.expectRevert(URRender.MalformedUR.selector);
+        h.render(_withData(h, abi.encodeWithSelector(0x3593564c, hex"90", inputs, uint256(1)), 0));
+    }
 }

@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "license": "MIT",
+  "main": "src/update.ts",
+  "exports": { ".": "./src/update.ts" },
   "bin": { "verbatim-attest": "src/cli.ts" },
   "scripts": { "test": "vitest run" },
   "dependencies": { "viem": "^2.21.0", "@verbatim/displayvm-ts": "workspace:*", "@verbatim/vdesc-compiler": "workspace:*" },

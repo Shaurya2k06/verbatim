@@ -1,0 +1,4 @@
+{
+  "metadata": { "owner": "Verbatim attack kit" },
+  "display": { "formats": { "detonate(uint256)": { "intent": "Test call: revert with a huge payload", "x-verbatim": { "exactWords": 1, "fields": [] } } } }
+}

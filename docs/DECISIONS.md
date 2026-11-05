@@ -43,8 +43,8 @@ An explicit `msg` cannot contain `sig_hash` (it is part of what `sig_hash` cover
 ### D-A6: render and derive are one pass
 §9.2 describes `derive(tree)` as a second walk. Effects need the descriptors, which the tree does not contain, so render emits tree and spec together. `derive()` in the TypeScript package returns that second output. Same determinism, less gas.
 
-### D-A7: the tree's `trustEpoch` is the maximum over descriptors it used
-§8.1 reads as the store's current epoch. That would change every pending tree on any `refreshTrust`, a mass-invalidation bug in the design itself. Tested in `test_I9_unrelated_trust_refresh_leaves_pending_tree_valid` and live in `INVALIDATION`.
+### D-A7: no trust epoch in the tree
+§8.1 reads as the store's current epoch. That would change every pending tree on any `refreshTrust`, a mass-invalidation bug in the design itself. Each `CALL_BEGIN` carries its own `descHash` and attestation `version` instead. Tested in `test_I9_unrelated_trust_refresh_leaves_pending_tree_valid` and live in `A15`.
 
 ### D-A8: code-bearing addresses come as signed hints
 §9.1 renders EOAs by reading `EXTCODEHASH`. CALLING-010 forbids touching a code-free address in validation, and recipients are usually EOAs. So frame 1's data lists addresses claimed to have code. A listed address must actually have code or render refuses; an unlisted one is rendered as code-free and asserted so at execution. Frame 1 data is bound by `txCommit`.
@@ -71,6 +71,59 @@ Checked against `Uniswap/universal-router@edf19bf`, `v4-periphery@c6e4754` and `
 - **`client/` and `server/`** are untouched boilerplate from the first commit. The spec's `apps/` layout replaced them. Delete them if you don't need them.
 - **Hardhat boilerplate removed from `contracts/`.** Foundry replaces it, per §16.
 - **Kurtosis fallback unused:** the public devnet stayed reachable.
+
+### D-A13: freshness is an absolute timestamp
+Replaces `signedAtBlock` and block TTLs, which a device with no chain access could not judge. `validUntil` is in the tree and in the signature. `executeVerified` reverts `Expired` past it and `TtlTooLong` if it is further out than the policy's `maxTtl` (default 300 s, client default 240 s). The device refuses a future-dated tree by its own clock (`DEVICE_MAX_TTL`, 600 s), and refuses an expired one. Validation cannot read TIMESTAMP (OP-011), so this all happens in execution: an expired transaction lands and pays its fee.
+
+### D-A14: fee tickets replace deposits and FEE_HEADROOM (Leg A)
+One deposit shared by pending transactions could be overcommitted. `feeTicket[account][nonce]` is funded in advance with `fundTickets(account, firstNonce, count)`, must cover the transaction's maximum cost, and is consumed first in frame 2 (any surplus goes to the account's deposit). A second transaction can only use the same ticket by having the same nonce, and then only one can land (A14). Tokens as fees and their rates are removed, per the checklist's §15. Tickets reclaim on a delay. Leg B uses EntryPoint's own prefund and refunds the difference in `postOp`.
+
+### D-A15: approvals to spenders nobody attested are refused
+`SPENDER_UNATTESTED` for ERC-20 `approve`, Permit2 `approve` and `setApprovalForAll`, lifted only by policy, and not raised for an approval to zero, which revokes. `TrustUpdate.spenders` holds the list.
+
+### D-A16: `refreshTrust` takes ERC-8176 attestations
+Each descriptor update carries offchain EAS v2 attestations under the canonical schema (`bytes32 descriptorHash`, UID `0xe023...b5c2`), checked against the fixed mainnet EAS EIP-712 domain, in ascending attester order, unexpired, to the attestor threshold. `descriptorHash` is keccak256 of the descriptor's RFC 8785 form. The update's own attestor signatures bind that hash to the compiled `vdesc`, since the chain cannot canonicalise JSON. **Limit:** EAS revocation lives on mainnet, out of reach here, so an EAS revocation only takes effect when attestors send a `Revocation` through `refreshTrust`. Our `jcs()` handles what descriptors contain: not the full number canonicalisation of RFC 8785.
+
+### D-A17: return data is bounded (A18)
+Found by Slither's `return-bomb`, confirmed by a failing test, then fixed. Solidity's `.call` copies all return data, so a target reverting with about 500 KB made the outer call run past `OUTER_RESERVE`. That reverted frame 2 whole, taking the fee with it. Both calls now keep at most 256 bytes.
+
+### D-A18: registry import is display-only
+ERC-7730 has no effects, so imported descriptors render a sentence and get the default assertions, which fail closed if a tracked token is spent. Fields ERC-7730 marks hidden are shown anyway. `@.to` and `@.from` fields are dropped, since a call node already shows the target and the header the account. See `docs/REGISTRY.md`.
+
+## Every transaction field (Leg A)
+
+Nothing in the envelope is left unexamined. "Committed" means inside the digest owners sign.
+
+| Field | Status | How | Test |
+|---|---|---|---|
+| `chain_id` | Committed | EIP-712 domain, tree header | `test_sig_other_chain_refused` |
+| `nonce_keys` | **Refused** unless `[0]` | `BadLayout(7)` | `test_refused_fields_blobs_and_keyed_nonces` |
+| `nonce_seq` | Committed | `txCommit` | `test_txCommit_covers_every_committed_field` |
+| `sender` | Committed | Domain, tree, layout lock `BadLayout(2)` | `test_I3_signature_binds_fees_gas_and_frames` |
+| Frame count | Locked | Exactly 3, `BadLayout(0)` | A3 |
+| Frame modes, flags, targets | Locked | `BadLayout(3-5)` | A3, A3b |
+| Frame 2 value | Locked | Must be zero, `BadLayout(5)`; ETH moves through signed calls. EIP-8141 requires 0 on VERIFY frames | `test_I3_signature_binds_fees_gas_and_frames` |
+| Frame 2 selector | Locked | `executeVerified`, `BadLayout(6)` | `test_I3_signature_binds_fees_gas_and_frames` |
+| All frame gas limits (execution, state) | Committed | `txCommit` | `test_txCommit_covers_every_committed_field` |
+| Frame 0 data | Committed | Its tree hash, spec hash and `validUntil` are the digest | `test_I3_signature_binds_fees_gas_and_frames` |
+| Frame 1, 2 data | Committed | Hashes in `txCommit` | `test_txCommit_covers_every_committed_field` |
+| `max_priority_fee`, `max_fee` | Committed | `txCommit` | `test_txCommit_covers_every_committed_field` |
+| `blob_hashes` | **Refused** if any | `BadLayout(7)` | `test_refused_fields_blobs_and_keyed_nonces` |
+| `max_fee_per_blob_gas` | Irrelevant | Blobs are refused, so nothing is paid at this rate | |
+| `signatures` | Checked | Count, scheme, `msg`, owner, ascending | `test_sig_*` |
+| `recent_root_references` | Irrelevant | Read by nothing in validation or the batch. A relayer changing it changes the transaction hash, not one effect. Our client always sends none | |
+
+## Pinned commits
+
+| Dependency | Commit |
+|---|---|
+| ethrex, `eip8141-tracer` | `9aa3645d` |
+| `forshtat/mempool-workshop-sidecar` | `2e22ff0` |
+| Uniswap `universal-router` | `edf19bfde87e6cf5b29046f6ca2f483a4ffd6ae6` |
+| Uniswap `v4-periphery` | `c6e4754dab11bd38c6f08ac51c3c868569e93d64` |
+| Uniswap `v4-core` | `bea7f6d1c11cd5dc4f0d5151ffa37a1c239feee6` |
+| Uniswap `permit2` | `cc56ad0` |
+| ENS `contracts-v2` | `07e55a05` |
 
 ## Day-1 falsifiers (§19)
 

@@ -26,6 +26,7 @@ const out = {
   evilVault: s.evilVault,
   skimHook: s.skimHook,
   gasBurner: s.gasBurner,
+  returnBomb: s.returnBomb,
   reenterer: s.reenterer,
   pools: { honest: s.poolHonest, evil: s.poolEvil },
   uniswap: {

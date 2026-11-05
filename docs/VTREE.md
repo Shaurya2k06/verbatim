@@ -6,14 +6,14 @@ All integers are big-endian. Every node is `type(u8) len(u16) payload`.
 
 ```
 Tree   := 0x56540001 Header Node*
-Header := chainId(u64) account(20) signedAtBlock(u64) validUntilBlock(u64) trustEpoch(u64)
+Header := chainId(u64) account(20) validUntil(u64)
 ```
 
-`trustEpoch` is the highest attested epoch among the descriptors this tree used, not the store's current epoch, so an unrelated `refreshTrust` cannot change a pending tree (`DECISIONS.md`, D-A7).
+`validUntil` is a unix timestamp. There is no global trust epoch in the tree: each `CALL_BEGIN` binds its own `descHash` and attestation `version`, so revoking one descriptor touches only the trees that use it (`DECISIONS.md`, D-A7).
 
 | Type | Name | Payload |
 |---|---|---|
-| 0x01 | CALL_BEGIN | target(20) codehash(32) selector(4) descHash(32) intent(str) publisher(str) attestStatus(u8) |
+| 0x01 | CALL_BEGIN | target(20) codehash(32) selector(4) descHash(32) intent(str) publisher(str) attestStatus(u8) version(u64) |
 | 0x02 | CALL_END | |
 | 0x10 | FIELD_ADDRESS | label(str) addr(20) nameSource(u8) name(str) flags(u8: bit 0 hasCode, bit 1 isSelf) |
 | 0x11 | FIELD_AMOUNT | label(str) token(20) symbol(str) decimals(u8) raw(u256) |
@@ -26,7 +26,7 @@ Header := chainId(u64) account(20) signedAtBlock(u64) validUntilBlock(u64) trust
 | 0x30 | RISK | code(u16) args(bytes) |
 | 0x31 | BLIND | label(str) keccak(32) len(u32) boundBy(u16, 0xFFFF for unbound) |
 | 0x40 | FEE | token(20) symbol(str) decimals(u8) amount(u256) gasLimitTotal(u64) |
-| 0x41 | VALID_UNTIL | block(u64) |
+| 0x41 | VALID_UNTIL | timestamp(u64) |
 | 0x42 | POLICY | policyHash(32) |
 
 `attestStatus`: 0 none, 1 attested with an ENS exclusivity proof, 2 attested without ENS (the frames devnet has none).
@@ -57,9 +57,11 @@ Header := chainId(u64) account(20) signedAtBlock(u64) validUntilBlock(u64) trust
 | 0x0106 | SWEEP_TO_OTHER | SWEEP or PAY_PORTION to someone else |
 | 0x0107 | PERMIT2_ALLOWANCE_CHANGE | Permit2 approve in the batch |
 | 0x0108 | UR_ALLOW_REVERT | a command carries the allow-revert flag |
-| 0x0201 | TTL_LONG | validity above the default 25 blocks |
+| 0x0009 | SPENDER_UNATTESTED | an approval names a spender no attestor has vouched for |
 | 0x0202 | TOKEN_UNSAFE | added: token flagged fee-on-transfer or rebasing. This sets a policy bit and is not emitted as a node |
 
 ## Default policy (`_applyPolicy`)
 
-Refuses: `UNVERIFIED_CONTRACT`, unbounded `BLIND`, `UNLIMITED_APPROVAL`, `TTL_LONG`, unsafe tokens, and any `HOOK_CAN_TAKE_*` combined with `NO_MIN_OUT` or `HOOK_UNVERIFIED`. A policy's `allowMask` lifts these one by one. `policyHash` is in the tree, so owners sign the policy in force.
+Refuses: `UNVERIFIED_CONTRACT`, unbounded `BLIND`, `UNLIMITED_APPROVAL`, `SPENDER_UNATTESTED` (unless the approval is being set to zero), `UR_ALLOW_REVERT`, unsafe tokens, and any `HOOK_CAN_TAKE_*` combined with `NO_MIN_OUT` or `HOOK_UNVERIFIED`. A policy's `allowMask` lifts these one by one. `policyHash` is in the tree, so owners sign the policy in force.
+
+Freshness is not a risk node. A validity beyond the policy's `maxTtl` (default 300 s) reverts `TtlTooLong` in execution, and the device refuses anything beyond its own `DEVICE_MAX_TTL` (600 s) by its own clock.

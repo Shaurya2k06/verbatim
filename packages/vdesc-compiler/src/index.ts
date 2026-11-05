@@ -1,5 +1,5 @@
 // ERC-7730 JSON plus the Verbatim "effects" extension, to VDesc bytes (docs/VDESC.md). Deterministic.
-import { bytesToHex, keccak256, toFunctionSelector, type Hex } from "viem";
+import { bytesToHex, keccak256, toFunctionSelector, toHex, type Hex } from "viem";
 
 export type Src = { kind: "target" } | { kind: "const"; address: Hex } | { kind: "field"; path: string };
 
@@ -23,7 +23,8 @@ export type EffectSpec =
   | { kind: "OPERATOR_SET"; token: Src; operator: string; approved: string }
   | { kind: "SHARES_MIN"; token: Src; min: string }
   | { kind: "NFT_OUT"; token: Src; id: string; to: string }
-  | { kind: "P2_APPROVE_SET"; token: Src; spender: string; amount: string };
+  | { kind: "P2_APPROVE_SET"; token: Src; spender: string; amount: string }
+  | { kind: "IN_VALUE"; token: Src };
 
 /** One function of a descriptor, in our effects-extended ERC-7730 subset. */
 export interface FunctionSpec {
@@ -36,10 +37,23 @@ export interface FunctionSpec {
   flags?: ("UNLIMITED_IF" | "OPERATOR" | "ADMIN")[];
 }
 
+/** RFC 8785 for what descriptors contain: sorted keys, no whitespace, JSON's own string and number forms. */
+export function jcs(v: unknown): string {
+  if (Array.isArray(v)) return `[${v.map(jcs).join(",")}]`;
+  if (v && typeof v === "object") {
+    const o = v as Record<string, unknown>;
+    return `{${Object.keys(o).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)).filter((k) => o[k] !== undefined).map((k) => `${JSON.stringify(k)}:${jcs(o[k])}`).join(",")}}`;
+  }
+  return JSON.stringify(v);
+}
+
+/** ERC-8176's `descriptorHash`. A file with `includes` must be resolved first. */
+export const descriptorHash = (json: unknown): Hex => keccak256(toHex(jcs(json)));
+
 const ROLES = { other: 0, recipient: 1, spender: 2, operator: 3 } as const;
 const UNITS = { none: 0, timestamp: 1, bips: 2 } as const;
 const FORMATS = { address: 1, tokenAmount: 2, uint: 3, bool: 4, enum: 5, bytes: 6, calldata: 7, ethValue: 8 } as const;
-const EFFECTS = { OUT_EXACT: 1, IN_MIN: 2, APPROVE_SET: 3, OPERATOR_SET: 4, SHARES_MIN: 5, NFT_OUT: 6, P2_APPROVE_SET: 7 } as const;
+const EFFECTS = { OUT_EXACT: 1, IN_MIN: 2, APPROVE_SET: 3, OPERATOR_SET: 4, SHARES_MIN: 5, NFT_OUT: 6, P2_APPROVE_SET: 7, IN_VALUE: 8 } as const;
 const FLAGS = { UNLIMITED_IF: 1, OPERATOR: 2, ADMIN: 4 } as const;
 
 const VALID = /^[\x20-\x5b\x5d-\x7e]*$/;
@@ -119,6 +133,8 @@ function effect(e: EffectSpec): number[] {
       return [...head, ...path(e.min)];
     case "NFT_OUT":
       return [...head, ...path(e.id), ...path(e.to)];
+    case "IN_VALUE":
+      return head;
   }
 }
 

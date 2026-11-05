@@ -12,7 +12,8 @@ const revive = (i: any) => ({ ...i, chainId: BigInt(i.chainId), validUntil: BigI
 
 describe("I8: golden vectors", () => {
   it("the TypeScript renderer reproduces them", () => {
-    expect(vectors.length).toBeGreaterThan(10);
+    expect(vectors.length).toBeGreaterThan(30);
+    expect(vectors.filter((v: any) => v.name).length).toBeGreaterThanOrEqual(29);
     for (const v of vectors) {
       const o = render(revive(v.input), tsTrust());
       expect(o.tree).toBe(v.tree);

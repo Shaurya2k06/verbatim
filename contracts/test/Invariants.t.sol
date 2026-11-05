@@ -237,7 +237,7 @@ contract InvariantsTest is Base {
         // A descriptor for something else: the tree must not change, so nothing pending is invalidated.
         TrustStoreLayout.TrustUpdate memory u = emptyUpdate();
         u.descriptors = new TrustStoreLayout.DescUpdate[](1);
-        u.descriptors[0] = TrustStoreLayout.DescUpdate(keccak256("other"), 0x12345678, transferDesc(), ATTESTORS);
+        u.descriptors[0] = _du(keccak256("other"), 0x12345678, transferDesc());
         refresh(u);
         (bytes memory tree, , ) = rpm.renderView(input(p));
         assertEq(keccak256(tree), keccak256(p.tree));
@@ -269,8 +269,67 @@ contract InvariantsTest is Base {
 
         TrustStoreLayout.TrustUpdate memory back = emptyUpdate();
         back.descriptors = new TrustStoreLayout.DescUpdate[](1);
-        back.descriptors[0] = TrustStoreLayout.DescUpdate(address(usdc).codehash, 0xa9059cbb, transferDesc(), ATTESTORS);
+        back.descriptors[0] = _du(address(usdc).codehash, 0xa9059cbb, transferDesc());
         expectRefresh(back, abi.encodeWithSelector(TrustStoreLayout.DescriptorRevoked.selector));
+    }
+
+    function _oneDesc(TrustStoreLayout.DescUpdate memory d) private returns (TrustStoreLayout.TrustUpdate memory u) {
+        u = emptyUpdate();
+        u.descriptors = new TrustStoreLayout.DescUpdate[](1);
+        u.descriptors[0] = d;
+    }
+
+    function test_erc8176_valid_attestations_accepted() public {
+        refresh(_oneDesc(_du(keccak256("c"), 0x11111111, transferDesc())));
+    }
+
+    function test_erc8176_forged_attestation_refused() public {
+        TrustStoreLayout.DescUpdate memory d = _du(keccak256("c"), 0x11111111, transferDesc());
+        // A stranger's signature in an attestor's place.
+        d.attestations[1] = att8176(0xBAD, d.descriptorHash, 0, SCHEMA_8176);
+        (bool ok, bytes memory ret) = _tryRefresh(_oneDesc(d));
+        assertFalse(ok);
+        assertEq(errorName(ret), TrustStoreLayout.AttestationInvalid.selector);
+    }
+
+    function test_erc8176_other_schema_refused() public {
+        TrustStoreLayout.DescUpdate memory d = _du(keccak256("c"), 0x11111111, transferDesc());
+        d.attestations[0] = att8176(vm.addr(AT1) < vm.addr(AT2) ? AT1 : AT2, d.descriptorHash, 0, keccak256("another schema"));
+        (bool ok, bytes memory ret) = _tryRefresh(_oneDesc(d));
+        assertFalse(ok);
+        assertEq(errorName(ret), TrustStoreLayout.AttestationInvalid.selector);
+    }
+
+    function test_erc8176_expired_refused() public {
+        TrustStoreLayout.DescUpdate memory d = _du(keccak256("c"), 0x11111111, transferDesc());
+        d.attestations[0] = att8176(vm.addr(AT1) < vm.addr(AT2) ? AT1 : AT2, d.descriptorHash, uint64(block.timestamp - 1), SCHEMA_8176);
+        (bool ok, bytes memory ret) = _tryRefresh(_oneDesc(d));
+        assertFalse(ok);
+        assertEq(errorName(ret), TrustStoreLayout.AttestationInvalid.selector);
+    }
+
+    function test_erc8176_wrong_hash_refused() public {
+        TrustStoreLayout.DescUpdate memory d = _du(keccak256("c"), 0x11111111, transferDesc());
+        d.descriptorHash = keccak256("a different file");
+        (bool ok, bytes memory ret) = _tryRefresh(_oneDesc(d));
+        assertFalse(ok);
+        assertEq(errorName(ret), TrustStoreLayout.AttestationInvalid.selector);
+    }
+
+    function test_erc8176_needs_threshold() public {
+        TrustStoreLayout.DescUpdate memory d = _du(keccak256("c"), 0x11111111, transferDesc());
+        TrustStoreLayout.Attestation8176 memory only = d.attestations[0];
+        d.attestations = new TrustStoreLayout.Attestation8176[](1);
+        d.attestations[0] = only;
+        (bool ok, bytes memory ret) = _tryRefresh(_oneDesc(d));
+        assertFalse(ok);
+        assertEq(errorName(ret), TrustStoreLayout.NotEnoughAttestors.selector);
+    }
+
+    function _tryRefresh(TrustStoreLayout.TrustUpdate memory u) private returns (bool, bytes memory) {
+        (bool ok, bytes memory ret) = address(rpm).call(abi.encodeCall(TrustAdmin.trustUpdateHash, (u)));
+        require(ok, "hash");
+        return address(rpm).call(abi.encodeCall(TrustAdmin.refreshTrust, (u, attestorSigs(abi.decode(ret, (bytes32))))));
     }
 
     function test_refresh_needs_threshold_of_attestors() public {
