@@ -1,0 +1,13 @@
+{
+  "name": "@verbatim/urrender",
+  "version": "0.1.0",
+  "description": "Human-readable Universal Router and Uniswap v4 calldata, with hook risk from address bits. Solidity and TypeScript, byte-identical.",
+  "type": "module",
+  "license": "MIT",
+  "main": "src/index.ts",
+  "exports": { ".": "./src/index.ts" },
+  "files": ["src", "solidity", "README.md"],
+  "scripts": { "test": "vitest run", "sync": "cp ../../contracts/src/uniswap/URRender.sol ../../contracts/src/uniswap/HookFlags.sol ../../contracts/src/lib/VTree.sol solidity/" },
+  "dependencies": { "viem": "^2.21.0" },
+  "devDependencies": { "vitest": "^2.1.0" }
+}

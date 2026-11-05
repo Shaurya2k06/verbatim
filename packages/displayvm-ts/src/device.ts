@@ -1,0 +1,252 @@
+// What a signing device needs: strict VTREE decoding and display formatting. Refuses anything it does not know.
+import { bytesToHex, hexToBytes, type Address, type Hex } from "viem";
+import { NODE, RISK } from "@verbatim/urrender";
+
+export const RISK_NAMES: Record<number, string> = Object.fromEntries(Object.entries(RISK).map(([k, v]) => [v, k]));
+
+export const RISK_TEXT: Record<number, string> = {
+  [RISK.UNLIMITED_APPROVAL]: "UNLIMITED APPROVAL",
+  [RISK.OPERATOR_APPROVAL]: "CAN MOVE ALL YOUR NFTS",
+  [RISK.UPGRADEABLE_TARGET]: "CONTRACT IS UPGRADEABLE",
+  [RISK.UNVERIFIED_CONTRACT]: "UNVERIFIED CONTRACT",
+  [RISK.TRUST_CHANGE]: "CHANGES WHO CONTROLS THIS ACCOUNT",
+  [RISK.NO_POST_CHECK]: "NOT CHECKED AFTER SIGNING",
+  [RISK.RECIPIENT_HAS_CODE]: "RECIPIENT IS A CONTRACT",
+  [RISK.RECIPIENT_NOT_SELF]: "OUTPUT GOES TO ANOTHER ADDRESS",
+  [RISK.NO_MIN_OUT]: "NO MINIMUM OUTPUT",
+  [RISK.HOOK_CAN_TAKE_INPUT]: "HOOK CAN TAKE YOUR INPUT",
+  [RISK.HOOK_CAN_TAKE_OUTPUT]: "HOOK CAN TAKE YOUR OUTPUT",
+  [RISK.HOOK_DYNAMIC_FEE]: "POOL FEE CAN CHANGE",
+  [RISK.HOOK_UNVERIFIED]: "UNVERIFIED HOOK",
+  [RISK.SWEEP_TO_OTHER]: "FUNDS SWEPT TO ANOTHER ADDRESS",
+  [RISK.PERMIT2_ALLOWANCE_CHANGE]: "CHANGES PERMIT2 ALLOWANCE",
+  [RISK.UR_ALLOW_REVERT]: "COMMAND MAY PARTIALLY FAIL",
+  [RISK.TTL_LONG]: "SIGNATURE VALID FOR A LONG TIME",
+  [RISK.TOKEN_UNSAFE]: "REBASING OR FEE-ON-TRANSFER TOKEN",
+};
+
+export type TreeNode =
+  | { type: "CALL_BEGIN"; target: Address; codehash: Hex; selector: Hex; descHash: Hex; intent: string; publisher: string; attestStatus: number }
+  | { type: "CALL_END" }
+  | { type: "FIELD_ADDRESS"; label: string; addr: Address; nameSource: number; name: string; hasCode: boolean; isSelf: boolean }
+  | { type: "FIELD_AMOUNT"; label: string; token: Address; symbol: string; decimals: number; raw: bigint }
+  | { type: "FIELD_UINT"; label: string; value: bigint; unit: number }
+  | { type: "FIELD_BOOL"; label: string; value: boolean }
+  | { type: "FIELD_ENUM"; label: string; code: number; text: string }
+  | { type: "FIELD_BYTES"; label: string; keccak: Hex; len: number }
+  | { type: "FIELD_ETH_VALUE"; raw: bigint }
+  | { type: "GROUP_BEGIN"; label: string }
+  | { type: "GROUP_END" }
+  | { type: "RISK"; code: number; args: Hex }
+  | { type: "BLIND"; label: string; keccak: Hex; len: number; boundBy: number }
+  | { type: "FEE"; token: Address; symbol: string; decimals: number; amount: bigint; gasLimitTotal: bigint }
+  | { type: "VALID_UNTIL"; block: bigint }
+  | { type: "POLICY"; policyHash: Hex };
+
+export interface DecodedTree {
+  chainId: bigint;
+  account: Address;
+  signedAtBlock: bigint;
+  validUntilBlock: bigint;
+  trustEpoch: bigint;
+  nodes: TreeNode[];
+}
+
+class Reader {
+  p = 0;
+  constructor(public d: Uint8Array, public end: number) {}
+  need(n: number) {
+    if (this.p + n > this.end) throw new Error("VTREE: truncated");
+  }
+  u8() {
+    this.need(1);
+    return this.d[this.p++];
+  }
+  be(n: number): bigint {
+    this.need(n);
+    let v = 0n;
+    for (let i = 0; i < n; i++) v = (v << 8n) | BigInt(this.d[this.p + i]);
+    this.p += n;
+    return v;
+  }
+  hex(n: number): Hex {
+    this.need(n);
+    const h = bytesToHex(this.d.slice(this.p, this.p + n));
+    this.p += n;
+    return h;
+  }
+  str(): string {
+    const n = this.u8();
+    if (n > 48) throw new Error("VTREE: string too long");
+    this.need(n);
+    let s = "";
+    for (let i = 0; i < n; i++) {
+      const c = this.d[this.p + i];
+      if (c < 0x20 || c > 0x7e || c === 0x5c) throw new Error("VTREE: bad character in string");
+      s += String.fromCharCode(c);
+    }
+    this.p += n;
+    return s;
+  }
+  done() {
+    if (this.p !== this.end) throw new Error("VTREE: trailing bytes in node");
+  }
+}
+
+/** Strict: unknown node types, trailing bytes and malformed strings all refuse. */
+export function decodeTree(tree: Hex): DecodedTree {
+  const d = hexToBytes(tree);
+  const h = new Reader(d, d.length);
+  if (h.be(4) !== 0x56540001n) throw new Error("VTREE: bad magic");
+  const out: DecodedTree = { chainId: h.be(8), account: h.hex(20) as Address, signedAtBlock: h.be(8), validUntilBlock: h.be(8), trustEpoch: h.be(8), nodes: [] };
+  while (h.p < d.length) {
+    const type = h.u8();
+    const len = Number(h.be(2));
+    h.need(len);
+    const r = new Reader(d, h.p + len);
+    r.p = h.p;
+    out.nodes.push(decodeNode(type, r));
+    r.done();
+    h.p += len;
+  }
+  return out;
+}
+
+function decodeNode(type: number, r: Reader): TreeNode {
+  switch (type) {
+    case NODE.CALL_BEGIN:
+      return { type: "CALL_BEGIN", target: r.hex(20) as Address, codehash: r.hex(32), selector: r.hex(4), descHash: r.hex(32), intent: r.str(), publisher: r.str(), attestStatus: r.u8() };
+    case NODE.CALL_END:
+      return { type: "CALL_END" };
+    case NODE.FIELD_ADDRESS: {
+      const label = r.str();
+      const addr = r.hex(20) as Address;
+      const nameSource = r.u8();
+      const name = r.str();
+      const flags = r.u8();
+      if (flags > 3 || nameSource > 2) throw new Error("VTREE: bad address flags");
+      return { type: "FIELD_ADDRESS", label, addr, nameSource, name, hasCode: !!(flags & 1), isSelf: !!(flags & 2) };
+    }
+    case NODE.FIELD_AMOUNT:
+      return { type: "FIELD_AMOUNT", label: r.str(), token: r.hex(20) as Address, symbol: r.str(), decimals: r.u8(), raw: r.be(32) };
+    case NODE.FIELD_UINT:
+      return { type: "FIELD_UINT", label: r.str(), value: r.be(32), unit: r.u8() };
+    case NODE.FIELD_BOOL: {
+      const label = r.str();
+      const v = r.u8();
+      if (v > 1) throw new Error("VTREE: bad bool");
+      return { type: "FIELD_BOOL", label, value: v === 1 };
+    }
+    case NODE.FIELD_ENUM:
+      return { type: "FIELD_ENUM", label: r.str(), code: Number(r.be(2)), text: r.str() };
+    case NODE.FIELD_BYTES:
+      return { type: "FIELD_BYTES", label: r.str(), keccak: r.hex(32), len: Number(r.be(4)) };
+    case NODE.FIELD_ETH_VALUE:
+      return { type: "FIELD_ETH_VALUE", raw: r.be(32) };
+    case NODE.GROUP_BEGIN:
+      return { type: "GROUP_BEGIN", label: r.str() };
+    case NODE.GROUP_END:
+      return { type: "GROUP_END" };
+    case NODE.RISK: {
+      const code = Number(r.be(2));
+      if (!(code in RISK_NAMES)) throw new Error(`VTREE: unknown risk code ${code}`);
+      return { type: "RISK", code, args: r.hex(r.end - r.p) };
+    }
+    case NODE.BLIND:
+      return { type: "BLIND", label: r.str(), keccak: r.hex(32), len: Number(r.be(4)), boundBy: Number(r.be(2)) };
+    case NODE.FEE:
+      return { type: "FEE", token: r.hex(20) as Address, symbol: r.str(), decimals: r.u8(), amount: r.be(32), gasLimitTotal: r.be(8) };
+    case NODE.VALID_UNTIL:
+      return { type: "VALID_UNTIL", block: r.be(8) };
+    case NODE.POLICY:
+      return { type: "POLICY", policyHash: r.hex(32) };
+    default:
+      throw new Error(`VTREE: unknown node type 0x${type.toString(16)}`);
+  }
+}
+
+/** Exact decimal, never rounded: digits, at most one dot, then the symbol. */
+export function formatAmount(raw: bigint, decimals: number, symbol: string): string {
+  const s = raw.toString().padStart(decimals + 1, "0");
+  const whole = s.slice(0, s.length - decimals);
+  const frac = decimals ? s.slice(s.length - decimals).replace(/0+$/, "") : "";
+  return `${whole}${frac ? "." + frac : ""} ${symbol}`;
+}
+
+const shortAddr = (a: string) => a;
+
+export interface DeviceLine {
+  text: string;
+  risk?: boolean;
+  indent: number;
+}
+
+/** Every node becomes a line; risk lines are also lifted to the top, highlighted. */
+export function formatForDevice(t: DecodedTree): DeviceLine[] {
+  const risks: DeviceLine[] = [];
+  const lines: DeviceLine[] = [];
+  let indent = 0;
+  const push = (text: string, extra: Partial<DeviceLine> = {}) => lines.push({ text, indent, ...extra });
+  for (const n of t.nodes) {
+    switch (n.type) {
+      case "CALL_BEGIN":
+        push(`${n.intent}${n.publisher ? ` (by ${n.publisher})` : ""} at ${shortAddr(n.target)}`);
+        if (n.attestStatus === 0) push("Not attested", { risk: true });
+        indent++;
+        break;
+      case "CALL_END":
+        indent--;
+        break;
+      case "GROUP_BEGIN":
+        push(n.label);
+        indent++;
+        break;
+      case "GROUP_END":
+        indent--;
+        break;
+      case "FIELD_ADDRESS": {
+        const who = n.isSelf ? "this account" : n.nameSource ? `${n.name} (${n.addr})` : n.addr;
+        push(`${n.label}: ${who}${n.hasCode && !n.isSelf ? " [contract]" : ""}`);
+        break;
+      }
+      case "FIELD_AMOUNT":
+        push(`${n.label}: ${formatAmount(n.raw, n.decimals, n.symbol)}`);
+        break;
+      case "FIELD_UINT":
+        push(`${n.label}: ${n.unit === 1 ? `timestamp ${n.value}` : n.unit === 2 ? `${n.value} bps` : n.value}`);
+        break;
+      case "FIELD_BOOL":
+        push(`${n.label}: ${n.value ? "yes" : "no"}`);
+        break;
+      case "FIELD_ENUM":
+        push(`${n.label}: ${n.text}`);
+        break;
+      case "FIELD_BYTES":
+        push(`${n.label}: ${n.len} bytes, hash ${n.keccak}`);
+        break;
+      case "FIELD_ETH_VALUE":
+        push(`Sends ${formatAmount(n.raw, 18, "ETH")}`);
+        break;
+      case "RISK": {
+        const line = { text: `! ${RISK_TEXT[n.code]}${n.args !== "0x" ? ` ${n.args}` : ""}`, indent: 0, risk: true };
+        risks.push(line);
+        break;
+      }
+      case "BLIND": {
+        const line = { text: `! BLIND DATA "${n.label}": ${n.len} bytes, hash ${n.keccak}`, indent: 0, risk: true };
+        risks.push(line);
+        break;
+      }
+      case "FEE":
+        push(`Fee: ${formatAmount(n.amount, n.decimals, n.symbol)} (gas limit ${n.gasLimitTotal})`);
+        break;
+      case "VALID_UNTIL":
+        push(`Valid until block ${n.block}`);
+        break;
+      case "POLICY":
+        push(`Policy ${n.policyHash}`);
+        break;
+    }
+  }
+  return [...risks, ...lines];
+}
