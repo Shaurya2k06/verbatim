@@ -314,13 +314,13 @@
     "expected": "bundler accepts; lands; delivered; name in the sentence",
     "pass": true,
     "outcome": "mined",
-    "txHash": "0xb441ba48211c3c275acc8c5cf8c2800a201581168ab7f0743adf3c4ce590c9a7",
+    "txHash": "0xf3e40dad61ee2774ad8f0c0128b53cdfc4f63a3d7816b0fe61a19e885ece3739",
     "extra": {
-      "actualGasUsed": "1625112",
+      "actualGasUsed": "1630134",
       "bundler": "pimlico",
-      "sentence": "You lose exactly 1 dUSDC\nThe code at 0x7e068face3fc4a6826d182b1ec0e80d7d8979e0f is what was attested\n0x3ac4caf4b6727fdb58a7784630e4689a4331c616 is not a contract\nThe name shown for 0x3ac4caf4b6727fdb58a7784630e4689a4331c616 still resolves to it\nNo other tracked holding decreases\nNo other Permit2 allowance grows\nOwners and policy stay the same\nNo approval outlives this transaction\n! OUTPUT GOES TO ANOTHER ADDRESS\nFee cap: 0.0032670000081 ETH\nSend tokens (by verbatim-demo.eth) at 0x7e068face3fc4a6826d182b1ec0e80d7d8979e0f\nTo: verbatim-demo.eth (0x3ac4caf4b6727fdb58a7784630e4689a4331c616)\nAmount: 1 dUSDC\nValid until 2026-11-05 23:27:24 UTC\nPolicy version 1, path ERC-4337\nSnapshot 0x01d06dd453d388b3be12eae66001c30119daa0564b8bf38a43d4d35b5f014342"
+      "sentence": "You lose exactly 1 dUSDC\nThe code at 0x7e068face3fc4a6826d182b1ec0e80d7d8979e0f is what was attested\n0x3ac4caf4b6727fdb58a7784630e4689a4331c616 is not a contract\nThe name shown for 0x3ac4caf4b6727fdb58a7784630e4689a4331c616 still resolves to it\nNo other tracked holding decreases\nNo other Permit2 allowance grows\nOwners and policy stay the same\nNo approval outlives this transaction\n! OUTPUT GOES TO ANOTHER ADDRESS\nFee cap: 0.0032670000081 ETH\nSend tokens (by verbatim-demo.eth) at 0x7e068face3fc4a6826d182b1ec0e80d7d8979e0f\nTo: verbatim-demo.eth (0x3ac4caf4b6727fdb58a7784630e4689a4331c616)\nAmount: 1 dUSDC\nValid until 2026-11-05 23:34:12 UTC\nPolicy version 1, path ERC-4337\nSnapshot 0x01d06dd453d388b3be12eae66001c30119daa0564b8bf38a43d4d35b5f014342"
     },
-    "at": "2026-11-05T23:23:37.602Z"
+    "at": "2026-11-05T23:30:28.523Z"
   },
   "B-honest-alchemy": {
     "id": "B-honest-alchemy",
@@ -328,36 +328,36 @@
     "expected": "bundler accepts; lands; delivered",
     "pass": true,
     "outcome": "mined",
-    "txHash": "0xc30b42437771a2fb31532bf43515faed1033c9f9bf9a2130b98572491d26c52c",
-    "block": 12072080,
+    "txHash": "0x22a3081ba2dbfc8c9fc968815f0a962b0c575a8f82a8e943aeb6bb470847a9dd",
     "extra": {
-      "actualGasUsed": "1107411",
+      "actualGasUsed": "1521133",
       "bundler": "alchemy"
     },
-    "at": "2026-11-05T21:15:37.464Z"
+    "at": "2026-11-05T23:33:27.520Z"
   },
   "B-swap": {
     "id": "B-swap",
     "title": "v4 swap through Uniswap's official Sepolia Universal Router and PoolManager",
     "expected": "lands; minimum output respected",
-    "pass": false,
+    "pass": true,
     "outcome": "mined",
-    "txHash": "0x871509a0e030c18759cd190a03c26c157455dce5cbc26ac6aba3de25b6e54a97",
+    "txHash": "0x56feaa563d4baa2797348b7e26e235eff8b62221047ce7cb1ba39e8fe7a78b72",
+    "message": "",
     "extra": {
-      "actualGasUsed": "1248235",
-      "got": "0",
+      "actualGasUsed": "1266317",
+      "got": "2930711",
       "bundler": "pimlico"
     },
-    "at": "2026-11-05T23:24:17.458Z"
+    "at": "2026-11-05T23:33:51.130Z"
   },
   "B-A1": {
     "id": "B-A1",
     "title": "Swapped recipient under an honest sentence, on Sepolia",
-    "expected": "bundler rejects; TreeMismatch",
-    "pass": false,
+    "expected": "bundler rejects; the account's reason is TreeMismatch",
+    "pass": true,
     "outcome": "rejected-at-mempool",
-    "message": "\"Internal error from bundler (trace id: 491648dd2debd2ead895477803b957ed)\"",
-    "at": "2026-11-05T23:24:25.993Z"
+    "message": "Internal error from bundler (trace id: d893853b498b10666d3e75f894c44b60) | Error: TreeMismatch(bytes32 expected, bytes32 actual)",
+    "at": "2026-11-05T23:30:57.605Z"
   },
   "A8": {
     "id": "A8",
@@ -365,8 +365,8 @@
     "expected": "not in the snapshot, so hex is shown; the exclusivity proof refuses it",
     "pass": true,
     "outcome": "rejected-at-mempool",
-    "message": "Execution reverted with reason: +Ă\r\u0010\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0010\u0000\u0000\u0011\u0010\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0010\u0000\u0000\u0011.\n\nRaw Call Arguments:\n  to:    0x318c1ba633e2411dd422a5f2e0752d885f22acd7\n  data:  0x257d67a | To: 0x000000000000000000000000000000000000bad1",
-    "at": "2026-11-05T23:26:17.087Z"
+    "message": "Execution reverted with reason: +Ă\r\u0010\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0010\u0000\u0000\u0011\u0010\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0010\u0000\u0000\u0011.\n\nRaw Call Arguments:\n  to:    0x982d1e4b68c603009ce8b383eeda08653ab04ea7\n  data:  0x257d67a | To: 0x000000000000000000000000000000000000bad1",
+    "at": "2026-11-05T23:32:50.202Z"
   },
   "INVALIDATION": {
     "id": "INVALIDATION",
@@ -663,17 +663,18 @@
     "expected": "",
     "pass": false,
     "outcome": "not-run",
-    "message": "ALCHEMY_BUNDLER_URL missing",
-    "at": "2026-11-05T23:23:49.051Z"
+    "message": "Verification gas limit efficiency too low. Required: 0.4, Actual: 0.18277",
+    "at": "2026-11-05T23:30:35.373Z"
   },
   "B13": {
     "id": "B13",
-    "title": "B13",
-    "expected": "",
-    "pass": false,
-    "outcome": "not-run",
-    "message": "Internal error from bundler (trace id: 49fe3d870faec858e0c02d4d633ce718)",
-    "at": "2026-11-05T23:24:52.271Z"
+    "title": "An attestor missing from the ENS anchor",
+    "expected": "admitted; refused at execution: AttestorNotListed",
+    "pass": true,
+    "outcome": "reverted-in-batch",
+    "txHash": "0x64e6ed6043b7343d5b9f2089aa3420ae61cae86900998efc56f8fdef08596695",
+    "message": "AttestorNotListed(0x062D072F2Cd4E28659cdD434aD985dc5696d522C)",
+    "at": "2026-11-05T23:34:17.145Z"
   },
   "B_ENS_REVOKED": {
     "id": "B_ENS_REVOKED",
@@ -683,5 +684,15 @@
     "outcome": "not-run",
     "message": "Internal error from bundler (trace id: 3db57cbc6bb9f7f305e68ca7f6c9f931)",
     "at": "2026-11-05T23:25:52.129Z"
+  },
+  "B-ens-revoked": {
+    "id": "B-ens-revoked",
+    "title": "A leaf revoked by ENS record while the operation is pending",
+    "expected": "admitted; refused at execution: LeafRevokedInEns",
+    "pass": true,
+    "outcome": "reverted-in-batch",
+    "txHash": "0xace999157d8832fcafddff539746fb4b4ce7575059423bcfdf30a87228c1fa4d",
+    "message": "LeafRevokedInEns(0x855303e467745419d6be80bbb9f5d7c68f7286761e53355bcdffd7fd2506fdd1)",
+    "at": "2026-11-05T23:35:05.296Z"
   }
 }

@@ -9,6 +9,7 @@ import {EnsTrustAnchor} from "../src/trust/EnsTrustAnchor.sol";
 import {EnsTrustChecker} from "../src/trust/EnsTrustChecker.sol";
 import {DisplayVM} from "../src/lib/DisplayVM.sol";
 import {AssertionKit} from "../src/lib/AssertionKit.sol";
+import {Vm} from "forge-std/Vm.sol";
 
 contract AnchorRegistry {
     address public sub;
@@ -275,8 +276,7 @@ contract Account4337Test is SnapshotFixture {
         acct.validateUserOp(op, h, 0);
         resolver.setRecord("attestors", _lower(address(0x9999)));
         (address a, ) = _attestorPair();
-        vm.expectRevert(abi.encodeWithSelector(EnsTrustAnchor.AttestorNotListed.selector, a));
-        acct.executeUserOp(op, h);
+        _expectRefused(op, h, abi.encodeWithSelector(EnsTrustAnchor.AttestorNotListed.selector, a));
         assertEq(usdc.balanceOf(BOB), 0);
     }
 
@@ -287,8 +287,8 @@ contract Account4337Test is SnapshotFixture {
         for (uint256 i = 0; i < sorted.length; i++) if (sorted[i].kind == 1 && sorted[i].key[2] == bytes32(bytes4(0xa9059cbb))) idx = i;
         bytes32 leaf = keccak256(abi.encodePacked(bytes1(0), sorted[idx].kind, sorted[idx].key, sorted[idx].value));
         resolver.setRecord("revoked", vm.toString(leaf));
-        vm.expectRevert(abi.encodeWithSelector(EnsTrustAnchor.LeafRevokedInEns.selector, leaf));
-        acct.executeUserOp(op, h);
+        _expectRefused(op, h, abi.encodeWithSelector(EnsTrustAnchor.LeafRevokedInEns.selector, leaf));
+        assertEq(usdc.balanceOf(BOB), 0);
     }
 
     function test_registry_revocation_stops_a_leaf() public {
@@ -300,8 +300,25 @@ contract Account4337Test is SnapshotFixture {
         bytes32[] memory list = new bytes32[](1);
         list[0] = leaf;
         registry().revoke(list, _quorumSigs(registry().digest(list)));
-        vm.expectRevert(abi.encodeWithSelector(VerbatimAccount4337.LeafRevoked.selector, leaf));
+        _expectRefused(op, h, abi.encodeWithSelector(VerbatimAccount4337.LeafRevoked.selector, leaf));
+        assertEq(usdc.balanceOf(BOB), 0);
+    }
+
+    /// Lands, runs nothing, says why, and spends the signature.
+    function _expectRefused(PackedUserOperation memory op, bytes32 h, bytes memory reason) private {
+        vm.recordLogs();
         acct.executeUserOp(op, h);
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+        bytes32 sig = keccak256("VerbatimResult(bool,bytes)");
+        bool seen;
+        for (uint256 i = 0; i < logs.length; i++) {
+            if (logs[i].topics[0] == sig) {
+                assertEq(uint256(logs[i].topics[1]), 0);
+                assertEq(abi.decode(logs[i].data, (bytes)), reason);
+                seen = true;
+            }
+        }
+        assertTrue(seen, "VerbatimResult");
     }
 
     function _quorumSigs(bytes32 d) private pure returns (bytes[] memory s) {
@@ -318,16 +335,17 @@ contract Account4337Test is SnapshotFixture {
         acct.validateUserOp(op, h, 0);
         uint256 res = uint256(keccak256(bytes("attestors")));
         resolver.setCount(res, (1 << 4) * 2);
-        vm.expectRevert();
+        vm.recordLogs();
         acct.executeUserOp(op, h);
+        assertEq(usdc.balanceOf(BOB), 0);
     }
 
     function test_publisher_that_lost_exclusivity_stops_at_execution() public {
         (PackedUserOperation memory op, bytes32 h, , , , ) = _honest(1);
         acct.validateUserOp(op, h, 0);
         checker.setFail(true);
-        vm.expectRevert(bytes("publisher not exclusive"));
         acct.executeUserOp(op, h);
+        assertEq(usdc.balanceOf(BOB), 0, "refused, and the operation still lands");
     }
 
     function test_no_anchor_on_chains_without_ens() public {

@@ -18,7 +18,7 @@ export interface Gas {
   preVerificationGas: bigint;
 }
 
-export const GAS: Gas = { callGasLimit: 1_500_000n, verificationGasLimit: 700_000n, preVerificationGas: 500_000n };
+export const GAS: Gas = { callGasLimit: 1_500_000n, verificationGasLimit: 300_000n, preVerificationGas: 500_000n };
 
 export async function rpc(url: string, method: string, params: unknown[]) {
   const res = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }, (_, v) => (typeof v === "bigint" ? `0x${v.toString(16)}` : v)) });

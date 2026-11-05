@@ -3,8 +3,8 @@
  "schema": 1,
  "root": "0x01d06dd453d388b3be12eae66001c30119daa0564b8bf38a43d4d35b5f014342",
  "depth": 4,
- "issuedAt": "1793920827",
- "expiry": "1793942427",
+ "issuedAt": "1793921331",
+ "expiry": "1793942931",
  "leaves": [
   {
    "type": 0,
@@ -136,11 +136,11 @@
  "signatures": [
   {
    "signer": "0x062D072F2Cd4E28659cdD434aD985dc5696d522C",
-   "sig": "0x4d6c3adc95b7be0f53c8df5f36d4dd4c2fb893bb5e0d23c0ab328d1b35ab0f5713f1b2d8ddbfae828b2cedaa9a1d896feedfccf41a9ed4c7eded7b0d9ce806291b"
+   "sig": "0xf4521ccc9524d73853d2bc58e1bc86eea11d74ee758ecf088af86264594aac7e5c21270eb6f4fd0f6f65c35fc847db618652b23b6499078f760f02eb3e3d53881c"
   },
   {
    "signer": "0x3F2B7Bf19AcFF84dBd2CE1670F6A3E77Ac60c627",
-   "sig": "0xc124332be8d58525336aa2600562e651f19f878a9cb7619d0125d25b81de05a07e99e435a68056ead63d602ad0f3295f3ded461b1e10380ef1858f629ada2cff1b"
+   "sig": "0xcbd45e9c3da457deb01bc83069e6bfeb16d15d9df558a38b4a93ff7e363e35150791973770f485e58eaff5e633124aa581baf4d62266fca5cea15b2812ac3a071b"
   }
  ]
 }

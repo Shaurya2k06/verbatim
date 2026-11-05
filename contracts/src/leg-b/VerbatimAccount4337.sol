@@ -153,15 +153,24 @@ contract VerbatimAccount4337 is VerbatimCore {
     function executeUserOp(PackedUserOperation calldata op, bytes32 userOpHash) external {
         if (msg.sender != ENTRY_POINT) revert NotEntryPoint();
         Sig memory s = abi.decode(op.signature, (Sig));
-        ITrustAnchor.Used memory used = _parse(s.proofs);
-        for (uint256 i = 0; i < used.leaves.length; i++) if (IRevocationRegistry(REVOCATIONS).isRevoked(used.leaves[i])) revert LeafRevoked(used.leaves[i]);
-        if (TRUST_ANCHOR != address(0)) {
-            used.attestors = _recoverAttestors(s);
-            ITrustAnchor(TRUST_ANCHOR).check(used);
-        }
         (Call[] memory calls, bytes memory spec) = abi.decode(op.callData[4:], (Call[], bytes));
         bytes32 digest = OwnerDigest.compute(address(this), s.treeHash, s.specHash, s.expiry, s.root, PATH_ERC4337, userOpHash);
-        this.executeBatch(calls, spec, s.specHash, s.expiry, digest);
+        ITrustAnchor.Used memory used = _parse(s.proofs);
+        used.attestors = _recoverAttestors(s);
+        // A refusal here is like a failed assertion: nothing runs, the signature is spent, the event says why. A revert would have
+        // bundlers refuse the operation in simulation, and an honest one that went stale would just retry forever.
+        try this.trustChecks(used) {
+            this.executeBatch(calls, spec, s.specHash, s.expiry, digest);
+        } catch (bytes memory reason) {
+            consumed[digest] = true;
+            emit VerbatimResult(false, reason);
+        }
+    }
+
+    /// §10 step 3: nothing used has been revoked, and ENS still stands behind it.
+    function trustChecks(ITrustAnchor.Used calldata used) external view {
+        for (uint256 i = 0; i < used.leaves.length; i++) if (IRevocationRegistry(REVOCATIONS).isRevoked(used.leaves[i])) revert LeafRevoked(used.leaves[i]);
+        if (TRUST_ANCHOR != address(0)) ITrustAnchor(TRUST_ANCHOR).check(used);
     }
 
     /// A self-call so that memory arguments become the calldata `_execute` works from.

@@ -179,4 +179,33 @@ contract URRenderTest is Test, TestVectors {
         vm.expectRevert(URRender.MalformedUR.selector);
         h.render(_withData(h, abi.encodeWithSelector(0x3593564c, hex"90", inputs, uint256(1)), 0));
     }
+
+    /// ETH in: the call's value is the debit, once. Found by the chain: the first live ETH swap failed its own assertion.
+    function test_native_input_is_debited_once_and_must_match_exactly() public {
+        RenderHarness h = harness();
+        SwapT memory sw = SwapT(PoolKeyT(address(0), TOKEN2, 3000, 60, address(0)), true, 1e6, 5e5, 0, "");
+        bytes[] memory params = new bytes[](3);
+        params[0] = abi.encode(sw);
+        params[1] = abi.encode(address(0), uint256(1e6));
+        params[2] = abi.encode(TOKEN2, uint256(5e5));
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = abi.encode(hex"060c0f", params);
+        bytes memory data = abi.encodeWithSelector(0x3593564c, hex"10", inputs, uint256(2e9));
+        address[] memory hints = new address[](1);
+        hints[0] = ROUTER;
+        CallT[] memory calls = new CallT[](1);
+        calls[0] = CallT(ROUTER, 1e6, data);
+        (, bytes memory spec, ) = h.render(baseIn(body(calls), hints));
+        // The first item debits the account by 1e6 of ETH, once.
+        assertEq(uint8(spec[6]), 0x01);
+        int256 delta;
+        assembly ("memory-safe") {
+            delta := mload(add(add(spec, 0x20), add(7, 40)))
+        }
+        assertEq(delta, -1e6);
+        calls[0] = CallT(ROUTER, 2e6, data);
+        DisplayVM.In memory over = baseIn(body(calls), hints);
+        vm.expectRevert(URRender.UnsupportedETHFlow.selector);
+        h.render(over);
+    }
 }
