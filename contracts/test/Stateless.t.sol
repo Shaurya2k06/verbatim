@@ -26,8 +26,8 @@ contract AbsentProbe {
     }
 }
 
-/// B1-B11, I10-I13 on the stateless path, against a real snapshot tree built here the same way packages/snapshot-cli does it.
-contract StatelessTest is Base {
+/// A real snapshot tree, built here the same way packages/snapshot-cli does it.
+abstract contract SnapshotFixture is Base {
     struct Leaf {
         uint8 kind;
         bytes32[] key;
@@ -46,7 +46,7 @@ contract StatelessTest is Base {
     address[] internal hintsNow;
     bytes internal proofsNow;
 
-    function setUp() public override {
+    function setUp() public virtual override {
         super.setUp();
         attestorList.push(vm.addr(AT1));
         attestorList.push(vm.addr(AT2));
@@ -65,7 +65,7 @@ contract StatelessTest is Base {
 
     // --------------------------------------------------------------------------------- the tree ---
 
-    function _two(uint256 a, uint256 b) private pure returns (bytes32[] memory k) {
+    function _two(uint256 a, uint256 b) internal pure returns (bytes32[] memory k) {
         k = new bytes32[](2);
         (k[0], k[1]) = (bytes32(a), bytes32(b));
     }
@@ -104,13 +104,13 @@ contract StatelessTest is Base {
         leaves.push(Leaf(5, _two(block.chainid, uint256(ch)), v, ""));
     }
 
-    function _keyOf(Leaf memory l) private pure returns (uint256) {
+    function _keyOf(Leaf memory l) internal pure returns (uint256) {
         if (l.kind == 0) return 0;
         if (l.kind == 255) return type(uint256).max;
         return uint256(keccak256(abi.encodePacked(l.kind, l.key)));
     }
 
-    function _hashOf(Leaf memory l) private pure returns (bytes32) {
+    function _hashOf(Leaf memory l) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked(bytes1(0), l.kind, l.key, l.value));
     }
 
@@ -183,11 +183,19 @@ contract StatelessTest is Base {
         return bytes.concat(bytes1(uint8(depth)), items);
     }
 
+    function _attestorPair() internal view returns (address a, address b) {
+        (a, b) = (vm.addr(AT1), vm.addr(AT2));
+        if (a > b) (a, b) = (b, a);
+    }
+
     /// The honest proofs for a dUSDC transfer: the descriptor and the token.
     function _transferProofs() internal view returns (bytes memory) {
         return _withDepth(bytes.concat(_proofDesc(address(usdc), 0xa9059cbb), _proofToken(address(usdc))));
     }
+}
 
+/// B1-B11, I10-I13 on the stateless path.
+contract StatelessTest is SnapshotFixture {
     // --------------------------------------------------------------------------------- the path ---
 
     function _in(VerbatimCore.Call[] memory calls, uint64 expiry) internal view returns (DisplayVM.In memory i) {
@@ -241,11 +249,6 @@ contract StatelessTest is Base {
 
     function _ownerPair() internal view returns (address a, address b) {
         (a, b) = (vm.addr(O1), vm.addr(O2));
-        if (a > b) (a, b) = (b, a);
-    }
-
-    function _attestorPair() internal view returns (address a, address b) {
-        (a, b) = (vm.addr(AT1), vm.addr(AT2));
         if (a > b) (a, b) = (b, a);
     }
 
@@ -548,11 +551,12 @@ contract StatelessTest is Base {
     function test_B11_A4_weaker_spec_refused() public {
         bytes memory p = _transferProofs();
         S memory s = _plan(_transfer(1), T0 + 100, p);
-        bytes32 derived = keccak256(s.spec);
         s.spec = hex"565300020000";
         // The owners even signed the weak hash; the render disagrees.
         _load(s, p, keccak256(s.tree), keccak256(s.spec));
-        _expectVerify(abi.encodeWithSelector(StatelessRenderer.SpecArgMismatch.selector, derived, keccak256(s.spec)));
+        (bool ok, bytes memory ret) = _verify();
+        assertFalse(ok);
+        assertEq(errorName(ret), StatelessRenderer.SpecArgMismatch.selector);
     }
 
     function test_B11_A7b_starved_expiry_frame_refused() public {
