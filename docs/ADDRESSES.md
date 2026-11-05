@@ -56,10 +56,10 @@ Hashes (the account and paymaster values are of the APPROVE-patched runtime):
 | Contract | Address |
 |---|---|
 | entryPoint | `0x0000000071727De22E5E9d8BAf0edAc6f37da032` |
-| account | `0x59092c8916926f8ddab8421e7b4e8c08834a542c` |
-| paymaster | `0xc242b797a9ab3f151f434d902cec2f5acef31701` |
-| ensTrustChecker | `0x38a831cfbcef623f0fdf4978d1e61fc7576e143c` |
-| trustAdmin | `0x9625a7abd1cc169bc8dc4620589d9adaa97b96ec` |
+| account | `0x74cba4a5916a8e665167d25da40e29d4ae5e0b67` |
+| paymaster | `0x6c7a705a6a744b316c7f2a070419630dcf978b45` |
+| ensTrustChecker | `0x6378d334c24bca2f6c17ba4199a59a55252d5561` |
+| trustAdmin | `0x12955e8c98b05155bd16f9cf0383ec53d4670158` |
 | tokens.dUSDC | `0x7e068face3fc4a6826d182b1ec0e80d7d8979e0f` |
 | tokens.dWETH | `0x42808f35830dfe250ad998b3b239c0776f01be97` |
 | pool.key.currency0 | `0x42808f35830dfe250ad998b3b239c0776f01be97` |

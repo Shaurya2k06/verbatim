@@ -52,7 +52,7 @@ if (!s.paymaster) {
   s = readState();
 }
 
-if (!s.staked) {
+if (!s.staked && !process.env.SKIP_STAKE) {
   const r = await send(deployer, s.paymaster, encodeFunctionData({ abi: PAYMASTER_ABI, functionName: "stake", args: [STAKING_REGISTRY, 86400] }), parseEther("0.012"));
   console.log("staked", r.transactionHash);
   writeState({ staked: r.transactionHash });

@@ -24,3 +24,8 @@ jobs:
           cmp contracts/src/lib/VTree.sol packages/urrender/solidity/VTree.sol
           cmp contracts/src/uniswap/HookFlags.sol packages/urrender/solidity/HookFlags.sol
           sed 's#"../lib/VTree.sol"#"./VTree.sol"#' contracts/src/uniswap/URRender.sol | cmp - packages/urrender/solidity/URRender.sol
+      - name: frame-tools matches the contract's FrameReader
+        run: cmp contracts/src/lib/FrameReader.yul packages/frame-tools/yul/FrameReader.yul
+      - name: Exactly one LOG1 in the account and paymaster, no DELEGATECALL in the account
+        working-directory: tools/scripts
+        run: npx tsx check-bytecode.ts

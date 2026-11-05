@@ -6,7 +6,7 @@ import type { Address, Hex } from "viem";
 
 export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const ENV = resolve(ROOT, ".env");
-export const STATE = resolve(ROOT, ".state/devnet.json");
+export const STATE = resolve(ROOT, process.env.VERBATIM_STATE ?? ".state/devnet.json");
 
 const KEYS = ["DEPLOYER_KEY", "OWNER1_KEY", "OWNER2_KEY", "OWNER3_KEY", "ATTESTOR1_KEY", "ATTESTOR2_KEY", "ATTESTOR3_KEY", "ATTACKER_KEY"];
 

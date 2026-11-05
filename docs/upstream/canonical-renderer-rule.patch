@@ -1,0 +1,232 @@
+diff --git a/packages/executor/src/config.ts b/packages/executor/src/config.ts
+index 9eb284f..d827a27 100644
+--- a/packages/executor/src/config.ts
++++ b/packages/executor/src/config.ts
+@@ -559,6 +559,15 @@ export class Config {
+       true
+     ) as string[];
+ 
++    config.canonicalRendererCodehashes = (
++      fromEnvVar(
++        "CANONICAL_RENDERER_CODEHASHES",
++        config.canonicalRendererCodehashes ||
++          bundlerDefaultConfigs.canonicalRendererCodehashes,
++        true
++      ) as string[]
++    ).map((h) => h.toLowerCase());
++
+     config.relayOpsWithWhitelistedEntities = Boolean(
+       fromEnvVar(
+         "RELAY_OPS_WITH_WHITELISTED_ENTITIES",
+@@ -669,6 +678,7 @@ const bundlerDefaultConfigs: BundlerConfig = {
+   pimlicoSimulationsContract: "",
+   binarySearchMaxRetries: 3,
+   precompiles: [],
++  canonicalRendererCodehashes: [],
+   relayOpsWithWhitelistedEntities: false,
+ };
+ 
+diff --git a/packages/executor/src/executor.ts b/packages/executor/src/executor.ts
+index f9d0792..29182dc 100644
+--- a/packages/executor/src/executor.ts
++++ b/packages/executor/src/executor.ts
+@@ -3,7 +3,7 @@ import { IDbController, Logger } from "@skandha/types/lib/index.js";
+ import { chainsWithoutEIP1559 } from "@skandha/params/lib/index.js";
+ import { PerChainMetrics } from "@skandha/monitoring/lib/index.js";
+ import { SkandhaVersion } from "@skandha/types/lib/executor/index.js";
+-import { PublicClient } from "viem";
++import { PublicClient, keccak256 } from "viem";
+ import { Web3, Debug, Eth, Skandha, Explorer } from "./modules/index.js";
+ import {
+   MempoolService,
+@@ -148,7 +148,9 @@ export class Executor {
+       this.reputationService,
+       this.networkConfig,
+       this.logger,
+-      (address) => this.publicClient.getBalance({ address })
++      (address) => this.publicClient.getBalance({ address }),
++      async (address) =>
++        keccak256((await this.publicClient.getCode({ address })) ?? "0x")
+     );
+ 
+     this.frameTxSimulationService = new FrameTxSimulationService(
+diff --git a/packages/executor/src/interfaces.ts b/packages/executor/src/interfaces.ts
+index a41846c..d14e6fa 100644
+--- a/packages/executor/src/interfaces.ts
++++ b/packages/executor/src/interfaces.ts
+@@ -205,6 +205,8 @@ export interface NetworkConfig {
+   binarySearchMaxRetries: number;
+   // list of precompiled addresses
+   precompiles: string[];
++  // code hashes of canonical renderers: a paymaster running one of these may read its own storage without stake
++  canonicalRendererCodehashes: string[];
+   // flag to relay userops to connected peers via p2p when userop is validated because of whitelisted entities
+   relayOpsWithWhitelistedEntities: boolean;
+ }
+diff --git a/packages/executor/src/services/UserOpValidation/validators/frameTx.ts b/packages/executor/src/services/UserOpValidation/validators/frameTx.ts
+index ce5ef15..0747f8b 100644
+--- a/packages/executor/src/services/UserOpValidation/validators/frameTx.ts
++++ b/packages/executor/src/services/UserOpValidation/validators/frameTx.ts
+@@ -200,9 +200,27 @@ export class FrameTxValidationService {
+     private networkConfig: NetworkConfig,
+     private logger: Logger,
+     /** Reads an account's balance, to say when a payer cannot afford a transaction. Optional. */
+-    private getBalance?: (address: Hex) => Promise<bigint>
++    private getBalance?: (address: Hex) => Promise<bigint>,
++    /** Reads an account's code hash, to recognize a canonical renderer. Without it, none is recognized. */
++    private getCodeHash?: (address: Hex) => Promise<Hex>
+   ) {}
+ 
++  /**
++   * Canonical-renderer rule: a paymaster whose code hash is listed may READ its
++   * own storage without stake, inside the same prefix budget. Writes still need
++   * stake. Its own-storage reads can only be invalidated by a transaction that
++   * writes that storage, so what stake prices here is replaced by the operator
++   * vetting the code hash. Everything else about the entity's checks is unchanged.
++   */
++  private async isCanonicalRenderer(addr: string): Promise<boolean> {
++    const listed = this.networkConfig.canonicalRendererCodehashes ?? [];
++    if (listed.length === 0 || !this.getCodeHash) {
++      return false;
++    }
++    const hash = await this.getCodeHash(addr as Hex);
++    return listed.includes(hash.toLowerCase());
++  }
++
+   /**
+    * The message for a failure ethrex described in detail (`failedFrameIndex`
+    * and `haltReason`), or `null` when this ethrex sent none (an older one), so
+@@ -750,6 +768,16 @@ export class FrameTxValidationService {
+             continue;
+           }
+ 
++          if (
++            role === "payer" &&
++            addr === entityAddr &&
++            Object.keys(writes).length === 0 &&
++            Object.keys(transientWrites).length === 0 &&
++            (await this.isCanonicalRenderer(addr))
++          ) {
++            continue;
++          }
++
+           let requireStakeSlot: string | undefined;
+           for (const slot of [
+             ...Object.keys(writes),
+diff --git a/packages/executor/test/services/UserOpValidation/validators/frameTx.test.ts b/packages/executor/test/services/UserOpValidation/validators/frameTx.test.ts
+index 20bf477..efa418c 100644
+--- a/packages/executor/test/services/UserOpValidation/validators/frameTx.test.ts
++++ b/packages/executor/test/services/UserOpValidation/validators/frameTx.test.ts
+@@ -1,4 +1,5 @@
+ import { describe, it, expect, vi } from "vitest";
++import { readFileSync } from "node:fs";
+ import { FrameTxValidationService } from "../../../../src/services/UserOpValidation/validators/frameTx.js";
+ import { StakingRegistryService } from "../../../../src/services/StakingRegistryService/index.js";
+ import { ReputationService } from "../../../../src/services/ReputationService.js";
+@@ -1216,3 +1217,106 @@ describe("FrameTxValidationService: ethrex's structured failure detail", () => {
+     expect(await message({ canonicalMempoolViolation: "BannedOpcode(66)" })).toBe("banned opcode: TIMESTAMP (0x42)");
+   });
+ });
++
++describe("canonical-renderer rule", () => {
++  const RENDERER = "0x4444444444444444444444444444444444444444" as const;
++  const CODEHASH = `0x${"ab".repeat(32)}` as const;
++  const OWN_SLOT = "0x05";
++
++  const config = (listed: string[]) =>
++    ({ ...fakeNetworkConfig(), canonicalRendererCodehashes: listed }) as NetworkConfig;
++
++  const onlyVerifyPay = () => ({
++    tx: baseTx([
++      { ...selfVerifyFrame(), flags: APPROVE_SCOPE.EXECUTION } as Frame,
++      payFrame(RENDERER),
++    ]),
++    trace: (accessed: any) =>
++      fakeEthrexResult([
++        ethrexFrame({ to: SENDER }),
++        ethrexFrame({ to: RENDERER, accessedSlots: { ...emptyAccessedSlots(), ...accessed } }),
++      ]),
++  });
++
++  const service = (listed: string[], hash: `0x${string}` = CODEHASH) =>
++    new FrameTxValidationService(
++      fakeStakingRegistry(), // nobody staked
++      fakeReputationService(),
++      config(listed),
++      fakeLogger(),
++      undefined,
++      async () => hash
++    );
++
++  it("admits an unstaked renderer reading its own storage when its code hash is listed", async () => {
++    const { tx, trace } = onlyVerifyPay();
++    await expect(
++      service([CODEHASH]).validate(tx, trace({ reads: { [OWN_SLOT]: ["0x0"] } }))
++    ).resolves.toMatchObject({ mempoolMembership: { [STANDARD_MEMPOOL_ID]: true } });
++  });
++
++  it("still rejects the same paymaster when its code hash is not listed", async () => {
++    const { tx, trace } = onlyVerifyPay();
++    await expect(
++      service([`0x${"cd".repeat(32)}`]).validate(tx, trace({ reads: { [OWN_SLOT]: ["0x0"] } }))
++    ).rejects.toMatchObject({ message: expect.stringContaining("unstaked payer") });
++  });
++
++  it("still rejects a listed renderer that writes its own storage", async () => {
++    const { tx, trace } = onlyVerifyPay();
++    await expect(
++      service([CODEHASH]).validate(tx, trace({ writes: { [OWN_SLOT]: 1 } }))
++    ).rejects.toMatchObject({ message: expect.stringContaining("unstaked payer") });
++  });
++});
++
++describe("canonical-renderer rule, on a real unstaked deployment", () => {
++  // A transaction to an unstaked paymaster on the public devnet, with ethrex's real trace of it. The deployed sidecar
++  // refused this very transaction ("publicSidecarRefusal" in the fixture).
++  const fx = JSON.parse(
++    readFileSync(new URL("../../../fixtures/unstaked-renderer.json", import.meta.url), "utf8")
++  );
++  const tx: FrameTransaction = {
++    chainId: BigInt(fx.tx.chainId),
++    nonceKeys: fx.tx.nonceKeys.map(BigInt),
++    nonceSeq: BigInt(fx.tx.nonceSeq),
++    sender: fx.tx.sender,
++    frames: fx.tx.frames.map((f: any) => ({
++      mode: f.mode,
++      flags: f.flags,
++      target: f.target,
++      limits: { execution: BigInt(f.limits.execution), state: BigInt(f.limits.state) },
++      value: BigInt(f.value),
++      data: f.data,
++    })),
++    signatures: fx.tx.signatures,
++    fees: {
++      maxPriorityFeePerGas: BigInt(fx.tx.fees.maxPriorityFeePerGas),
++      maxFeePerGas: BigInt(fx.tx.fees.maxFeePerGas),
++      maxFeePerBlobGas: BigInt(fx.tx.fees.maxFeePerBlobGas),
++    },
++    blobVersionedHashes: [],
++    recentRootReferences: [],
++  };
++  const service = (listed: string[]) =>
++    new FrameTxValidationService(
++      fakeStakingRegistry(),
++      fakeReputationService(),
++      { ...fakeNetworkConfig(), canonicalRendererCodehashes: listed } as NetworkConfig,
++      fakeLogger(),
++      async () => 10n ** 18n,
++      async () => fx.codehash
++    );
++
++  it("is refused without the rule, as the deployed sidecar refused it", async () => {
++    await expect(service([]).validate(tx, fx.simResult)).rejects.toMatchObject({
++      message: expect.stringContaining("unstaked payer"),
++    });
++  });
++
++  it("is admitted when the renderer's code hash is listed", async () => {
++    await expect(service([fx.codehash]).validate(tx, fx.simResult)).resolves.toMatchObject({
++      mempoolMembership: { [STANDARD_MEMPOOL_ID]: true },
++    });
++  });
++});

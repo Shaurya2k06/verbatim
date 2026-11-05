@@ -1,0 +1,22 @@
+[
+ {
+  "name": "transfer",
+  "frame0": 18264,
+  "frame1": 56650
+ },
+ {
+  "name": "approve",
+  "frame0": 18279,
+  "frame1": 61233
+ },
+ {
+  "name": "permit2.approve",
+  "frame0": 18310,
+  "frame1": 67558
+ },
+ {
+  "name": "v4 swap",
+  "frame0": 18860,
+  "frame1": 62725
+ }
+]

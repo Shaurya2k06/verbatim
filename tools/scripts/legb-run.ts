@@ -1,4 +1,5 @@
 // Leg B on Sepolia: through two real bundlers, with the official Uniswap contracts and ENSv2 names in the sentence.
+import { attestations } from "./lib/trust-update";
 import { keccak256 as keccak256Hex, encodeFunctionData, getAddress, hexToBigInt, parseAbi, parseEther, type Address, type Hex } from "viem";
 import { decodeTree, formatForDevice } from "@verbatim/displayvm-ts";
 import { v4SwapCall } from "@verbatim/urrender";
@@ -110,7 +111,7 @@ const steps: Record<string, () => Promise<void>> = {
     const u = emptyUpdate(BigInt(Date.now()));
     const selector = "0xdeadbeef" as Hex;
     const vdesc = ("0x5644000105" + Buffer.from("Spoof").toString("hex") + "ff000000" + "00") as Hex;
-    u.descriptors = [{ codehash: tokenCode, selector, vdesc, publisher: packStr(name), descriptorHash: keccak256(vdesc), attestations: [] }];
+    u.descriptors = [{ codehash: tokenCode, selector, vdesc, publisher: packStr(name), descriptorHash: keccak256(vdesc), attestations: await attestations(keccak256(vdesc)) }];
     let refreshMsg = "";
     await attest(s.paymaster, u, 11155111n, async (data: Hex) => {
       refreshMsg = await rawRevert(wallet().account!.address, s.paymaster, data);

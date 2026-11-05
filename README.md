@@ -158,15 +158,15 @@ cd ../gas-report && pnpm report     # regenerate docs/GAS.md and docs/PROOFS.md
 | What | Where |
 |---|---|
 | Router dispatch, fails closed on anything unknown | [`URRender.sol:71`](contracts/src/uniswap/URRender.sol#L71) |
-| `V4_SWAP` strict decoding | [`URRender.sol:161`](contracts/src/uniswap/URRender.sol#L161) |
-| `SWAP_EXACT_IN_SINGLE`, `SETTLE_ALL`, `TAKE_ALL`, hook risk | [`URRender.sol:193`](contracts/src/uniswap/URRender.sol#L193), risk nodes at [`:238`](contracts/src/uniswap/URRender.sol#L238) and [`:242`](contracts/src/uniswap/URRender.sol#L242) |
+| `V4_SWAP` strict decoding | [`URRender.sol:164`](contracts/src/uniswap/URRender.sol#L164) |
+| `SWAP_EXACT_IN_SINGLE`, `SETTLE_ALL`, `TAKE_ALL`, hook risk | [`URRender.sol:196`](contracts/src/uniswap/URRender.sol#L196), risk nodes at [`:235`](contracts/src/uniswap/URRender.sol#L235) and [`:241`](contracts/src/uniswap/URRender.sol#L241) |
 | Swap effect assertions, including Permit2 | [`URRender.sol:258`](contracts/src/uniswap/URRender.sol#L258) |
-| `WRAP_ETH`, `SWEEP`, `V3_SWAP_EXACT_IN` | [`:262`](contracts/src/uniswap/URRender.sol#L262), [`:289`](contracts/src/uniswap/URRender.sol#L289), [`:313`](contracts/src/uniswap/URRender.sol#L313) |
+| `WRAP_ETH`, `SWEEP`, `V3_SWAP_EXACT_IN` | [`:265`](contracts/src/uniswap/URRender.sol#L265), [`:292`](contracts/src/uniswap/URRender.sol#L292), [`:316`](contracts/src/uniswap/URRender.sol#L316) |
 | Hook flag constants | [`HookFlags.sol:7-9`](contracts/src/uniswap/HookFlags.sol#L7-L9), tested against upstream in [`URRender.t.sol`](contracts/test/URRender.t.sol) |
-| Where the renderer dispatches to it | [`DisplayVM.sol:186`](contracts/src/lib/DisplayVM.sol#L186) |
+| Where the renderer dispatches to it | [`DisplayVM.sol:189`](contracts/src/lib/DisplayVM.sol#L189) |
 | Permit2 allowance reads in assertions | [`AssertionKit.sol:53`](contracts/src/lib/AssertionKit.sol#L53) |
 | The evil hook | [`SkimHook.sol:38`](contracts/src/demo/SkimHook.sol#L38) |
-| Pool creation and liquidity through PositionManager | [`seed-uniswap.ts:58-66`](tools/scripts/seed-uniswap.ts#L58-L66) |
+| Pool creation and liquidity through PositionManager | [`seed-uniswap.ts:66`](tools/scripts/seed-uniswap.ts#L66) |
 
 **Upstream, as checked**
 
@@ -182,7 +182,7 @@ cd ../gas-report && pnpm report     # regenerate docs/GAS.md and docs/PROOFS.md
 
 ## ENS
 
-`verbatim-demo.eth` on Sepolia ENSv2 publishes the descriptor hashes it stands behind, and appears in signed sentences (`Send tokens (by verbatim-demo.eth)`, `To: verbatim-demo.eth (0x3ac4...)`). A name only gets there through both gates: k-of-n attestors **and** a live exclusivity proof in `refreshTrust` ([`EnsTrustChecker.sol:104`](contracts/src/trust/EnsTrustChecker.sol#L104)):
+`verbatim-demo.eth` on Sepolia ENSv2 publishes the descriptor hashes it stands behind, and appears in signed sentences (`Send tokens (by verbatim-demo.eth)`, `To: verbatim-demo.eth (0x3ac4...)`). A name only gets there through both gates: k-of-n attestors **and** a live exclusivity proof in `refreshTrust` ([`EnsTrustChecker.sol:111`](contracts/src/trust/EnsTrustChecker.sol#L111)):
 
 - the resolver is the pinned code, and is reached directly (no wildcard, no CCIP-read);
 - the `clear-signing` text record lists this descriptor's hash;

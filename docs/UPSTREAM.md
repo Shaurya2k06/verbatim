@@ -11,3 +11,14 @@ We built `URRender`, a standalone Solidity and TypeScript decoder (MIT, byte-ide
 Two questions:
 1. Would command-dispatch support in ERC-7730, or a registered decoder reference, be welcome?
 2. ERC-7730 has no notion of *effects*. We extended our subset with an `effects` section (`docs/VDESC.md`) so the chain can assert what a sentence promised. Is there interest in standardising something like it?
+
+---
+
+# Other prepared posts (not posted)
+
+| What | Where it would go | Draft |
+|---|---|---|
+| Canonical-renderer rule, as a PR | `forshtat/mempool-workshop-sidecar` | [note](upstream/canonical-renderer-rule.md), [patch](upstream/canonical-renderer-rule.patch) |
+| Findings on the deployed sidecar | The track author, as an issue or note | "Where the deployed sidecar differs" in [ALTMEMPOOL.md](ALTMEMPOOL.md) |
+| ERC draft: sentence-bound frame transactions | Ethereum Magicians | [draft](erc/sentence-bound-frame-transactions.md) |
+| ERC draft: canonical-renderer rule | Ethereum Magicians | [draft](erc/canonical-renderer-mempool-rule.md) |

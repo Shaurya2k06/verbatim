@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 // docs/GAS.md and docs/PROOFS.md, from receipts on the live chains. Every number is re-read here, not copied from a log.
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -74,6 +75,24 @@ budget would hold over 40 calls, against the renderer's own limit of 16.
 **State gas:** this devnet charges EIP-8037 state gas, about 1,530 per byte of new state. It is why frame 2 declares
 1,500,000 of it, why a first approval costs much more than a later one (ledger entries are new slots), and why deploying the
 paymaster took about 34M gas.
+
+## Every demo transaction against the 100k cap
+
+Measured by \`tools/scripts/measure.ts\` with generous limits, so each figure is what the frame used. The checklist's floor is 8,000 of headroom.
+
+| Transaction | Frame 0 | Frame 1 | Signatures | Prefix | Headroom |
+|---|---:|---:|---:|---:|---:|
+${JSON.parse(readFileSync(resolve(ROOT, "docs/prefix-measurements.json"), "utf8")).map((r: any) => `| ${r.name} | ${fmt(r.frame0)} | ${fmt(r.frame1)} | 5,600 | ${fmt(r.frame0 + r.frame1 + 5600)} | ${fmt(100000 - r.frame0 - r.frame1 - 5600)} |`).join("\n")}
+
+Multi-hop swaps are not supported. \`V3_SWAP_EXACT_IN\` renders, but the devnet's router has no v3 factory, so it cannot run there. v4 \`SWAP_EXACT_IN\` and \`PERMIT2_TRANSFER_FROM\` render as \`BLIND\` and are refused, which is proof A17. Adding them is future work and each must keep this floor.
+
+## Patched bytecode
+
+Each holds exactly one LOG1 before patching, checked in CI by \`tools/scripts/check-bytecode.ts\`. Hashes of the artifacts' patched runtimes; deployed code differs where immutables are filled in.
+
+\`\`\`
+${execFileSync("npx", ["tsx", "check-bytecode.ts"], { cwd: resolve(ROOT, "tools/scripts"), encoding: "utf8" }).trim()}
+\`\`\`
 
 ## Leg B: Sepolia (ERC-4337, EntryPoint v0.7)
 

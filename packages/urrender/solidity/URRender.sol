@@ -90,7 +90,10 @@ library URRender {
             uint256 len = data.rdWord(elem);
             uint256 inp = elem + 32;
             if (inp + len > data.length) revert MalformedUR();
-            if (raw & FLAG_ALLOW_REVERT != 0) t.risk(Risk.UR_ALLOW_REVERT);
+            if (raw & FLAG_ALLOW_REVERT != 0) {
+                t.risk(Risk.UR_ALLOW_REVERT);
+                c.risk |= Risk.BIT_ALLOW_REVERT;
+            }
             _command(t, data, uint8(raw & COMMAND_MASK), inp, len, c);
         }
     }

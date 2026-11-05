@@ -332,13 +332,13 @@
     "expected": "bundler accepts; lands; delivered",
     "pass": true,
     "outcome": "mined",
-    "txHash": "0x8f6e2fad41072dbb405c81a9aaffce58d690b7cf876e2ad7de46e74c2106a305",
-    "block": 12071640,
+    "txHash": "0x49256aa47f5000f839301ffa7a6add588725f345e6d6d7142c32d7c4db54d2da",
+    "block": 12072079,
     "extra": {
-      "actualGasUsed": "1113104",
+      "actualGasUsed": "1107411",
       "bundler": "pimlico"
     },
-    "at": "2026-11-05T19:46:05.737Z"
+    "at": "2026-11-05T21:15:27.793Z"
   },
   "B-honest-alchemy": {
     "id": "B-honest-alchemy",
@@ -346,13 +346,13 @@
     "expected": "bundler accepts; lands; delivered",
     "pass": true,
     "outcome": "mined",
-    "txHash": "0x4f1bac38c46053d14e99cdaa52bfcfc681d2f18b762d9d95008db442c9b2873d",
-    "block": 12071641,
+    "txHash": "0xc30b42437771a2fb31532bf43515faed1033c9f9bf9a2130b98572491d26c52c",
+    "block": 12072080,
     "extra": {
-      "actualGasUsed": "1113134",
+      "actualGasUsed": "1107411",
       "bundler": "alchemy"
     },
-    "at": "2026-11-05T19:46:17.530Z"
+    "at": "2026-11-05T21:15:37.464Z"
   },
   "B-swap": {
     "id": "B-swap",
@@ -360,13 +360,13 @@
     "expected": "bundler accepts; lands; min out respected",
     "pass": true,
     "outcome": "mined",
-    "txHash": "0x0f70460eb746c1d76c47bcd99784727d0c543a57c6857d73e765a9fd325d21ac",
-    "block": 12071642,
+    "txHash": "0x9723873a218547940dd2992d71b3e09364406ae8fffb77ab1bff3253a713b035",
+    "block": 12072081,
     "extra": {
-      "receivedRaw": "2316930970",
-      "actualGasUsed": "1178313"
+      "receivedRaw": "2996598319",
+      "actualGasUsed": "1172189"
     },
-    "at": "2026-11-05T19:46:28.406Z"
+    "at": "2026-11-05T21:15:52.745Z"
   },
   "B-A1": {
     "id": "B-A1",
@@ -374,11 +374,11 @@
     "expected": "bundler rejects; paymaster reverts TreeMismatch",
     "pass": true,
     "outcome": "rejected-at-mempool",
-    "message": "0x669a6fec1fe4012d07b5f3c48e3f8dc2a9c64d5ebc96a58286bfcf9c6e221a142e762614b5ba6d37e2762d6eafdd378ddb261eedb572f6f68fa94fdfb4c798f48e905ed2 => TreeMismatch(0x1fe4012d07b5f3c48e3f8dc2a9c64d5ebc96a58286bfcf9c6e221a142e762614, 0xb5ba6d37e2762d6eafdd378ddb261eedb572f6f68fa94fdfb4c798f48e905ed2)",
+    "message": "0x669a6fec678e50e16a445bc39dec6c1481f580fe89d462728b78fe162d53d51246af5275c8b9f444c95c503822d355b130fde6a7f33201a2037b9764c70941f27d1c7cdc => TreeMismatch(0x678e50e16a445bc39dec6c1481f580fe89d462728b78fe162d53d51246af5275, 0xc8b9f444c95c503822d355b130fde6a7f33201a2037b9764c70941f27d1c7cdc)",
     "extra": {
-      "bundler": "Internal error from bundler (trace id: 8211ff3f9944fc07637f34f04294af71)"
+      "bundler": "Internal error from bundler (trace id: 55a6c6e157516f009b11d533b08c66f9)"
     },
-    "at": "2026-11-05T19:46:32.545Z"
+    "at": "2026-11-05T21:15:56.754Z"
   },
   "A8": {
     "id": "A8",
@@ -390,10 +390,10 @@
     "extra": {
       "deviceLine": "To: 0x000000000000000000000000000000000000bad1",
       "lookalike": "verbatim-dem0.eth",
-      "sameCodeChecker": "0x728336074b2e46af182887ca1d21baab52db677e",
+      "sameCodeChecker": "0xf47fa7a5ef1f0c38d88b9076e872316a8b3968fd",
       "sameCodeResult": "01110000000000000000000000010000011 => RootRolesHeld(0x1000000000000000000000001000001110000000000000000000000010000011)"
     },
-    "at": "2026-11-05T19:46:53.648Z"
+    "at": "2026-11-05T21:17:03.763Z"
   },
   "INVALIDATION": {
     "id": "INVALIDATION",
@@ -551,5 +551,14 @@
       "revokeTx": "0x7e666c1bb263a252ada8b27f80e359932293cb0b927650d2a47add47e442fc32"
     },
     "at": "2026-11-05T20:59:12.166Z"
+  },
+  "CANONICAL-UNSTAKED": {
+    "id": "CANONICAL-UNSTAKED",
+    "title": "Unstaked renderer: the public sidecar refuses it",
+    "expected": "unstaked payer",
+    "pass": true,
+    "outcome": "rejected-at-mempool",
+    "message": "unstaked payer accessed payer slot 0xfe14b27715673b991bd7915a08d56171b500abd7973c04ea2a64086efe7b46b5",
+    "at": "2026-11-05T21:27:25.024Z"
   }
 }
