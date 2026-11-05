@@ -263,15 +263,15 @@ library URRender {
 
     function _swapEffects(address tokenIn, address tokenOut, uint256 amountIn, uint256 min, Ctx memory c) private pure {
         address account = c.cfg.account;
-        c.effects.addDelta(account, tokenOut, VSpec.toInt(min), true);
+        // Native input settles from msg.value, which the call's own value effect already took. Exactly that much: anything
+        // more would sit in the router for the next caller to sweep.
         if (tokenIn == address(0)) {
-            // Native input settles from msg.value, which the call's own value effect already took. Exactly that much: anything
-            // more would sit in the router for the next caller to sweep.
             if (c.value != amountIn) revert UnsupportedETHFlow();
         } else {
             c.effects.addDelta(account, tokenIn, -VSpec.toInt(amountIn), false);
             c.effects.p2AllowLe(c.cfg.permit2, tokenIn, c.cfg.router, 0);
         }
+        c.effects.addDelta(account, tokenOut, VSpec.toInt(min), true);
     }
 
     /// SWAP_EXACT_IN: ExactInputParams, where the older router's layout has no per-hop price array.

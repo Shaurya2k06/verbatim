@@ -214,13 +214,13 @@ function poolRisks(t: Buf, fee: bigint, hook: string, c: URCtx) {
 }
 
 function swapEffects(tokenIn: string, tokenOut: string, amountIn: bigint, min: bigint, c: URCtx) {
-  c.effects.addDelta(c.account, tokenOut, toInt(min), true);
   if (same(tokenIn, ZERO)) {
     if (c.value !== amountIn) fail("UnsupportedETHFlow");
   } else {
     c.effects.addDelta(c.account, tokenIn, -toInt(amountIn), false);
     c.effects.p2AllowLe(c.permit2, tokenIn, c.router, 0n);
   }
+  c.effects.addDelta(c.account, tokenOut, toInt(min), true);
 }
 
 const MAX_HOPS = 4n;
