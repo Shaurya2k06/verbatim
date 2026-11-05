@@ -24,11 +24,6 @@ abstract contract TestVectors is Test {
         bytes data;
     }
 
-    struct FeeT {
-        address asset;
-        uint256 amount;
-    }
-
     // "Send tokens"; exactWords 2; To (recipient); Amount (target token); OUT_EXACT.
     bytes internal constant TRANSFER_DESC = hex"564400010b53656e6420746f6b656e73020201000102546f0101010206416d6f756e7400010100010101000000";
 
@@ -46,17 +41,18 @@ abstract contract TestVectors is Test {
     function baseIn(bytes memory body, address[] memory hints) internal pure returns (DisplayVM.In memory i) {
         i.chainId = 1337;
         i.account = ACCOUNT;
-        i.validUntil = 1_800_000_000;
+        i.expiry = 1_800_000_000;
+        i.snapshotRoot = keccak256("root");
+        i.policyVersion = 1;
+        i.path = 2;
         i.feeAsset = address(0);
-        i.feeAmount = 1e9;
-        i.gasLimitTotal = 3_000_000;
-        i.policyHash = keccak256("policy");
+        i.maxFee = 1e9;
         i.body = body;
         i.hints = hints;
     }
 
     function body(CallT[] memory calls) internal pure returns (bytes memory) {
-        return abi.encode(FeeT(address(0), 1e9), calls, bytes(""));
+        return abi.encode(calls, bytes(""));
     }
 
     function transferIn(RenderHarness) internal pure returns (DisplayVM.In memory) {

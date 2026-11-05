@@ -7,6 +7,9 @@ export const TRUST_UPDATE_TUPLE = {
   type: "tuple",
   components: [
     { name: "epoch", type: "uint64" },
+    { name: "root", type: "bytes32" },
+    { name: "issuedAt", type: "uint64" },
+    { name: "expiry", type: "uint64" },
     { name: "descriptors", type: "tuple[]", components: [{ name: "codehash", type: "bytes32" }, { name: "selector", type: "bytes4" }, { name: "vdesc", type: "bytes" }, { name: "publisher", type: "bytes32" }, { name: "descriptorHash", type: "bytes32" }, { name: "attestations", type: "tuple[]", components: [{ name: "time", type: "uint64" }, { name: "expirationTime", type: "uint64" }, { name: "salt", type: "bytes32" }, { name: "signature", type: "bytes" }] }] },
     { name: "revocations", type: "tuple[]", components: [{ name: "codehash", type: "bytes32" }, { name: "selector", type: "bytes4" }] },
     { name: "tokens", type: "tuple[]", components: [{ name: "token", type: "address" }, { name: "symbol", type: "bytes11" }, { name: "symLen", type: "uint8" }, { name: "decimals", type: "uint8" }, { name: "flags", type: "uint8" }] },
@@ -22,6 +25,9 @@ export const REFRESH_ABI = [{ type: "function", name: "refreshTrust", stateMutab
 
 export interface TrustUpdate {
   epoch: bigint;
+  root: Hex;
+  issuedAt: bigint;
+  expiry: bigint;
   descriptors: { codehash: Hex; selector: Hex; vdesc: Hex; publisher: Hex; descriptorHash: Hex; attestations: Attestation8176[] }[];
   revocations: { codehash: Hex; selector: Hex }[];
   tokens: { token: Address; symbol: Hex; symLen: number; decimals: number; flags: number }[];
@@ -61,7 +67,10 @@ export async function attest8176(hash: Hex, signers: { address: string; signType
   return out;
 }
 
-export const emptyUpdate = (epoch: bigint): TrustUpdate => ({ epoch, descriptors: [], revocations: [], tokens: [], proxies: [], routers: [], hooks: [], spenders: [], names: [] });
+/** A snapshot's cache-side fields. `root` comes from snapshot-cli; TTL 6h, the default policy cap. */
+export const SNAPSHOT_TTL = 6n * 3600n;
+
+export const emptyUpdate = (epoch: bigint, root: Hex = `0x${"11".repeat(32)}`, issuedAt: bigint = BigInt(Math.floor(Date.now() / 1000)) - 60n): TrustUpdate => ({ epoch, root, issuedAt, expiry: issuedAt + SNAPSHOT_TTL, descriptors: [], revocations: [], tokens: [], proxies: [], routers: [], hooks: [], spenders: [], names: [] });
 
 export const updateHash = (chainId: bigint, paymaster: Address, u: TrustUpdate): Hex =>
   keccak256(encodeAbiParameters([{ type: "uint256" }, { type: "address" }, TRUST_UPDATE_TUPLE], [chainId, paymaster, u as never]));

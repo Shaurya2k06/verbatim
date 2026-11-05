@@ -32,24 +32,24 @@ contract Handler is Base {
 
     function _try(Plan memory p, bytes32 tree, bytes32 spec) private returns (bool landed, bool batch) {
         load(p, tree, spec);
-        env.setCurrent(0);
-        bytes memory f0 = env.frame(0).data;
-        bytes memory f1 = env.frame(1).data;
-        bytes memory f2 = env.frame(2).data;
+        env.setCurrent(1);
+        bytes memory f0 = env.frame(1).data;
+        bytes memory f1 = env.frame(2).data;
+        bytes memory f2 = env.frame(3).data;
         vm.prank(address(0xaa));
         (bool a, ) = address(account).call(f0);
         if (!a) return (false, false);
-        env.setCurrent(1);
+        env.setCurrent(2);
         vm.prank(address(0xaa));
         (bool b, ) = address(rpm).call(f1);
         if (!b) return (false, false);
-        env.setCurrent(2);
+        env.setCurrent(3);
         vm.recordLogs();
         vm.prank(address(account));
         (bool c, ) = address(account).call(f2);
         if (!c) return (true, false);
         nonceNow++;
-        ghostFees += p.fee.amount;
+        ghostFees += FEE;
         ghostLanded++;
         bytes32 sig = keccak256("VerbatimResult(bool,bytes)");
         batch = _batchOk(sig);

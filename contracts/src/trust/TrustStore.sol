@@ -87,6 +87,10 @@ abstract contract TrustStoreLayout {
 
     struct TrustUpdate {
         uint64 epoch;
+        /// The attested snapshot this cache belongs to (§6). Every tree on the paymaster path states this root.
+        bytes32 root;
+        uint64 issuedAt;
+        uint64 expiry;
         DescUpdate[] descriptors;
         Revocation[] revocations;
         TokenUpdate[] tokens;
@@ -98,8 +102,12 @@ abstract contract TrustStoreLayout {
     }
 
     uint64 internal _trustEpoch;
+    /// keccak256(abi.encode(root, issuedAt, expiry)). One slot, because validation reads it on every transaction.
+    bytes32 internal _snapshotCommit;
+    bytes32 internal _snapshotRoot;
+    uint64 internal _snapshotIssuedAt;
+    uint64 internal _snapshotExpiry;
     mapping(bytes32 => mapping(bytes4 => DescSlot)) internal _descOf;
-    mapping(bytes32 => mapping(bytes4 => bytes32)) internal _publisherOf;
     mapping(bytes32 => bool) internal _everRevoked;
     mapping(address => TokenSlot) internal _tokens;
     mapping(bytes32 => uint8) internal _codeKind_;
@@ -113,13 +121,7 @@ abstract contract TrustStoreLayout {
     mapping(address => bool) internal _isAttestor;
     uint8 internal _attestorThreshold;
 
-    // Deposits, fees and policies (§7.2). Declared here so the render path and the admin module share one layout.
-    struct Policy {
-        uint64 ttl;
-        uint64 allowMask;
-        bool set;
-    }
-
+    // Deposits and fees (§7.2). Declared here so the render path and the admin module share one layout.
     struct Deposit {
         uint128 amount;
         uint128 pendingWithdraw;
@@ -131,7 +133,6 @@ abstract contract TrustStoreLayout {
         uint64 reclaimAt;
     }
 
-    mapping(address => Policy) internal _policyOf;
     mapping(address => mapping(address => Deposit)) internal _deposits;
     mapping(address => mapping(address => uint256)) internal _withdrawReadyAt;
     mapping(address => mapping(uint256 => FeeTicket)) internal _feeTickets;
@@ -141,13 +142,13 @@ abstract contract TrustStoreLayout {
 
     event Deposited(address indexed account, address indexed asset, uint256 amount);
     event WithdrawRequested(address indexed account, address indexed asset, uint256 amount, uint256 readyAt);
-    event PolicySet(address indexed account, bytes32 indexed policyHash);
     event TicketsFunded(address indexed account, uint256 indexed firstNonce, uint256 count, uint256 each);
 
     error WithdrawNotReady(uint256 readyAt);
     error TransferFailed();
 
     error EpochNotIncreasing();
+    error BadSnapshotTimes(uint64 issuedAt, uint64 expiry);
     error NotEnoughAttestors();
     error AttestorsNotSorted();
     error DescriptorRevoked();
@@ -172,8 +173,17 @@ abstract contract TrustStore is DisplayVM, TrustStoreLayout {
     function _descriptor(bytes32 codehash, bytes4 selector) internal view virtual override returns (Desc memory d) {
         DescSlot memory s = _descOf[codehash][selector];
         if (s.blob == address(0) || s.revoked) return d;
-        d.blob = SSTORE2.read(s.blob);
-        d.publisher = _publisherOf[codehash][selector];
+        // The blob is publisher(32) || vdesc: one read for both.
+        bytes memory b = SSTORE2.read(s.blob);
+        bytes32 publisher;
+        assembly ("memory-safe") {
+            publisher := mload(add(b, 0x20))
+            let n := sub(mload(b), 0x20)
+            b := add(b, 0x20)
+            mstore(b, n)
+        }
+        d.blob = b;
+        d.publisher = publisher;
         d.epoch = s.epoch;
         d.status = s.status;
     }
@@ -236,12 +246,22 @@ contract TrustAdmin is TrustStoreLayout {
             if (s <= last || !_isAttestor[s]) revert AttestorsNotSorted();
             last = s;
         }
+        if (u.issuedAt > block.timestamp || u.expiry <= block.timestamp) revert BadSnapshotTimes(u.issuedAt, u.expiry);
         _trustEpoch = u.epoch;
+        _snapshotCommit = keccak256(abi.encode(u.root, u.issuedAt, u.expiry));
+        _snapshotRoot = u.root;
+        _snapshotIssuedAt = u.issuedAt;
+        _snapshotExpiry = u.expiry;
 
         for (uint256 i = 0; i < u.revocations.length; i++) {
             Revocation calldata r = u.revocations[i];
             DescSlot storage slot = _descOf[r.codehash][r.selector];
-            if (slot.blob != address(0)) _everRevoked[keccak256(SSTORE2.read(slot.blob))] = true;
+            if (slot.blob != address(0)) {
+                bytes memory stored = SSTORE2.read(slot.blob);
+                bytes memory vdesc = new bytes(stored.length - 32);
+                for (uint256 k = 0; k < vdesc.length; k++) vdesc[k] = stored[k + 32];
+                _everRevoked[keccak256(vdesc)] = true;
+            }
             slot.revoked = true;
         }
         for (uint256 i = 0; i < u.descriptors.length; i++) {
@@ -251,8 +271,7 @@ contract TrustAdmin is TrustStoreLayout {
             VDesc.validate(d.vdesc);
             _checkAttestations(d);
             uint8 status = _checkPublisher(d.publisher, descHash);
-            _descOf[d.codehash][d.selector] = DescSlot(SSTORE2.write(d.vdesc), u.epoch, status, false);
-            _publisherOf[d.codehash][d.selector] = d.publisher;
+            _descOf[d.codehash][d.selector] = DescSlot(SSTORE2.write(abi.encodePacked(d.publisher, d.vdesc)), u.epoch, status, false);
         }
         for (uint256 i = 0; i < u.tokens.length; i++) {
             TokenUpdate calldata t = u.tokens[i];
@@ -286,8 +305,13 @@ contract TrustAdmin is TrustStoreLayout {
         return (d.blob, d.epoch, d.status, d.revoked);
     }
 
-    function publisherOf(bytes32 c, bytes4 s) external view returns (bytes32) {
-        return _publisherOf[c][s];
+    function publisherOf(bytes32 c, bytes4 s) external view returns (bytes32 publisher) {
+        address blob = _descOf[c][s].blob;
+        if (blob == address(0)) return bytes32(0);
+        bytes memory b = SSTORE2.read(blob);
+        assembly ("memory-safe") {
+            publisher := mload(add(b, 0x20))
+        }
     }
 
     function tokens(address t) external view returns (bytes11 symbol, uint8 symLen, uint8 decimals, uint8 flags, bool known) {
@@ -320,9 +344,8 @@ contract TrustAdmin is TrustStoreLayout {
         return _everRevoked[h];
     }
 
-    function policyOf(address a) external view returns (uint64 ttl, uint64 allowMask, bool set) {
-        Policy memory p = _policyOf[a];
-        return (p.ttl, p.allowMask, p.set);
+    function snapshot() external view returns (bytes32 root, uint64 issuedAt, uint64 expiry) {
+        return (_snapshotRoot, _snapshotIssuedAt, _snapshotExpiry);
     }
 
     function deposits(address a, address asset) external view returns (uint128 amount, uint128 pendingWithdraw) {
@@ -383,11 +406,6 @@ contract TrustAdmin is TrustStoreLayout {
         } else if (!IERC20Min(asset).transfer(msg.sender, amount)) {
             revert TransferFailed();
         }
-    }
-
-    function setPolicy(uint64 maxTtl, uint64 allowMask) external {
-        _policyOf[msg.sender] = Policy(maxTtl, allowMask, true);
-        emit PolicySet(msg.sender, keccak256(abi.encode(maxTtl, allowMask)));
     }
 
     /// Anyone may prepay an account's next fees. The value is split evenly over `count` nonces.

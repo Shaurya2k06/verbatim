@@ -180,7 +180,6 @@ function v4Single(t: Buf, d: Uint8Array, pArr: bigint, i: bigint, end: bigint, c
   c.amount(t, "Minimum received", tokenOut, min, c);
   if (maxIn !== amountIn) c.amount(t, "Maximum paid", tokenIn, maxIn, c);
   VT.fieldUint(t, "Pool fee", fee, UNIT.NONE);
-  VT.fieldUint(t, "Tick spacing", spacing, UNIT.NONE);
   if (minHop !== 0n) VT.fieldUint(t, "Min hop price", minHop, UNIT.NONE);
   if (hdLen !== 0n) VT.fieldBytes(t, "Hook data", hashRange(d, hd + 32n, hdLen), hdLen);
 
@@ -210,7 +209,7 @@ function v4Single(t: Buf, d: Uint8Array, pArr: bigint, i: bigint, end: bigint, c
   if (same(tokenIn, ZERO)) {
     if (c.value < amountIn) fail("UnsupportedETHFlow");
   } else {
-    c.effects.p2AllowLe(c.permit2, tokenIn, c.router, SPEC.P2_RELATIVE, amountIn);
+    c.effects.p2AllowLe(c.permit2, tokenIn, c.router, 0n);
   }
 }
 
@@ -292,7 +291,7 @@ function v3Swap(t: Buf, d: Uint8Array, inp: bigint, len: bigint, c: URCtx) {
   }
   if (payer === 1n) {
     c.effects.addDelta(c.account, tokenIn, -toInt(amountIn), false);
-    c.effects.p2AllowLe(c.permit2, tokenIn, c.router, SPEC.P2_RELATIVE, amountIn);
+    c.effects.p2AllowLe(c.permit2, tokenIn, c.router, 0n);
   }
   if (!same(to, c.router)) c.effects.addDelta(to, tokenOut, toInt(minOut), true);
   VT.groupEnd(t);

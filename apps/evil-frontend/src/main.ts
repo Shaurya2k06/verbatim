@@ -1,18 +1,18 @@
 import "@verbatim/app-kit/style.css";
 import { encodeFunctionData, parseAbi, parseEther, type Address, type Hex } from "viem";
 import { ERC20, client, d, el, nav, prepareCalls, sendAndReport, sentence, signingPanel, txCommit, typedData, withSignatures, hashTypedData, type Prepared } from "@verbatim/app-kit";
-import { frame2Data } from "@verbatim/client";
+import { executeFrameData } from "@verbatim/client";
 import { Scope, newTx, type FrameTx } from "@verbatim/frames-sdk";
 import { CMD, executeData, v4ExactInSingleInput, v4SwapCall } from "@verbatim/urrender";
 
 const app = document.getElementById("app")!;
 const usdc: Address = d.tokens.dUSDC;
-const dWETH: Address = d.tokens.dWETH;
 const bob: Address = d.owners[2];
 const thief: Address = "0x000000000000000000000000000000000000bad1";
 const transfer = (to: Address, n = 1_000_000n) => ({ target: usdc, value: 0n, data: encodeFunctionData({ abi: ERC20, functionName: "transfer", args: [to, n] }) });
-const zeroForOne = d.pools.honest.key.currency0.toLowerCase() === dWETH.toLowerCase();
-const swap = (key: unknown, min: bigint) => ({ target: d.uniswap.router as Address, value: 0n, data: v4SwapCall({ key: key as never, zeroForOne, amountIn: parseEther("1"), amountOutMinimum: min }, BigInt(Math.floor(Date.now() / 1000) + 3600)) });
+const zeroForOne = true;
+const SWAP_IN = 1_000_000_000_000_000n;
+const swap = (key: unknown, min: bigint) => ({ target: d.uniswap.router as Address, value: SWAP_IN, data: v4SwapCall({ key: key as never, zeroForOne, amountIn: SWAP_IN, amountOutMinimum: min }, BigInt(Math.floor(Date.now() / 1000) + 3600)) });
 
 interface Attack {
   name: string;
@@ -31,23 +31,23 @@ const attacks: Attack[] = [
     expected: "Mempool rejects: tree mismatch",
     async build() {
       const shown = await prepareCalls([transfer(bob)]);
-      const lie = await prepareCalls([transfer(thief)], { validUntil: shown.validUntil, overrideSentence: { tree: shown.tree, spec: shown.spec } });
+      const lie = await prepareCalls([transfer(thief)], { expiry: shown.expiry, overrideSentence: { tree: shown.tree, spec: shown.spec } });
       return sends(lie);
     },
   },
   {
     name: "minOut = 0 through SkimHook",
-    claim: "Swap 1 dWETH for at least 2000 dUSDC",
+    claim: "Swap 0.001 ETH for at least 2 dUSDC",
     expected: "Mempool rejects: tree mismatch",
     async build() {
-      const shown = await prepareCalls([swap(d.pools.honest.key, 2_000_000_000n)]);
-      const lie = await prepareCalls([swap(d.pools.evil.key, 0n)], { validUntil: shown.validUntil, overrideSentence: { tree: shown.tree, spec: shown.spec } });
+      const shown = await prepareCalls([swap(d.pools.honest.key, 2_000_000n)]);
+      const lie = await prepareCalls([swap(d.pools.evil.key, 0n)], { expiry: shown.expiry, overrideSentence: { tree: shown.tree, spec: shown.spec } });
       return sends(lie);
     },
   },
   {
     name: "Same route, and the device tells the truth",
-    claim: "Swap 1 dWETH (the page says it is fine)",
+    claim: "Swap 0.001 ETH (the page says it is fine)",
     expected: "Device shows the risks; if signed anyway, policy refuses",
     async build() {
       return sends(await prepareCalls([swap(d.pools.evil.key, 0n)]));
@@ -56,7 +56,7 @@ const attacks: Attack[] = [
   {
     name: "Drop the renderer frame",
     claim: `Send 1 dUSDC to ${bob}`,
-    expected: "Frame 0 rejects: wrong layout",
+    expected: "The account frame rejects: wrong layout",
     async build() {
       const p = await prepareCalls([transfer(bob)]);
       return {
@@ -64,7 +64,7 @@ const attacks: Attack[] = [
         finish(s) {
           const signed = withSignatures(p.tx, p.digest, s);
           const f = p.tx.frames;
-          const tx = newTx({ chainId: p.tx.chainId, sender: p.tx.sender, nonce: p.tx.nonceSeq, maxFeePerGas: p.tx.fees.maxFeePerGas, maxPriorityFeePerGas: p.tx.fees.maxPriorityFeePerGas, signatures: signed.signatures, frames: [{ ...f[0], flags: Scope.EXECUTION_AND_PAYMENT }, f[2]] });
+          const tx = newTx({ chainId: p.tx.chainId, sender: p.tx.sender, nonce: p.tx.nonceSeq, maxFeePerGas: p.tx.fees.maxFeePerGas, maxPriorityFeePerGas: p.tx.fees.maxPriorityFeePerGas, signatures: signed.signatures, frames: [f[0], { ...f[1], flags: Scope.EXECUTION_AND_PAYMENT }, f[3]] });
           return tx;
         },
       };
@@ -73,14 +73,14 @@ const attacks: Attack[] = [
   {
     name: "Swap the spec for a weaker one",
     claim: `Send 1 dUSDC to ${bob}`,
-    expected: "Frame 1 rejects: spec mismatch",
+    expected: "The paymaster frame rejects: spec mismatch",
     async build() {
       const p = await prepareCalls([transfer(bob)]);
-      const weak = "0x565300010000" as Hex;
-      const f2 = { ...p.tx.frames[2], data: frame2Data(p.fee, p.calls, weak) };
-      const tx = { ...p.tx, frames: [p.tx.frames[0], p.tx.frames[1], f2] };
-      const c = txCommit(tx);
-      const typed = typedData(p.chainId, p.account, c, p.treeHash, p.specHash, p.validUntil);
+      const weak = "0x565300020000" as Hex;
+      const f3 = { ...p.tx.frames[3], data: executeFrameData(p.calls, weak) };
+      const tx = { ...p.tx, frames: [p.tx.frames[0], p.tx.frames[1], p.tx.frames[2], f3] };
+      const c = txCommit(tx, 2);
+      const typed = typedData(p.chainId, p.account, p.treeHash, p.specHash, p.expiry, p.snapshotRoot, 2, c);
       const device = { ...p, tx, txCommit: c, digest: hashTypedData(typed), digestTypedData: typed };
       return sends(device);
     },
@@ -95,34 +95,34 @@ const attacks: Attack[] = [
   },
   {
     name: "The contract tells the truth, then does more",
-    claim: "Deposit 5 dUSDC into Accurate Vault",
-    expected: "The sentence is accurate, so it is admitted. Execution pulls dWETH too: AssertionFailed, everything undone, fee kept.",
+    claim: "Deposit 0.000001 ETH into Accurate Vault, for at least that many shares",
+    expected: "The sentence is accurate, so it is admitted. The vault keeps the ETH and credits nothing: AssertionFailed, everything undone, fee kept.",
     async build() {
-      return sends(await prepareCalls([{ target: d.evilVault, value: 0n, data: encodeFunctionData({ abi: parseAbi(["function deposit(uint256)"]), functionName: "deposit", args: [5_000_000n] }) }]));
+      return sends(await prepareCalls([{ target: d.evilVault, value: 1_000_000_000_000n, data: encodeFunctionData({ abi: parseAbi(["function depositEth(uint256)"]), functionName: "depositEth", args: [1_000_000_000_000n] }) }]));
     },
   },
   {
     name: "Replay a stale signature",
     claim: `Send 1 dUSDC to ${bob}, with a signature this page holds until it expires`,
-    expected: "Admitted, then the batch reverts: Expired. The fee is kept.",
+    expected: "The expiry frame refuses it at the mempool. Nothing is paid.",
     async build() {
       const now = (await client.getBlock()).timestamp;
-      const validUntil = now + 40n;
-      return { ...sends(await prepareCalls([transfer(bob)], { validUntil })), holdUntil: validUntil + 2n };
+      const expiry = now + 40n;
+      return { ...sends(await prepareCalls([transfer(bob)], { expiry })), holdUntil: expiry + 2n };
     },
   },
   {
     name: "A signature that never expires",
     claim: `Send 1 dUSDC to ${bob}`,
-    expected: "The device refuses, by its own clock. Signed anyway, the policy cap reverts the batch.",
+    expected: "The device refuses, by its own clock. Signed anyway, it outlives the snapshot and the paymaster refuses.",
     async build() {
       const now = (await client.getBlock()).timestamp;
-      return sends(await prepareCalls([transfer(bob)], { validUntil: now + 86_400n }));
+      return sends(await prepareCalls([transfer(bob)], { expiry: now + 86_400n }));
     },
   },
   {
     name: "Router command that may silently fail",
-    claim: "Swap 1 dWETH for at least 2000 dUSDC",
+    claim: "Swap 0.001 ETH for at least 2 dUSDC",
     expected: "The device shows COMMAND MAY PARTIALLY FAIL; policy refuses",
     async build() {
       const input = v4ExactInSingleInput({ key: d.pools.honest.key, zeroForOne, amountIn: parseEther("1"), amountOutMinimum: 2_000_000_000n });
@@ -159,7 +159,7 @@ async function select(a: Attack, btn: HTMLElement) {
     const { device, finish, holdUntil } = await a.build();
     stage.replaceChildren(
       el("div", { class: "panel" }, el("h2", {}, "This page claims"), el("div", { class: "claim" }, a.claim), el("h2", { style: "margin-top:14px" }, "The device shows"), sentence(device.tree), el("h2", { style: "margin-top:14px" }, "Expected"), el("div", { class: "line" }, a.expected)),
-      signingPanel({ tree: device.tree, specHash: device.specHash, txCommit: device.txCommit }, d.threshold, async (sigs) => {
+      signingPanel({ tree: device.tree, txCommit: device.txCommit }, d.threshold, async (sigs) => {
         if (holdUntil) {
           result.replaceChildren(el("div", { class: "line" }, "Holding the signature until it expires..."));
           while ((await client.getBlock()).timestamp <= holdUntil) await new Promise((r) => setTimeout(r, 2000));

@@ -16,19 +16,18 @@ contract InvariantsTest is Base {
         (bool ok, ) = run(p);
         assertTrue(ok);
         // Decode what frame 2 actually carried, and re-render exactly that.
-        (VerbatimCore.Fee memory fee, VerbatimCore.Call[] memory calls, ) = _decodeFrame2();
+        (VerbatimCore.Call[] memory calls, ) = _decodeFrame2();
         Plan memory again = p;
-        again.fee = fee;
         again.calls = calls;
         (bytes memory tree, , ) = rpm.renderView(input(again));
         assertEq(keccak256(tree), signed);
     }
 
-    function _decodeFrame2() private view returns (VerbatimCore.Fee memory fee, VerbatimCore.Call[] memory calls, bytes memory spec) {
-        bytes memory d = env.frame(2).data;
+    function _decodeFrame2() private view returns (VerbatimCore.Call[] memory calls, bytes memory spec) {
+        bytes memory d = env.frame(3).data;
         bytes memory payload = new bytes(d.length - 4);
         for (uint256 i = 0; i < payload.length; i++) payload[i] = d[i + 4];
-        return abi.decode(payload, (VerbatimCore.Fee, VerbatimCore.Call[], bytes));
+        return abi.decode(payload, (VerbatimCore.Call[], bytes));
     }
 
     function test_I2_success_means_spec_held_and_hash_matches() public {
@@ -36,7 +35,7 @@ contract InvariantsTest is Base {
         uint256 before = usdc.balanceOf(address(account));
         (bool ok, ) = run(p);
         assertTrue(ok);
-        (, , bytes memory spec) = _decodeFrame2();
+        (, bytes memory spec) = _decodeFrame2();
         assertEq(keccak256(spec), keccak256(p.spec));
         assertEq(before - usdc.balanceOf(address(account)), 5e6, "DELTA_EQ held");
     }
@@ -49,23 +48,23 @@ contract InvariantsTest is Base {
         Plan memory p = plan(transferCall(BOB, 1), T0 + 100);
         // Other renderer.
         load(p);
-        env.setFrameTarget(1, address(0x1234));
+        env.setFrameTarget(2, address(0x1234));
         _expectLayoutFail(4);
         // Atomic flag on frame 2.
         load(p);
-        env.setFrameFlags(2, 4);
+        env.setFrameFlags(3, 4);
         _expectLayoutFail(5);
         // Value on frame 2.
         load(p);
-        env.setFrameValue(2, 1);
+        env.setFrameValue(3, 1);
         _expectLayoutFail(5);
         // Frame 2 calling something else.
         load(p);
-        env.setFrameData(2, abi.encodeWithSelector(0xdeadbeef));
+        env.setFrameData(3, abi.encodeWithSelector(0xdeadbeef));
         _expectLayoutFail(6);
         // Frame 1 in the wrong mode.
         load(p);
-        env.setFrameMode(1, 2);
+        env.setFrameMode(2, 2);
         _expectLayoutFail(4);
         // Frame count.
         load(p);
@@ -81,7 +80,7 @@ contract InvariantsTest is Base {
         expectFrame0(abi.encodeWithSelector(VerbatimAccountBase.BadSignatureEntry.selector));
         // So does changing the renderer's hints.
         load(p);
-        env.setFrameData(1, hex"00");
+        env.setFrameData(2, hex"00");
         expectFrame0(abi.encodeWithSelector(VerbatimAccountBase.BadSignatureEntry.selector));
     }
 
@@ -91,18 +90,20 @@ contract InvariantsTest is Base {
         env.reset();
         // Reload frames with a non-owner signing.
         load(p);
-        bytes32 d = account.digestOf(txCommit(), keccak256(p.tree), keccak256(p.spec), p.validUntil);
+        bytes32 d = account.digestOf(keccak256(p.tree), keccak256(p.spec), p.expiry, ROOT, 2, txCommit());
         _resign(d, vm.addr(O1), vm.addr(0xDEAD));
-        (bool ok, ) = callFrame(0, address(account), address(0xaa));
+        (bool ok, ) = callFrame(1, address(account), address(0xaa));
         assertFalse(ok, "non-owner");
     }
 
     function _resign(bytes32 d, address a, address b) private {
         // load() already pushed two entries; rebuild the env without them.
-        FrameEnv.Frame memory f0 = env.frame(0);
-        FrameEnv.Frame memory f1 = env.frame(1);
-        FrameEnv.Frame memory f2 = env.frame(2);
+        FrameEnv.Frame memory e = env.frame(0);
+        FrameEnv.Frame memory f0 = env.frame(1);
+        FrameEnv.Frame memory f1 = env.frame(2);
+        FrameEnv.Frame memory f2 = env.frame(3);
         env.reset();
+        env.pushFrame(e);
         env.pushFrame(f0);
         env.pushFrame(f1);
         env.pushFrame(f2);
@@ -119,7 +120,7 @@ contract InvariantsTest is Base {
         frame1();
         // The ticket disappears between validation and execution, which the real rules prevent.
         rpm.setTicketForTest(address(account), nonceNow, 0);
-        (bool ok, ) = callFrame(2, address(account), address(account));
+        (bool ok, ) = callFrame(3, address(account), address(account));
         assertFalse(ok, "frame 2 reverts");
         assertEq(usdc.balanceOf(BOB), 0, "nothing ran");
     }
@@ -133,10 +134,10 @@ contract InvariantsTest is Base {
         Plan memory p = plan(transferCall(BOB, 5e6), T0 + 100);
         p.spec[12] = bytes1(uint8(p.spec[12]) ^ 1); // an honest render would refuse this; go in below validation
         load(p, keccak256(p.tree), keccak256(p.spec));
-        (bool ok, ) = callFrame(2, address(account), address(account));
+        (bool ok, ) = callFrame(3, address(account), address(account));
         assertTrue(ok, "the frame itself succeeds");
         assertEq(usdc.balanceOf(BOB), usdcBefore, "no effect persists");
-        assertEq(admin_().feesAccrued(address(0)) - before, p.fee.amount, "fee paid");
+        assertEq(admin_().feesAccrued(address(0)) - before, FEE, "fee paid");
     }
 
     function test_I6_expiry_boundary() public {
@@ -194,7 +195,7 @@ contract InvariantsTest is Base {
 
     function _hasRisk(bytes memory tree, uint16 code) private pure returns (bool) {
         // Walk the nodes after the header.
-        uint256 p = 4 + 8 + 20 + 8;
+        uint256 p = 4 + 8 + 20 + 8 + 32 + 4 + 1;
         while (p < tree.length) {
             uint8 kind = uint8(tree[p]);
             uint256 len = (uint256(uint8(tree[p + 1])) << 8) | uint8(tree[p + 2]);
@@ -207,9 +208,9 @@ contract InvariantsTest is Base {
     function test_I9_validation_reads_only_own_storage() public {
         Plan memory p = plan(transferCall(BOB, 1e6), T0 + 100);
         load(p);
-        env.setCurrent(0);
-        bytes memory f0 = env.frame(0).data;
-        bytes memory f1 = env.frame(1).data;
+        env.setCurrent(1);
+        bytes memory f0 = env.frame(1).data;
+        bytes memory f1 = env.frame(2).data;
         vm.record();
         vm.prank(address(0xaa));
         (bool ok, ) = address(account).call(f0);
@@ -219,7 +220,7 @@ contract InvariantsTest is Base {
         (bytes32[] memory tokenReads, ) = vm.accesses(address(usdc));
         assertEq(tokenReads.length, 0, "frame 0 reads no token");
 
-        env.setCurrent(1);
+        env.setCurrent(2);
         vm.record();
         vm.prank(address(0xaa));
         (ok, ) = address(rpm).call(f1);
@@ -229,7 +230,7 @@ contract InvariantsTest is Base {
         (tokenReads, ) = vm.accesses(address(usdc));
         assertEq(tokenReads.length, 0, "frame 1 reads no token state");
         (tokenReads, ) = vm.accesses(address(account));
-        assertEq(tokenReads.length, 0, "frame 1 reads no account state");
+        assertEq(tokenReads.length, 0, "frame 2 reads no account state: frame 1 vouched for the policy word");
     }
 
     function test_I9_unrelated_trust_refresh_leaves_pending_tree_valid() public {
@@ -354,9 +355,9 @@ contract InvariantsTest is Base {
     // --- signature transport (D-A5): each is refused on its own
 
     function _sigFrame0Fails(Plan memory p, FrameEnv.Sig memory a, FrameEnv.Sig memory b, bytes4 err) private {
-        FrameEnv.Frame memory f0 = env.frame(0);
-        FrameEnv.Frame memory f1 = env.frame(1);
-        FrameEnv.Frame memory f2 = env.frame(2);
+        FrameEnv.Frame memory f0 = env.frame(1);
+        FrameEnv.Frame memory f1 = env.frame(2);
+        FrameEnv.Frame memory f2 = env.frame(3);
         env.reset();
         env.pushFrame(f0);
         env.pushFrame(f1);
@@ -370,7 +371,7 @@ contract InvariantsTest is Base {
     function _setup() private returns (Plan memory p, bytes32 d, address lo, address hi) {
         p = plan(transferCall(BOB, 1), T0 + 100);
         load(p);
-        d = account.digestOf(txCommit(), keccak256(p.tree), keccak256(p.spec), p.validUntil);
+        d = account.digestOf(keccak256(p.tree), keccak256(p.spec), p.expiry, ROOT, 2, txCommit());
         lo = vm.addr(O1);
         hi = vm.addr(O2);
         if (lo > hi) (lo, hi) = (hi, lo);
@@ -412,22 +413,16 @@ contract InvariantsTest is Base {
         (Plan memory p, , address lo, address hi) = _setup();
         uint256 here = block.chainid;
         vm.chainId(here + 1);
-        bytes32 foreign = account.digestOf(txCommit(), keccak256(p.tree), keccak256(p.spec), p.validUntil);
+        bytes32 foreign = account.digestOf(keccak256(p.tree), keccak256(p.spec), p.expiry, ROOT, 2, txCommit());
         vm.chainId(here);
         _sigFrame0Fails(p, FrameEnv.Sig(1, lo, foreign), FrameEnv.Sig(1, hi, foreign), VerbatimAccountBase.BadSignatureEntry.selector);
     }
 
-    function test_refused_fields_blobs_and_keyed_nonces() public {
+    function test_refused_field_blobs() public {
         Plan memory p = plan(transferCall(BOB, 1), T0 + 100);
         load(p);
         env.setBlobs(1);
         expectFrame0(abi.encodeWithSelector(VerbatimAccountBase.BadLayout.selector, uint256(7)));
-        env.setBlobs(0);
-        env.setKeys(2, 0);
-        expectFrame0(abi.encodeWithSelector(VerbatimAccountBase.BadLayout.selector, uint256(7)));
-        env.setKeys(1, 5);
-        expectFrame0(abi.encodeWithSelector(VerbatimAccountBase.BadLayout.selector, uint256(7)));
-        env.setKeys(1, 0);
     }
 
     function test_txCommit_covers_every_committed_field() public {
@@ -439,9 +434,9 @@ contract InvariantsTest is Base {
         env.setTx(address(account), nonceNow, 1, 101); // max fee
         expectFrame0(abi.encodeWithSelector(VerbatimAccountBase.BadSignatureEntry.selector));
         load(p);
-        bytes memory f2 = env.frame(2).data;
+        bytes memory f2 = env.frame(3).data;
         f2[f2.length - 1] = 0x01;
-        env.setFrameData(2, f2); // frame 2 data
+        env.setFrameData(3, f2); // frame 2 data
         expectFrame0(abi.encodeWithSelector(VerbatimAccountBase.BadSignatureEntry.selector));
     }
 

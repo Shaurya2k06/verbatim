@@ -4,10 +4,20 @@ import { privateKeyToAccount } from "viem/accounts";
 import type { Hex } from "viem";
 import { REFRESH_ABI, attest8176, descriptorsFromJson, emptyUpdate, encodeRefresh, sortSigs, tokenEntry, updateHash, type TrustUpdate } from "@verbatim/attestor-cli";
 import { descriptorHash } from "@verbatim/vdesc-compiler";
+import { buildTree, leavesOf, snapshotTypedData, type PublishedSnapshot } from "@verbatim/snapshot-cli";
 import { ROOT, key } from "./env";
 import { send } from "./chain";
 
 export { REFRESH_ABI, emptyUpdate, tokenEntry, updateHash, type TrustUpdate };
+
+/** What the attestors sign for a snapshot: `D_snapshot`, ascending by signer, for the 2-of-3 demo quorum. */
+export async function publishSnapshot(u: TrustUpdate, chainId: bigint, status: number, attestorsAll: Hex[] = ["ATTESTOR1_KEY", "ATTESTOR2_KEY", "ATTESTOR3_KEY"].map((k) => key(k))): Promise<PublishedSnapshot> {
+  const accounts = attestorsAll.map((k) => privateKeyToAccount(k));
+  const t = buildTree(leavesOf(u as never, chainId, status));
+  const signing = sortSigs(accounts).slice(0, 2);
+  const signatures = await Promise.all(signing.map(async (a) => ({ signer: a.address, sig: await a.signTypedData(snapshotTypedData(chainId, t.root, u.issuedAt, u.expiry) as never) })));
+  return { chainId: chainId.toString(), schema: 1, root: t.root, depth: t.depth, issuedAt: u.issuedAt.toString(), expiry: u.expiry.toString(), leaves: t.leaves, attestors: accounts.map((a) => a.address), signatures };
+}
 
 const signers = () => ["ATTESTOR1_KEY", "ATTESTOR2_KEY", "ATTESTOR3_KEY"].map((k) => privateKeyToAccount(key(k)));
 

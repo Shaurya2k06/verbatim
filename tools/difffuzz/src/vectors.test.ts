@@ -8,7 +8,7 @@ import { tsTrust } from "./world";
 
 const file = resolve(dirname(fileURLToPath(import.meta.url)), "../../../test/vectors/render.json");
 const { vectors } = JSON.parse(readFileSync(file, "utf8"));
-const revive = (i: any) => ({ ...i, chainId: BigInt(i.chainId), validUntil: BigInt(i.validUntil), feeAmount: BigInt(i.feeAmount), gasLimitTotal: BigInt(i.gasLimitTotal) });
+const revive = (i: any) => ({ ...i, chainId: BigInt(i.chainId), expiry: BigInt(i.expiry), maxFee: BigInt(i.maxFee) });
 
 describe("I8: golden vectors", () => {
   it("the TypeScript renderer reproduces them", () => {

@@ -11,7 +11,7 @@ mkdirSync(OUT, { recursive: true });
 const trust = tsTrust();
 const seeds = Array.from({ length: 400 }, (_, i) => i + 1);
 const vectors: any[] = [];
-const ser = (input: any) => ({ ...input, chainId: String(input.chainId), validUntil: String(input.validUntil), feeAmount: String(input.feeAmount), gasLimitTotal: String(input.gasLimitTotal) });
+const ser = (input: any) => ({ ...input, chainId: String(input.chainId), expiry: String(input.expiry), maxFee: String(input.maxFee) });
 // One named vector per supported selector and router command.
 for (const [name, input] of namedCases()) {
   const o = render(input, trust);

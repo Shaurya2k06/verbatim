@@ -227,7 +227,6 @@ library URRender {
         // Fields that only restate the defaults stay out, to keep the sentence short and cheap.
         if (maxIn != amountIn) c.fn.amount(t, "Maximum paid", tokenIn, maxIn, c);
         t.fieldUint("Pool fee", fee, VTree.UNIT_NONE);
-        t.fieldUint("Tick spacing", spacing, VTree.UNIT_NONE);
         if (minHop != 0) t.fieldUint("Min hop price", minHop, VTree.UNIT_NONE);
         if (hdLen != 0) t.fieldBytes("Hook data", d.hashRange(hd + 32, hdLen), hdLen);
 
@@ -258,7 +257,7 @@ library URRender {
             // Native input settles from msg.value, held by the router.
             if (c.value < amountIn) revert UnsupportedETHFlow();
         } else {
-            c.effects.p2AllowLe(c.cfg.permit2, tokenIn, c.cfg.router, VSpec.P2_RELATIVE, amountIn);
+            c.effects.p2AllowLe(c.cfg.permit2, tokenIn, c.cfg.router, 0);
         }
     }
 
@@ -342,7 +341,7 @@ library URRender {
         }
         if (payer == 1) {
             c.effects.addDelta(c.cfg.account, tokenIn, -VSpec.toInt(amountIn), false);
-            c.effects.p2AllowLe(c.cfg.permit2, tokenIn, c.cfg.router, VSpec.P2_RELATIVE, amountIn);
+            c.effects.p2AllowLe(c.cfg.permit2, tokenIn, c.cfg.router, 0);
         }
         if (to != c.cfg.router) c.effects.addDelta(to, tokenOut, VSpec.toInt(minOut), true);
         t.groupEnd();

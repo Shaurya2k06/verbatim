@@ -33,7 +33,7 @@ async function compose() {
     const result = el("div");
     flow.replaceChildren(
       el("div", { class: "panel" }, el("h2", {}, "The sentence"), sentence(p.tree)),
-      signingPanel({ tree: p.tree, specHash: p.specHash, txCommit: p.txCommit }, d.threshold, async (sigs) => {
+      signingPanel({ tree: p.tree, txCommit: p.txCommit }, d.threshold, async (sigs) => {
         await sendAndReport(withSignatures(p.tx, p.digest, sigs), d.account, result);
         refreshBalances();
       }),

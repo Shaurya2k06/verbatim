@@ -80,9 +80,9 @@ paymaster took about 34M gas.
 
 Measured by \`tools/scripts/measure.ts\` with generous limits, so each figure is what the frame used. The checklist's floor is 8,000 of headroom.
 
-| Transaction | Frame 0 | Frame 1 | Signatures | Prefix | Headroom |
-|---|---:|---:|---:|---:|---:|
-${JSON.parse(readFileSync(resolve(ROOT, "docs/prefix-measurements.json"), "utf8")).map((r: any) => `| ${r.name} | ${fmt(r.frame0)} | ${fmt(r.frame1)} | 5,600 | ${fmt(r.frame0 + r.frame1 + 5600)} | ${fmt(100000 - r.frame0 - r.frame1 - 5600)} |`).join("\n")}
+| Transaction | Expiry | Account | Paymaster | Signatures | Prefix | Headroom |
+|---|---:|---:|---:|---:|---:|---:|
+${JSON.parse(readFileSync(resolve(ROOT, "docs/prefix-measurements.json"), "utf8")).map((r: any) => `| ${r.name} | ${fmt(r.expiry)} | ${fmt(r.frame0)} | ${fmt(r.frame1)} | 5,600 | ${fmt(r.expiry + r.frame0 + r.frame1 + 5600)} | ${fmt(100000 - r.expiry - r.frame0 - r.frame1 - 5600)} |`).join("\n")}
 
 Multi-hop swaps are not supported. \`V3_SWAP_EXACT_IN\` renders, but the devnet's router has no v3 factory, so it cannot run there. v4 \`SWAP_EXACT_IN\` and \`PERMIT2_TRANSFER_FROM\` render as \`BLIND\` and are refused, which is proof A17. Adding them is future work and each must keep this floor.
 

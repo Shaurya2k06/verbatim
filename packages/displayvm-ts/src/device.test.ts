@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { decodeTree, formatAmount, formatForDevice } from "./device";
+import { decodeTree, formatAmount, formatForDevice, specOf } from "./device";
 
-const HEADER = "0x56540001" + "0000000000000539" + "00".repeat(19) + "01" + "000000006b49d200";
+const HEADER = "0x56540002" + "0000000000000539" + "00".repeat(19) + "01" + "000000006b49d200" + "ab".repeat(32) + "00000001" + "02";
 
 describe("device decoder", () => {
   it("formats amounts exactly, never rounded", () => {
@@ -14,20 +14,38 @@ describe("device decoder", () => {
   it("decodes a bare header", () => {
     expect(decodeTree(HEADER as `0x${string}`).nodes).toEqual([]);
   });
-  it("refuses bad magic", () => expect(() => decodeTree(("0x56540002" + HEADER.slice(10)) as `0x${string}`)).toThrow(/magic/));
+  it("refuses bad magic", () => expect(() => decodeTree(("0x56540001" + HEADER.slice(10)) as `0x${string}`)).toThrow(/magic/));
   it("refuses unknown node types", () => expect(() => decodeTree((HEADER + "7f0000") as `0x${string}`)).toThrow(/unknown node/));
   it("refuses unknown risk codes", () => expect(() => decodeTree((HEADER + "300002" + "7777") as `0x${string}`)).toThrow(/risk/));
   it("refuses trailing bytes inside a node", () => expect(() => decodeTree((HEADER + "020001" + "00") as `0x${string}`)).toThrow(/trailing/));
   it("refuses truncation", () => expect(() => decodeTree((HEADER + "30") as `0x${string}`)).toThrow());
   it("refuses control characters in strings", () => expect(() => decodeTree((HEADER + "200002" + "010a") as `0x${string}`)).toThrow(/character/));
   it("refuses a backslash in strings", () => expect(() => decodeTree((HEADER + "200002" + "015c") as `0x${string}`)).toThrow(/character/));
-  it("lifts risks to the top", () => {
-    const t = decodeTree((HEADER + "410008" + "000000006b49d200" + "300002" + "0101") as `0x${string}`);
+  const TAIL = "500001" + "09" + "500001" + "0a" + "500002" + "0b00" + "500001" + "0c";
+  it("shows guarantees first, then risks, then the sentence", () => {
+    const t = decodeTree((HEADER + "300002" + "0101" + TAIL) as `0x${string}`);
     const lines = formatForDevice(t);
-    expect(lines[0].risk).toBe(true);
-    expect(lines[0].text).toContain("NO MINIMUM OUTPUT");
-    expect(lines[1].text).toContain("Valid until");
+    expect(lines.slice(0, 4).every((l) => l.guarantee)).toBe(true);
+    expect(lines[0].text).toContain("tracked holding");
+    expect(lines[3].text).toContain("No approval outlives");
+    expect(lines[4].risk).toBe(true);
+    expect(lines[4].text).toContain("NO MINIMUM OUTPUT");
+    expect(lines.some((l) => l.text.includes("Valid until"))).toBe(true);
   });
+  it("derives the spec from the guarantee section, byte for byte", () => {
+    const t = decodeTree((HEADER + TAIL) as `0x${string}`);
+    expect(specOf(t)).toBe("0x565300020004090a0b000c");
+  });
+  it("refuses a tree missing a required guarantee", () => {
+    const t = decodeTree((HEADER + "500001" + "09") as `0x${string}`);
+    expect(() => specOf(t)).toThrow(/required/);
+  });
+  it("refuses guarantees that are not last", () => {
+    const t = decodeTree((HEADER + TAIL + "300002" + "0101") as `0x${string}`);
+    expect(() => specOf(t)).toThrow(/last/);
+  });
+  it("refuses an unknown guarantee", () => expect(() => decodeTree((HEADER + "500001" + "7e") as `0x${string}`)).toThrow(/guarantee/));
+  it("refuses an unknown path", () => expect(() => decodeTree((HEADER.slice(0, -2) + "07") as `0x${string}`)).toThrow(/path/));
 });
 
 describe("decoder fuzz", () => {

@@ -22,10 +22,13 @@ abstract contract FrameIntrospection {
     uint256 internal constant SP_MSG = 0x02;
     uint256 internal constant SP_LENGTH = 0x03;
 
+    uint256 internal constant SCOPE_BOTH = 3;
     uint256 internal constant MODE_VERIFY = 1;
     uint256 internal constant MODE_SENDER = 2;
     uint256 internal constant SCOPE_PAYMENT = 1;
     uint256 internal constant SCOPE_EXECUTION = 2;
+    uint256 internal constant PATH_STATELESS = 1;
+    uint256 internal constant PATH_PAYMASTER = 2;
     uint256 internal constant SCHEME_ARBITRARY = 0;
     uint256 internal constant SCHEME_SECP256K1 = 1;
 
@@ -35,49 +38,87 @@ abstract contract FrameIntrospection {
     function _framedatacopy(uint256 offset, uint256 length, uint256 frameIndex) internal view virtual returns (bytes memory);
     function _sigparam(uint256 sigIndex, uint256 param) internal view virtual returns (uint256);
     function _sigdatacopy(uint256 offset, uint256 length, uint256 sigIndex) internal view virtual returns (bytes memory);
-    /// The whole frame layout in one read. With anything but 3 frames, only `frameCount` is set.
+    /// The whole transaction in one read: see FrameReader.yul. With 3 frames, the two words after the frames (signature and
+    /// blob count, which txCommit also hashes) sit where `m3` and `f3` would. With an unsupported count, the commit region
+    /// is empty and `frameCount` reads as that count.
     struct Layout {
-        uint256 frameCount;
         uint256 current;
-        uint256 sender;
+        uint256 maxCost;
+        uint256 reserved;
         uint256 sigCount;
-        uint256 t0;
+        uint256 blobCount;
+        bytes32 txCommit;
+        uint256 expiryWord;
+        uint256 policyClaim;
+        uint256 chainId;
+        uint256 sender;
+        uint256 nonce;
+        uint256 maxPriorityFee;
+        uint256 maxFee;
+        uint256 frameCount;
         uint256 m0;
         uint256 f0;
+        uint256 t0;
         uint256 v0;
         uint256 g0;
         uint256 s0;
         uint256 l0;
-        uint256 t1;
         uint256 m1;
         uint256 f1;
+        uint256 t1;
         uint256 v1;
         uint256 g1;
         uint256 s1;
         uint256 l1;
-        uint256 t2;
         uint256 m2;
         uint256 f2;
+        uint256 t2;
         uint256 v2;
         uint256 g2;
         uint256 s2;
         uint256 l2;
+        uint256 m3;
+        uint256 f3;
+        uint256 t3;
+        uint256 v3;
+        uint256 g3;
+        uint256 s3;
+        uint256 l3;
+        uint256 sig4;
+        uint256 blob4;
+        uint256 sig0Scheme;
+        uint256 sig0Msg;
+        uint256 sig0Signer;
+        uint256 sig1Scheme;
+        uint256 sig1Msg;
+        uint256 sig1Signer;
+        uint256 sig2Scheme;
+        uint256 sig2Msg;
+        uint256 sig2Signer;
+        uint256 sig3Scheme;
+        uint256 sig3Msg;
+        uint256 sig3Signer;
+        uint256 sig4Scheme;
+        uint256 sig4Msg;
+        uint256 sig4Signer;
+        uint256 sig5Scheme;
+        uint256 sig5Msg;
+        uint256 sig5Signer;
     }
+
+    uint256 internal constant MAX_SIGNATURES = 6;
 
     function _layout() internal view virtual returns (Layout memory);
 
-    struct TxFields {
-        uint256 nonce;
-        uint256 maxPriorityFee;
-        uint256 maxFee;
-        uint256 blobCount;
-        uint256 nonceKeyCount;
-        uint256 nonceKey0;
+    /// Signature entry `i`, i < MAX_SIGNATURES, from the layout's own words.
+    function _sigAt(Layout memory l, uint256 i) internal pure returns (uint256 scheme, uint256 msgHash, uint256 signer) {
+        assembly ("memory-safe") {
+            let p := add(add(l, 0x580), mul(i, 0x60))
+            scheme := mload(p)
+            msgHash := mload(add(p, 0x20))
+            signer := mload(add(p, 0x40))
+        }
     }
-
-    function _txFields() internal view virtual returns (TxFields memory);
-    function _nonceAndMaxCost() internal view virtual returns (uint256 nonce, uint256 maxCost);
-    function _sigEntry(uint256 index) internal view virtual returns (uint256 scheme, uint256 msgHash, uint256 signer);
 
     /// Ends the frame on success, like RETURN.
     function _approve(uint256 scope) internal virtual;
@@ -137,8 +178,8 @@ abstract contract DevnetFrames is FrameIntrospection {
         bool ok;
         assembly ("memory-safe") {
             mstore(0x00, 6)
-            ok := staticcall(gas(), reader, 0, 0x80, l, 0x320)
-            ok := and(ok, or(eq(returndatasize(), 0x320), and(eq(returndatasize(), 0x20), iszero(eq(mload(l), 3)))))
+            ok := staticcall(gas(), reader, 0, 0x80, l, 0x7c0)
+            ok := and(ok, eq(returndatasize(), 0x7c0))
         }
         if (!ok) revert FrameReadFailed();
     }
@@ -165,48 +206,6 @@ abstract contract DevnetFrames is FrameIntrospection {
 
     function _sigdatacopy(uint256 offset, uint256 length, uint256 sigIndex) internal view override returns (bytes memory) {
         return _bytes(5, offset, length, sigIndex);
-    }
-
-    function _txFields() internal view override returns (TxFields memory f) {
-        address reader = FRAME_READER;
-        bool ok;
-        assembly ("memory-safe") {
-            mstore(0x00, 7)
-            ok := staticcall(gas(), reader, 0, 0x80, f, 0xc0)
-            ok := and(ok, eq(returndatasize(), 0xc0))
-        }
-        if (!ok) revert FrameReadFailed();
-    }
-
-    function _sigEntry(uint256 index) internal view override returns (uint256 scheme, uint256 msgHash, uint256 signer) {
-        address reader = FRAME_READER;
-        bool ok;
-        assembly ("memory-safe") {
-            let m := mload(0x40)
-            mstore(m, 9)
-            mstore(add(m, 0x20), index)
-            mstore(add(m, 0x40), 0)
-            mstore(add(m, 0x60), 0)
-            ok := staticcall(gas(), reader, m, 0x80, m, 0x60)
-            ok := and(ok, eq(returndatasize(), 0x60))
-            scheme := mload(m)
-            msgHash := mload(add(m, 0x20))
-            signer := mload(add(m, 0x40))
-        }
-        if (!ok) revert FrameReadFailed();
-    }
-
-    function _nonceAndMaxCost() internal view override returns (uint256 nonce, uint256 maxCost) {
-        address reader = FRAME_READER;
-        bool ok;
-        assembly ("memory-safe") {
-            mstore(0x00, 8)
-            ok := staticcall(gas(), reader, 0, 0x80, 0, 0x40)
-            ok := and(ok, eq(returndatasize(), 0x40))
-            nonce := mload(0)
-            maxCost := mload(0x20)
-        }
-        if (!ok) revert FrameReadFailed();
     }
 
     function _approve(uint256 scope) internal override {

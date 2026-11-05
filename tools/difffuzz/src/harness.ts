@@ -47,11 +47,11 @@ export async function boot(port = 18545) {
 
   const render = async (i: RenderIn): Promise<{ tree: Hex; spec: Hex; risk: number } | { error: string }> => {
     try {
-      const [tree, spec, risk] = (await pub.readContract({ address, abi, functionName: "render", args: [{ chainId: i.chainId, account: i.account, validUntil: i.validUntil, feeAsset: i.feeAsset, feeAmount: i.feeAmount, gasLimitTotal: i.gasLimitTotal, policyHash: i.policyHash, body: i.body, hints: i.hints }] })) as [Hex, Hex, bigint];
+      const [tree, spec, risk] = (await pub.readContract({ address, abi, functionName: "render", args: [{ chainId: i.chainId, account: i.account, expiry: i.expiry, snapshotRoot: i.snapshotRoot, policyVersion: i.policyVersion, path: i.path, feeAsset: i.feeAsset, maxFee: i.maxFee, body: i.body, hints: i.hints }] })) as [Hex, Hex, bigint];
       return { tree, spec, risk: Number(risk) };
     } catch (e) {
       return { error: String((e as Error).message).split("\n")[0].slice(0, 160) };
     }
   };
-  return { render, stop: () => proc.kill() };
+  return { render, stop: () => proc.kill(), address, abi, pub };
 }

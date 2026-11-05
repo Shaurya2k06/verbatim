@@ -67,5 +67,27 @@ for (const [name, k] of [["poolHonest", honestKey], ["poolEvil", evilKey]] as co
   console.log(name, "liquidity", r.transactionHash, "gas", r.gasUsed);
   writeState({ [name]: { key: k, init: init.transactionHash, liquidity: r.transactionHash } });
 }
+// Native-ETH pools: a swap from ETH needs no approval, so it fits one call under D9 (no approval outlives a batch).
+const ethPrice = 3000e6 / 1e18; // token1 per token0
+const ethSqrt = BigInt(Math.floor(Math.sqrt(ethPrice) * 2 ** 48)) * 2n ** 48n;
+const ethTick = Math.floor(Math.log(ethPrice) / Math.log(1.0001));
+const ethLower = Math.floor((ethTick - 6000) / 60) * 60;
+const ethUpper = Math.floor((ethTick + 6000) / 60) * 60;
+const ethSeed = parseEther("0.06");
+for (const [name, hooks] of [["poolEthHonest", ZERO], ["poolEthEvil", readState().skimHook as Address]] as const) {
+  if (readState()[name]) continue;
+  const k = { currency0: ZERO, currency1: s.tokenA as Address, fee: 3000, tickSpacing: 60, hooks };
+  const init = await send(deployer, POOL_MANAGER, encodeFunctionData({ abi: PM_ABI, functionName: "initialize", args: [k, ethSqrt] }), 0n, 3_000_000n);
+  const mint = encodeAbiParameters(
+    [POOL_KEY_TYPES, { type: "int24" }, { type: "int24" }, { type: "uint256" }, { type: "uint128" }, { type: "uint128" }, { type: "address" }, { type: "bytes" }],
+    [k, ethLower, ethUpper, 5_000_000_000_000n, ethSeed, 1n << 127n, me, "0x"],
+  );
+  const settle = encodeAbiParameters([{ type: "address" }, { type: "address" }], [ZERO, s.tokenA as Address]);
+  const sweep = encodeAbiParameters([{ type: "address" }, { type: "address" }], [ZERO, me]);
+  const unlock = encodeAbiParameters([{ type: "bytes" }, { type: "bytes[]" }], [encodePacked(["uint8", "uint8", "uint8"], [0x02, 0x0d, 0x14]), [mint, settle, sweep]]);
+  const r = await send(deployer, POSM, encodeFunctionData({ abi: POSM_ABI, functionName: "modifyLiquidities", args: [unlock, BigInt(Math.floor(Date.now() / 1000) + 3600)] }), ethSeed, 5_000_000n);
+  console.log(name, "liquidity", r.transactionHash, r.status);
+  writeState({ [name]: { key: k, init: init.transactionHash, liquidity: r.transactionHash } });
+}
 void keccak256; void attest; void emptyUpdate;
 console.log("pools ready", { c0, c1, tickLower, tickUpper, skim: readState().skimHook });

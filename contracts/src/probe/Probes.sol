@@ -59,3 +59,30 @@ contract ProbePaymaster is DevnetFrames {
         _approve(SCOPE_PAYMENT);
     }
 }
+
+/// G0 probes: explicit-msg entries read in a SIGPARAM loop, EXTCODEHASH of a contract that is no entity, and both
+/// prefixes with a leading expiry frame.
+contract ProbeG0Account is DevnetFrames {
+    event Ping(uint256 indexed frameCount);
+
+    constructor(address reader) payable DevnetFrames(reader) {}
+
+    receive() external payable {}
+
+    /// `nA` entries must carry msgA, the rest msgB. Each must be SECP256K1 with a resolved signer.
+    function verifyFrame(bytes32 msgA, bytes32 msgB, uint256 nA, uint256 total, address other, bytes32 otherHash, uint256 scope) external {
+        require(_txparam(TX_SIG_COUNT) == total, "sig count");
+        for (uint256 i = 0; i < total; i++) {
+            require(_sigparam(i, SP_SCHEME) == SCHEME_SECP256K1, "scheme");
+            require(bytes32(_sigparam(i, SP_MSG)) == (i < nA ? msgA : msgB), "msg");
+            require(_sigparam(i, SP_SIGNER) != 0, "signer");
+        }
+        if (other != address(0)) require(other.codehash == otherHash, "codehash");
+        _approve(scope);
+    }
+
+    function ping() external {
+        require(msg.sender == address(this), "caller");
+        emit Ping(_txparam(TX_FRAME_COUNT));
+    }
+}

@@ -7,9 +7,8 @@ export { RenderError } from "@verbatim/urrender";
 export * from "./device";
 
 const MAX_DEPTH = 3;
-const MAX_TREE = 6144;
-const MAX_OTHER = 2048;
-export const DEFAULT_MAX_TTL = 300n;
+const MAX_TREE = 3072;
+const MAX_OTHER = 1024;
 const EMPTY_CODE = "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470";
 const ZERO32 = `0x${"00".repeat(32)}` as Hex;
 const ZERO: Address = "0x0000000000000000000000000000000000000000";
@@ -54,12 +53,15 @@ export interface Trust {
 export interface RenderIn {
   chainId: bigint;
   account: Address;
-  /** Unix seconds. The device checks it against its own clock, the account at execution. */
-  validUntil: bigint;
+  /** Unix seconds, from the expiry frame. */
+  expiry: bigint;
+  snapshotRoot: Hex;
+  policyVersion: number;
+  /** 1 stateless, 2 paymaster, 3 ERC-4337 */
+  path: number;
   feeAsset: Address;
-  feeAmount: bigint;
-  gasLimitTotal: bigint;
-  policyHash: Hex;
+  /** Declared frame limits times the fee cap. */
+  maxFee: bigint;
   /** ABI body of executeVerified, no selector */
   body: Hex;
   hints: Address[];
@@ -109,23 +111,21 @@ export function render(i: RenderIn, trust: Trust): RenderOut {
     addressField: (b, label, a, ctx) => addressField(b, label, a, ROLE_RECIPIENT, ctx as Ctx),
   };
 
-  t.be(0x56540001, 4);
+  t.be(0x56540002, 4);
   t.be(i.chainId, 8);
   t.addr(i.account);
-  t.be(i.validUntil, 8);
+  t.be(i.expiry, 8);
+  t.word(hexToBigInt(i.snapshotRoot));
+  t.be(i.policyVersion, 4);
+  t.u8(i.path);
 
-  let at = VT.begin(t, NODE.FEE);
+  const at = VT.begin(t, NODE.FEE);
   t.addr(i.feeAsset);
-  tokenBody(t, i.feeAsset, i.feeAmount, c);
-  t.be(i.gasLimitTotal, 8);
-  VT.end(t, at);
-
-  at = VT.begin(t, NODE.VALID_UNTIL);
-  t.be(i.validUntil, 8);
+  t.word(i.maxFee);
   VT.end(t, at);
 
   const b = hexToBytes(i.body);
-  const arr = rdWord(b, 64n);
+  const arr = rdWord(b, 0n);
   const n = rdWord(b, arr);
   if (n > 16n) fail("BadCalldata");
   const el = arr + 32n;
@@ -138,12 +138,8 @@ export function render(i: RenderIn, trust: Trust): RenderOut {
     renderCall(t, c, target, value, slice(b, dataAt + 32n, dataLen), 0);
   }
 
-  at = VT.begin(t, NODE.POLICY);
-  t.word(hexToBigInt(i.policyHash));
-  VT.end(t, at);
-
+  const spec = bytesToHex(c.effects.finish(c.trustChange, t));
   const tree = t.toHex();
-  const spec = bytesToHex(c.effects.finish(c.trustChange));
   return { tree, spec, treeHash: keccak256(tree), specHash: keccak256(spec), risk: c.risk };
 }
 
@@ -162,7 +158,7 @@ function hinted(c: Ctx, a: Address): bigint {
   return 0n;
 }
 
-function callBegin(t: Buf, target: string, ch: bigint, sel: bigint, descHash: bigint, label: Uint8Array, lOff: number, lLen: number, publisher: bigint, status: number, version: bigint) {
+function callBegin(t: Buf, target: string, ch: bigint, sel: bigint, descHash: bigint, label: Uint8Array, lOff: number, lLen: number, publisher: bigint, status: number) {
   const at = VT.begin(t, NODE.CALL_BEGIN);
   t.addr(target);
   t.word(ch);
@@ -171,7 +167,6 @@ function callBegin(t: Buf, target: string, ch: bigint, sel: bigint, descHash: bi
   VT.strFrom(t, label, lOff, lLen);
   VT.strPacked(t, publisher);
   t.u8(status);
-  t.be(version, 8);
   VT.end(t, at);
 }
 
@@ -186,7 +181,7 @@ function renderCall(t: Buf, c: Ctx, target: Address, value: bigint, data: Uint8A
 
   if (ch === 0n) {
     const l = txt("Send ETH");
-    callBegin(t, target, 0n, 0n, 0n, l, 0, l.length, 0n, 0, 0n);
+    callBegin(t, target, 0n, 0n, 0n, l, 0, l.length, 0n, 0);
     VT.fieldEth(t, value);
     addressField(t, "To", target, ROLE_RECIPIENT, c);
     if (data.length !== 0) blindCall(t, c, data);
@@ -198,14 +193,19 @@ function renderCall(t: Buf, c: Ctx, target: Address, value: bigint, data: Uint8A
   const sel = data.length >= 4 ? rdBe(data, 0, 4) : 0n;
   const selHex = (`0x${sel.toString(16).padStart(8, "0")}`) as Hex;
   const chHex = hexWord(ch);
-  let d = c.trust.descriptor(chHex, selHex);
-  const kind = d === null ? c.trust.codeKind(chHex) : 0;
+  // A router's calls skip the descriptor read, as on chain.
+  let kind = sel === 0x3593564cn ? c.trust.codeKind(chHex) : 0;
+  let d: Desc | null = null;
+  if (kind !== 1 && kind !== 3) {
+    d = c.trust.descriptor(chHex, selHex);
+    kind = d === null ? c.trust.codeKind(chHex) : 0;
+  }
 
   if (kind === 1 || kind === 3) {
     c.legacyParams = kind === 3;
     const r = c.trust.routerConfig();
     const l = txt("Uniswap swap");
-    callBegin(t, target, ch, sel, 0n, l, 0, l.length, hexToBigInt(r.publisher), 2, 0n);
+    callBegin(t, target, ch, sel, 0n, l, 0, l.length, hexToBigInt(r.publisher), 2);
     if (value > 0n) VT.fieldEth(t, value);
     c.router = target;
     c.permit2 = r.permit2;
@@ -224,7 +224,7 @@ function renderCall(t: Buf, c: Ctx, target: Address, value: bigint, data: Uint8A
   }
   if (d === null) {
     const l = txt("Unverified call");
-    callBegin(t, target, ch, sel, 0n, l, 0, l.length, 0n, 0, 0n);
+    callBegin(t, target, ch, sel, 0n, l, 0, l.length, 0n, 0);
     if (value > 0n) VT.fieldEth(t, value);
     if (kind === 2) VT.riskAddr(t, RISK.UPGRADEABLE_TARGET, upgrader);
     blindCall(t, c, data);
@@ -244,7 +244,7 @@ function renderDesc(t: Buf, c: Ctx, target: Address, ch: bigint, sel: bigint, va
   const d = hexToBytes(desc.blob);
   if (rdBe(d, 0, 4) !== VDESC_MAGIC) fail("BadDescriptor");
   const labelLen = rdU8(d, 4);
-  callBegin(t, target, ch, sel, hexToBigInt(keccak256(d)), d, 5, labelLen, hexToBigInt(desc.publisher), desc.status, desc.epoch);
+  callBegin(t, target, ch, sel, hexToBigInt(keccak256(d)), d, 5, labelLen, hexToBigInt(desc.publisher), desc.status);
   if (value > 0n) VT.fieldEth(t, value);
   if (isProxy) VT.riskAddr(t, RISK.UPGRADEABLE_TARGET, upgrader);
 
@@ -418,7 +418,7 @@ function effect(t: Buf, c: Ctx, target: Address, value: bigint, cd: Uint8Array, 
     e.ownerEq(token, v1, toAddr(v2));
   } else if (kind === E.P2_APPROVE_SET) {
     if (v2 >> 160n !== 0n) fail("BadCalldata");
-    e.p2AllowLe(target, token, toAddr(v1), 0, v2);
+    e.p2AllowLe(target, token, toAddr(v1), v2);
     if (v2 !== 0n) spenderCheck(t, c, toAddr(v1));
     VT.risk(t, RISK.PERMIT2_ALLOWANCE_CHANGE);
     if (v2 >= (1n << 160n) - 1n) {
@@ -471,7 +471,7 @@ function tokenBody(t: Buf, token: Address, raw: bigint, c: Ctx) {
     } else {
       symbol = hexToBigInt(info.symbol);
       decimals = info.decimals;
-      if (info.flags & 3) c.risk |= BIT.TOKEN_UNSAFE;
+      if (info.flags) c.risk |= BIT.TOKEN_UNSAFE;
     }
   }
   VT.strPacked(t, symbol);

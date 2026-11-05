@@ -18,8 +18,7 @@ contract RenderHarness is RendererCore {
     }
 
     function setDesc(bytes32 ch, bytes4 sel, bytes calldata vdesc, bytes32 publisher, uint64 epoch, uint8 status) external {
-        _descOf[ch][sel] = DescSlot(SSTORE2.write(vdesc), epoch, status, false);
-        _publisherOf[ch][sel] = publisher;
+        _descOf[ch][sel] = DescSlot(SSTORE2.write(abi.encodePacked(publisher, vdesc)), epoch, status, false);
     }
 
     function setToken(address t, bytes11 symbol, uint8 symLen, uint8 decimals, uint8 flags) external {

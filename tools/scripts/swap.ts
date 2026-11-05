@@ -19,56 +19,32 @@ const bal = (t: Address, a: Address) => pub.readContract({ address: t, abi: ERC2
 
 const dWETH = s.tokenB as Address;
 const dUSDC = s.tokenA as Address;
-const honest = s.poolHonest.key;
-const evil = s.poolEvil.key;
-const zeroForOne = honest.currency0.toLowerCase() === dWETH.toLowerCase();
+// Native-ETH pools: ETH in, no approval to leave behind (D9).
+const honest = s.poolEthHonest.key;
+const evil = s.poolEthEvil.key;
+const zeroForOne = true;
 const deadline = BigInt(Math.floor(Date.now() / 1000) + 3600);
-const ONE = parseEther("1");
+const ONE = parseEther("0.001");
+const MIN = 2_000_000n; // 2 dUSDC; the pool price is near 3000
 
-const swapCall = (key: unknown, amountOutMinimum: bigint) => ({ target: ROUTER, value: 0n, data: v4SwapCall({ key: key as never, zeroForOne, amountIn: ONE, amountOutMinimum }, deadline) });
+const swapCall = (key: unknown, amountOutMinimum: bigint) => ({ target: ROUTER, value: ONE, data: v4SwapCall({ key: key as never, zeroForOne, amountIn: ONE, amountOutMinimum }, deadline) });
 
 async function setup() {
-  const allowance = await pub.readContract({ address: dWETH, abi: ERC20, functionName: "allowance", args: [s.account, PERMIT2] });
-  if (allowance === 0n) {
-    const c = { target: dWETH, value: 0n, data: encodeFunctionData({ abi: ERC20, functionName: "approve", args: [PERMIT2, parseEther("1000")] }) };
-    const tx = await sign(await prepareTx([c]));
-    const h = await submit(tx);
-    const r = await waitReceipt(h);
-    console.log("token.approve(Permit2)", h, batchResult(r, s.account));
-    await sleep(7000);
-  }
-  const [p2Amt] = await pub.readContract({ address: PERMIT2, abi: P2, functionName: "allowance", args: [s.account, dWETH, ROUTER] });
-  if (p2Amt < ONE * 20n) {
-    const c = { target: PERMIT2, value: 0n, data: encodeFunctionData({ abi: P2, functionName: "approve", args: [dWETH, ROUTER, parseEther("500"), 2 ** 47] }) };
-    const p = await prepareTx([c]);
-    const tx = await sign(p);
-    const h = await submit(tx);
-    const r = await waitReceipt(h);
-    console.log("permit2.approve(UR)", h, batchResult(r, s.account), frameGas(r));
-    await sleep(7000);
-  }
-}
-
-async function measure() {
-  const p = await prepareTx([swapCall(honest, parseEther("2000") / 10n ** 12n)], { gas: { frame0: 300_000n, frame1: 900_000n, frame2: 2_000_000n, frame2State: 1_500_000n } });
-  for (const l of formatForDevice(decodeTree(p.tree))) console.log("  ".repeat(l.indent) + l.text);
-  const sim = await simulate(await sign(p));
-  console.log("measured swap frames", sim.frames?.map((f: any) => parseInt(f.gasUsed, 16)), "err", sim.executionError, sim.revertData);
-  return sim.frames ? parseInt(sim.frames[1].gasUsed, 16) : null;
+  if ((await pub.getBalance({ address: s.account })) < parseEther("0.01")) await send(key("DEPLOYER_KEY"), s.account, "0x", parseEther("0.02"), 500_000n);
 }
 
 const steps: Record<string, () => Promise<void>> = {
   async SWAP() {
     const before = await bal(dUSDC, s.account);
-    const wethBefore = await bal(dWETH, s.account);
-    const min = 2_000_000_000n; // 2000 dUSDC, pool price is near 3000
+    const ethBefore = await pub.getBalance({ address: s.account });
+    const min = MIN;
     const p = await prepareTx([swapCall(honest, min)]);
     for (const l of formatForDevice(decodeTree(p.tree))) console.log("  ".repeat(l.indent) + l.text);
     const h = await submit(await sign(p));
     const r = await waitReceipt(h);
     const res = batchResult(r, s.account);
     const got = (await bal(dUSDC, s.account)) - before;
-    const paid = wethBefore - (await bal(dWETH, s.account));
+    const paid = ethBefore - (await pub.getBalance({ address: s.account }));
     record({ id: "SWAP", title: "Honest v4 swap through the real Universal Router", expected: "admitted, mined, min out respected", pass: res.ok === true && got >= min && paid === ONE, outcome: "mined", txHash: h, block: Number(r.blockNumber), frameGas: frameGas(r), message: res.err, extra: { receivedRaw: String(got), paidRaw: String(paid) } });
   },
   async WRAP() {
@@ -89,13 +65,10 @@ const steps: Record<string, () => Promise<void>> = {
     // A separate plain EOA plays the victim on an ordinary wallet; the hook's beneficiary is checked by balance.
     const victimKey = key("OWNER3_KEY");
     const victim = addr("OWNER3_KEY");
-    if ((await pub.getBalance({ address: victim })) < parseEther("0.002")) await send(key("DEPLOYER_KEY"), victim, "0x", parseEther("0.01"), 500_000n);
-    await send(key("DEPLOYER_KEY"), dWETH, encodeFunctionData({ abi: ERC20, functionName: "mint", args: [victim, ONE] }));
-    await send(victimKey, dWETH, encodeFunctionData({ abi: ERC20, functionName: "approve", args: [PERMIT2, ONE] }), 0n, 500_000n);
-    await send(victimKey, PERMIT2, encodeFunctionData({ abi: P2, functionName: "approve", args: [dWETH, ROUTER, ONE, 2 ** 47] }), 0n, 500_000n);
+    if ((await pub.getBalance({ address: victim })) < parseEther("0.003")) await send(key("DEPLOYER_KEY"), victim, "0x", parseEther("0.01"), 500_000n);
     const before = await bal(dUSDC, victim);
     const thiefBefore = await bal(dUSDC, eoa);
-    const r = await send(victimKey, ROUTER, v4SwapCall({ key: evil, zeroForOne, amountIn: ONE, amountOutMinimum: 0n }, deadline), 0n, 3_000_000n);
+    const r = await send(victimKey, ROUTER, v4SwapCall({ key: evil, zeroForOne, amountIn: ONE, amountOutMinimum: 0n }, deadline), ONE, 3_000_000n);
     const got = (await bal(dUSDC, victim)) - before;
     const stolen = (await bal(dUSDC, eoa)) - thiefBefore;
     void eoaKey;
@@ -103,8 +76,8 @@ const steps: Record<string, () => Promise<void>> = {
   },
   async A2() {
     // The frontend shows "at least 2000 dUSDC" on the honest pool and routes minOut = 0 through SkimHook.
-    const shown = await prepareTx([swapCall(honest, 2_000_000_000n)]);
-    const lie = await prepareTx([swapCall(evil, 0n)], { validUntil: shown.validUntil, overrideSentence: { tree: shown.tree, spec: shown.spec } });
+    const shown = await prepareTx([swapCall(honest, MIN)]);
+    const lie = await prepareTx([swapCall(evil, 0n)], { expiry: shown.expiry, overrideSentence: { tree: shown.tree, spec: shown.spec } });
     try {
       const h = await submit(await sign(lie));
       record({ id: "A2", title: "minOut=0 via SkimHook under an honest sentence", expected: "mempool reject (tree mismatch)", pass: false, outcome: "mined", txHash: h });
@@ -139,4 +112,4 @@ for (const [id, run] of Object.entries(steps)) {
   }
   await sleep(7000);
 }
-void simulate; void measure; void readState; void writeState;
+void simulate; void readState; void writeState; void P2; void PERMIT2; void dWETH; void encodeFunctionData;

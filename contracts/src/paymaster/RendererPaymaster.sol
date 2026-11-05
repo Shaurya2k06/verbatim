@@ -2,9 +2,14 @@
 pragma solidity ^0.8.26;
 
 import {FrameIntrospection, DevnetFrames} from "../lib/FrameIntrospection.sol";
+import {OwnerDigest} from "../account/VerbatimAccount.sol";
 import {IERC20Min, TrustStore} from "../trust/TrustStore.sol";
 import {DisplayVM} from "../lib/DisplayVM.sol";
-import {Buf, Risk} from "../lib/VTree.sol";
+import {Buf, PolicyRules} from "../lib/VTree.sol";
+
+interface IPolicySource {
+    function policyWord() external view returns (uint256);
+}
 
 interface IStakingRegistry {
     function addStake(uint32 unstakeDelaySec) external payable;
@@ -27,8 +32,11 @@ abstract contract RendererCore is TrustStore {
     error PolicyRefused(uint256 risk);
     error TreeMismatch(bytes32 expected, bytes32 actual);
     error SpecHashMismatch(bytes32 expected, bytes32 actual);
-    error FeeAssetNotAllowed(address asset);
-    error FeeTooLow(uint256 min, uint256 amount);
+    error DigestMismatch(bytes32 expected, bytes32 signed);
+    error SnapshotMissing();
+    error SnapshotMismatch(bytes32 given, bytes32 cached);
+    error SnapshotExpiresTooSoon(uint64 expiry, uint64 snapshotExpiry);
+    error SnapshotTtlTooLong(uint256 ttl, uint256 max);
     error NoTicket(uint256 nonce, uint256 needed);
     error InsufficientDeposit(uint256 available, uint256 needed);
 
@@ -57,25 +65,9 @@ abstract contract RendererCore is TrustStore {
 
     // ----------------------------------------------------------------- render + policy + fee ----
 
-    /// Everything validation checks about one transaction, independent of how the leg gets at its data.
-    function _validateTx(DisplayVM.In memory i, bytes32 treeHash, bytes32 specHash) internal view {
-        DisplayVM.Out memory o = _render(i);
-        bytes32 tree = keccak256(o.tree);
-        if (tree != treeHash) revert TreeMismatch(treeHash, tree);
-        bytes32 spec = keccak256(o.spec);
-        if (spec != specHash) revert SpecHashMismatch(specHash, spec);
-        bytes memory b = i.body;
-        uint256 sp = b.rdWord(96);
-        bytes32 argSpec = b.hashRange(sp + 32, b.rdWord(sp));
-        if (argSpec != specHash) revert SpecHashMismatch(specHash, argSpec);
-        _applyPolicy(o.risk, _policyOf[i.account].allowMask);
-    }
-
     /// §9.3, failing closed on the refused set.
     function _applyPolicy(uint256 risk, uint256 allow) internal pure {
-        uint256 refused = Risk.BIT_UNVERIFIED | Risk.BIT_BLIND | Risk.BIT_UNLIMITED | Risk.BIT_SPENDER_UNATTESTED | Risk.BIT_TOKEN_UNSAFE | Risk.BIT_ALLOW_REVERT;
-        if (risk & refused & ~allow != 0) revert PolicyRefused(risk);
-        if (risk & Risk.BIT_HOOK_TAKE != 0 && allow & Risk.BIT_HOOK_TAKE == 0 && risk & (Risk.BIT_NO_MIN_OUT | Risk.BIT_HOOK_UNVERIFIED) != 0) revert PolicyRefused(risk);
+        if (PolicyRules.refuses(risk, allow)) revert PolicyRefused(risk);
     }
 
     // ----------------------------------------------------- deposits (the rest is in TrustAdmin) ----
@@ -88,17 +80,6 @@ abstract contract RendererCore is TrustStore {
         } else {
             require(IERC20Min(asset).transfer(to, amount));
         }
-    }
-
-    /// The longest a signature may still have to run when it executes, in seconds.
-    function maxTtlOf(address account) public view returns (uint64) {
-        Policy memory p = _policyOf[account];
-        return p.set ? p.ttl : DEFAULT_MAX_TTL;
-    }
-
-    function policyHashOf(address account) public view returns (bytes32) {
-        Policy memory p = _policyOf[account];
-        return keccak256(abi.encode(p.set ? p.ttl : DEFAULT_MAX_TTL, p.allowMask));
     }
 
     receive() external payable {}
@@ -131,46 +112,76 @@ abstract contract RendererPaymasterBase is RendererCore, FrameIntrospection {
         VERBATIM_ACCOUNT_CODEHASH = accountCodehash;
     }
 
-    /// Frame 1. Layout is the canonical account's frame 0's job, which the protocol ran first and which the code
-    /// hash check pins. `hints` is bound by `sig_hash`, like all frame data on this build.
-    function verifyFrame(address[] calldata hints) external {
+    /// Frame 2. The layout is the canonical account's frame 1's job, which the protocol ran first and which the code hash
+    /// check pins. This frame rebuilds the owners' digest from its own render and requires every entry to carry it (D2).
+    function verifyFrame(address[] calldata hints, bytes32 root, uint64 issuedAt, uint64 snapExpiry) external {
         if (msg.sender != address(0xaa)) revert NotEntryPoint();
         Layout memory l = _layout();
-        if (l.current != 1) revert BadFrame();
+        if (l.current != 2) revert BadFrame();
         address sender = address(uint160(l.sender));
         bytes32 ch = sender.codehash;
         if (ch != VERBATIM_ACCOUNT_CODEHASH) revert NotCanonicalSender(ch);
+        // Frame 1, which that code ran, checked this word against the sender's storage.
+        uint256 policy = l.policyClaim;
 
-        bytes memory f0 = _framedatacopy(4, 96, 0);
-        bytes memory body = _framedatacopy(4, l.l2 - 4, 2);
-        uint256 gasTotal = l.g0 + l.s0 + l.g1 + l.s1 + l.g2 + l.s2;
+        // One slot for all three: the rest travels in this frame's data and only has to hash to it.
+        bytes32 cached = _snapshotCommit;
+        if (cached == bytes32(0)) revert SnapshotMissing();
+        bytes32 commit = keccak256(abi.encode(root, issuedAt, snapExpiry));
+        if (commit != cached) revert SnapshotMismatch(commit, cached);
+        uint64 expiry = uint64(l.expiryWord >> 192);
+        if (expiry > snapExpiry) revert SnapshotExpiresTooSoon(expiry, snapExpiry);
+        uint256 maxSnapshotTtl = uint32(policy >> 56);
+        if (snapExpiry - issuedAt > maxSnapshotTtl) revert SnapshotTtlTooLong(snapExpiry - issuedAt, maxSnapshotTtl);
 
+        bytes memory body = _framedatacopy(4, l.l3 - 4, 3);
         DisplayVM.In memory i;
         i.chainId = uint64(block.chainid);
         i.account = sender;
-        i.validUntil = uint64(f0.rdWord(64));
-        i.feeAsset = body.rdAddr(0);
-        i.feeAmount = body.rdWord(32);
-        i.gasLimitTotal = uint64(gasTotal);
-        i.policyHash = policyHashOf(sender);
+        i.expiry = expiry;
+        i.snapshotRoot = root;
+        i.policyVersion = uint32(policy >> 120);
+        i.path = uint8(PATH_PAYMASTER);
+        i.maxFee = l.maxFee * (l.g0 + l.s0 + l.g1 + l.s1 + l.g2 + l.s2 + l.g3 + l.s3);
         i.body = body;
         i.hints = hints;
-        _validateTx(i, bytes32(f0.rdWord(0)), bytes32(f0.rdWord(32)));
-        _checkTicket(sender, i.feeAsset, i.feeAmount);
+        DisplayVM.Out memory o = _render(i);
+
+        bytes32 specHash = keccak256(o.spec);
+        uint256 sp = body.rdWord(32);
+        bytes32 argSpec = body.hashRange(sp + 32, body.rdWord(sp));
+        if (argSpec != specHash) revert SpecHashMismatch(specHash, argSpec);
+        _applyPolicy(o.risk, uint32(policy >> 88));
+
+        bytes32 treeHash = keccak256(o.tree);
+        bytes32 digest = OwnerDigest.compute(sender, treeHash, specHash, expiry, root, uint8(PATH_PAYMASTER), l.txCommit);
+        uint256 n = uint8(policy);
+        if (l.sigCount != n || n > MAX_SIGNATURES) revert BadFrame();
+        for (uint256 k = 0; k < n; k++) {
+            (, uint256 signed, ) = _sigAt(l, k);
+            if (signed != uint256(digest)) _explainMismatch(treeHash, specHash, digest, signed);
+        }
+        _checkTicket(sender, l.nonce, l.maxCost);
         _approve(SCOPE_PAYMENT);
     }
 
-    /// The fee must cover the most this transaction can cost, and a ticket for this very nonce must hold it. Tickets
-    /// are per nonce, so pending transactions cannot overcommit one balance (A14).
-    function _checkTicket(address sender, address asset, uint256 amount) private view {
-        if (asset != address(0)) revert FeeAssetNotAllowed(asset);
-        (uint256 nonce, uint256 maxCost) = _nonceAndMaxCost();
-        if (amount < maxCost) revert FeeTooLow(maxCost, amount);
-        FeeTicket memory t = _feeTickets[sender][nonce];
-        if (t.reclaimAt != 0 || t.amount < amount) revert NoTicket(nonce, amount);
+    /// Only on the way to a revert, so the common path never pays for it: names which part the owners signed differently.
+    function _explainMismatch(bytes32 treeHash, bytes32 specHash, bytes32 digest, uint256 signed) private view {
+        bytes32 claimedTree = bytes32(_framedataload(4, 1));
+        if (claimedTree != treeHash) revert TreeMismatch(claimedTree, treeHash);
+        bytes32 claimedSpec = bytes32(_framedataload(36, 1));
+        if (claimedSpec != specHash) revert SpecHashMismatch(claimedSpec, specHash);
+        revert DigestMismatch(digest, bytes32(signed));
     }
 
-    /// Frame 2's first act. The ticket is spent whole; anything above the fee goes back to the account's deposit.
+    /// A ticket for this very nonce must hold the most this transaction can cost. Tickets are per nonce, so pending
+    /// transactions cannot overcommit one balance (A14).
+    function _checkTicket(address sender, uint256 nonce, uint256 maxCost) private view {
+        FeeTicket memory t = _feeTickets[sender][nonce];
+        if (t.reclaimAt != 0 || t.amount < maxCost) revert NoTicket(nonce, maxCost);
+    }
+
+    /// The last frame's first act. The ticket is spent whole; anything above the fee goes back to the account's deposit.
     function chargeTicket(uint256 nonce, uint256 amount) external virtual {
         FeeTicket memory t = _feeTickets[msg.sender][nonce];
         if (t.amount < amount) revert NoTicket(nonce, amount);

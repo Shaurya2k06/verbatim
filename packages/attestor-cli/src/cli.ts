@@ -16,7 +16,7 @@ const flag = (n: string) => args[args.indexOf(`--${n}`) + 1];
 /** bigints arrive as strings in update.json */
 const loadUpdate = (f: string): TrustUpdate => {
   const u = json(f);
-  return { ...u, epoch: BigInt(u.epoch) };
+  return { ...u, epoch: BigInt(u.epoch), issuedAt: BigInt(u.issuedAt), expiry: BigInt(u.expiry) };
 };
 
 switch (cmd) {

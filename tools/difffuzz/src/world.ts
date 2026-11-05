@@ -275,7 +275,6 @@ function mangle(r: ReturnType<typeof rng>, c: Call): Call {
 }
 
 const BODY = [
-  { type: "tuple", components: [{ type: "address" }, { type: "uint256" }] },
   { type: "tuple[]", components: [{ type: "address" }, { type: "uint256" }, { type: "bytes" }] },
   { type: "bytes" },
 ] as const;
@@ -284,26 +283,24 @@ export function makeCase(seed: number): RenderIn {
   const r = rng(seed);
   const n = r.next() < 0.05 ? 0 : 1 + r.int(4);
   const calls = Array.from({ length: n }, () => mangle(r, call(r)));
-  const feeAsset = r.pick(["0x0000000000000000000000000000000000000000" as Address, "0x0000000000000000000000000000000000000000" as Address, TOKEN, UNKNOWN, UNSAFE]);
-  const feeAmount = BigInt(r.int(1e9));
-  const body = encodeAbiParameters(BODY, [[feeAsset, feeAmount], calls.map((c) => [c.target, c.value, c.data]) as never, "0x"]);
+  const body = encodeAbiParameters(BODY, [calls.map((c) => [c.target, c.value, c.data]) as never, "0x"]);
   // Hints occasionally lie: claiming code on an address with none, or omitting one that has it.
   const hints = ALL_HINTS.filter(() => r.next() < 0.95);
   if (r.next() < 0.05) hints.push(BOB);
   return {
     chainId: 1337n,
     account: ACCOUNT,
-    validUntil: BigInt(1_800_000_000 + r.int(1e6)),
-    feeAsset,
-    feeAmount,
-    gasLimitTotal: BigInt(r.int(5e6)),
-    policyHash: r.bytes(32),
+    expiry: BigInt(1_800_000_000 + r.int(1e6)),
+    snapshotRoot: r.bytes(32),
+    policyVersion: 1 + r.int(5),
+    path: 1 + r.int(3),
+    feeAsset: "0x0000000000000000000000000000000000000000",
+    maxFee: BigInt(r.int(1e9)),
     body,
     hints,
   };
 }
 
-const BODY_FEE = [ZERO_ADDR(), 1000n] as const;
 function ZERO_ADDR(): Address {
   return "0x0000000000000000000000000000000000000000";
 }
@@ -311,12 +308,13 @@ function ZERO_ADDR(): Address {
 const named = (calls: Call[]): RenderIn => ({
   chainId: 1337n,
   account: ACCOUNT,
-  validUntil: 1_800_000_000n,
-  feeAsset: BODY_FEE[0],
-  feeAmount: BODY_FEE[1],
-  gasLimitTotal: 3_000_000n,
-  policyHash: `0x${"ab".repeat(32)}`,
-  body: encodeAbiParameters(BODY, [[BODY_FEE[0], BODY_FEE[1]], calls.map((c) => [c.target, c.value, c.data]) as never, "0x"]),
+  expiry: 1_800_000_000n,
+  snapshotRoot: `0x${"ab".repeat(32)}`,
+  policyVersion: 1,
+  path: 2,
+  feeAsset: ZERO_ADDR(),
+  maxFee: 1000n,
+  body: encodeAbiParameters(BODY, [calls.map((c) => [c.target, c.value, c.data]) as never, "0x"]),
   hints: ALL_HINTS,
 });
 

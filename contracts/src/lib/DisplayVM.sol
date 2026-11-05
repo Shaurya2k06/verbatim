@@ -20,9 +20,8 @@ abstract contract DisplayVM {
     error UnknownEnum();
 
     uint256 internal constant MAX_DEPTH = 3;
-    uint256 internal constant MAX_TREE = 6144;
-    uint256 internal constant MAX_OTHER = 2048;
-    uint64 internal constant DEFAULT_MAX_TTL = 300;
+    uint256 internal constant MAX_TREE = 3072;
+    uint256 internal constant MAX_OTHER = 1024;
     bytes32 private constant EMPTY_CODE = keccak256("");
 
     uint8 internal constant ATTEST_NONE = 0;
@@ -30,13 +29,15 @@ abstract contract DisplayVM {
     struct In {
         uint64 chainId;
         address account;
-        /// Unix seconds. The device checks it against its own clock, the account at execution.
-        uint64 validUntil;
+        /// Unix seconds, from the expiry frame. The device checks it against its own clock, the verifier in validation.
+        uint64 expiry;
+        bytes32 snapshotRoot;
+        uint32 policyVersion;
+        uint8 path;
         address feeAsset;
-        uint256 feeAmount;
-        uint64 gasLimitTotal;
-        bytes32 policyHash;
-        /// ABI body of executeVerified, without the selector.
+        /// Declared frame limits times the fee cap: what the signer can be told before knowing the base fee (D-A19).
+        uint256 maxFee;
+        /// ABI body of executeVerified, without the selector: calls, spec.
         bytes body;
         /// Addresses claimed to have code. Everything else is rendered as code-free and asserted so at execution,
         /// because validation must not touch an address with no code (CALLING-010).
@@ -93,21 +94,19 @@ abstract contract DisplayVM {
         t.be(VTree.MAGIC, 4);
         t.be(i.chainId, 8);
         t.addr(i.account);
-        t.be(i.validUntil, 8);
+        t.be(i.expiry, 8);
+        t.word(uint256(i.snapshotRoot));
+        t.be(i.policyVersion, 4);
+        t.u8(i.path);
 
         uint256 at = t.begin(VTree.FEE);
         t.addr(i.feeAsset);
-        _tokenBody(t, i.feeAsset, i.feeAmount, c);
-        t.be(i.gasLimitTotal, 8);
+        t.word(i.maxFee);
         t.end(at);
 
-        at = t.begin(VTree.VALID_UNTIL);
-        t.be(i.validUntil, 8);
-        t.end(at);
-
-        // body: [fee.asset, fee.amount, calls ptr, spec ptr]
+        // body: [calls ptr, spec ptr]
         bytes memory b = i.body;
-        uint256 arr = b.rdWord(64);
+        uint256 arr = b.rdWord(0);
         uint256 n = b.rdWord(arr);
         if (n > 16) revert BadCalldata();
         uint256 el = arr + 32;
@@ -120,12 +119,8 @@ abstract contract DisplayVM {
             _renderCall(t, c, h, target, value, b.slice(dataAt + 32, dataLen), 0);
         }
 
-        at = t.begin(VTree.POLICY);
-        t.word(uint256(i.policyHash));
-        t.end(at);
-
+        o.spec = c.effects.finish(h.trustChange, t);
         o.tree = t.toBytes();
-        o.spec = c.effects.finish(h.trustChange);
         o.risk = c.risk;
     }
 
@@ -141,7 +136,7 @@ abstract contract DisplayVM {
         e.noCode(a);
     }
 
-    function _callBegin(Buf.B memory t, address target, bytes32 ch, bytes4 sel, bytes32 descHash, bytes memory label, uint256 lOff, uint256 lLen, bytes32 publisher, uint8 status, uint64 version) private pure {
+    function _callBegin(Buf.B memory t, address target, bytes32 ch, bytes4 sel, bytes32 descHash, bytes memory label, uint256 lOff, uint256 lLen, bytes32 publisher, uint8 status) private pure {
         uint256 at = t.begin(VTree.CALL_BEGIN);
         t.addr(target);
         t.word(uint256(ch));
@@ -150,7 +145,6 @@ abstract contract DisplayVM {
         t.strFrom(label, lOff, lLen);
         t.strPacked(publisher);
         t.u8(status);
-        t.be(version, 8);
         t.end(at);
     }
 
@@ -163,7 +157,7 @@ abstract contract DisplayVM {
 
         if (ch == bytes32(0)) {
             bytes memory l = "Send ETH";
-            _callBegin(t, target, ch, bytes4(0), bytes32(0), l, 0, l.length, bytes32(0), ATTEST_NONE, 0);
+            _callBegin(t, target, ch, bytes4(0), bytes32(0), l, 0, l.length, bytes32(0), ATTEST_NONE);
             t.fieldEth(value);
             _addressField(t, "To", target, VDesc.ROLE_RECIPIENT, c, h);
             if (data.length != 0) _blindCall(t, c, data);
@@ -173,14 +167,19 @@ abstract contract DisplayVM {
         e.codehashEq(target, ch);
 
         bytes4 sel = data.length >= 4 ? bytes4(uint32(data.rdBe(0, 4))) : bytes4(0);
-        Desc memory d = _descriptor(ch, sel);
-        uint8 kind = d.blob.length == 0 ? _codeKind(ch) : 0;
+        // A router's calls skip the descriptor read: its one selector is rendered by URRender.
+        uint8 kind = sel == 0x3593564c ? _codeKind(ch) : 0;
+        Desc memory d;
+        if (kind != 1 && kind != 3) {
+            d = _descriptor(ch, sel);
+            kind = d.blob.length == 0 ? _codeKind(ch) : 0;
+        }
 
         if (kind == 1 || kind == 3) {
             c.cfg.legacyParams = kind == 3;
             (address permit2, address weth, bytes32 publisher) = _routerConfig();
             bytes memory l = "Uniswap swap";
-            _callBegin(t, target, ch, sel, bytes32(0), l, 0, l.length, publisher, 2, 0);
+            _callBegin(t, target, ch, sel, bytes32(0), l, 0, l.length, publisher, 2);
             if (value > 0) t.fieldEth(value);
             c.cfg.router = target;
             c.cfg.permit2 = permit2;
@@ -201,7 +200,7 @@ abstract contract DisplayVM {
         }
         if (d.blob.length == 0) {
             bytes memory l = "Unverified call";
-            _callBegin(t, target, ch, sel, bytes32(0), l, 0, l.length, bytes32(0), ATTEST_NONE, 0);
+            _callBegin(t, target, ch, sel, bytes32(0), l, 0, l.length, bytes32(0), ATTEST_NONE);
             if (value > 0) t.fieldEth(value);
             if (kind == 2) t.riskAddr(Risk.UPGRADEABLE_TARGET, upgrader);
             _blindCall(t, c, data);
@@ -220,17 +219,17 @@ abstract contract DisplayVM {
     function _renderDesc(Buf.B memory t, URRender.Ctx memory c, Host memory h, address target, bytes32 ch, bytes4 sel, uint256 value, bytes memory data, Desc memory desc, uint256 depth, bool isProxy, address upgrader) private view {
         bytes memory d = desc.blob;
         if (d.rdBe(0, 4) != VDesc.MAGIC) revert VDesc.BadDescriptor();
-        uint256 labelLen = d.rdU8(4);
-        _callBegin(t, target, ch, sel, keccak256(d), d, 5, labelLen, desc.publisher, desc.status, desc.epoch);
+        uint256 labelLen = d.u8At(4);
+        _callBegin(t, target, ch, sel, keccak256(d), d, 5, labelLen, desc.publisher, desc.status);
         if (value > 0) t.fieldEth(value);
         if (isProxy) t.riskAddr(Risk.UPGRADEABLE_TARGET, upgrader);
 
         uint256 p = 5 + labelLen;
-        uint256 exact = d.rdU8(p++);
+        uint256 exact = d.u8At(p++);
         if (exact != VDesc.EXACT_UNCHECKED && data.length != 4 + exact * 32) revert BadCalldata();
-        uint256 n = d.rdU8(p++);
+        uint256 n = d.u8At(p++);
         for (uint256 i = 0; i < n; i++) p = _field(t, c, h, target, value, data, d, p, depth);
-        n = d.rdU8(p++);
+        n = d.u8At(p++);
         uint256 flags = d.rdBe(d.length - 2, 2);
         for (uint256 i = 0; i < n; i++) p = _effect(t, c, target, value, data, d, p, flags);
         if (flags & VDesc.F_ADMIN != 0) {
@@ -243,11 +242,11 @@ abstract contract DisplayVM {
 
     /// Word position of a path: each step is (deref flag 0x80 | word index), the last step names the leaf.
     function _pos(bytes memory d, uint256 p, bytes memory cd) private pure returns (uint256 pos, uint256 next) {
-        uint256 n = d.rdU8(p);
+        uint256 n = d.u8At(p);
         if (n == 0) revert VDesc.BadDescriptor();
         uint256 base = 4;
         for (uint256 i = 0; i < n; i++) {
-            uint256 s = d.rdU8(p + 1 + i);
+            uint256 s = d.u8At(p + 1 + i);
             pos = base + (s & 0x7f) * 32;
             if (i + 1 < n) base = s & 0x80 != 0 ? base + cd.rdWord(pos) : pos;
         }
@@ -255,17 +254,17 @@ abstract contract DisplayVM {
     }
 
     function _skipPath(bytes memory d, uint256 p) private pure returns (uint256) {
-        return p + 1 + d.rdU8(p);
+        return p + 1 + d.u8At(p);
     }
 
     /// Tail of a dynamic `bytes` whose pointer sits at `pos`, relative to the enclosing tuple. Only top-level or
     /// single-tuple paths reach here, so the base is recomputed from the path.
     function _dynAt(bytes memory cd, bytes memory d, uint256 pathAt) private pure returns (uint256 off, uint256 len) {
-        uint256 n = d.rdU8(pathAt);
+        uint256 n = d.u8At(pathAt);
         uint256 base = 4;
         uint256 pos;
         for (uint256 i = 0; i < n; i++) {
-            uint256 s = d.rdU8(pathAt + 1 + i);
+            uint256 s = d.u8At(pathAt + 1 + i);
             pos = base + (s & 0x7f) * 32;
             if (i + 1 < n) base = s & 0x80 != 0 ? base + cd.rdWord(pos) : pos;
         }
@@ -276,7 +275,7 @@ abstract contract DisplayVM {
     }
 
     function _src(bytes memory d, uint256 p, address target, bytes memory cd) private pure returns (address token, uint256 next) {
-        uint256 kind = d.rdU8(p);
+        uint256 kind = d.u8At(p);
         if (kind == VDesc.SRC_TARGET) return (target, p + 1);
         if (kind == VDesc.SRC_CONST) return (address(uint160(d.rdBe(p + 1, 20))), p + 21);
         uint256 pos;
@@ -287,9 +286,9 @@ abstract contract DisplayVM {
     function _field(Buf.B memory t, URRender.Ctx memory c, Host memory h, address target, uint256 value, bytes memory cd, bytes memory d, uint256 p, uint256 depth) private view returns (uint256) {
         uint256 pathAt = p;
         p = _skipPath(d, p);
-        uint256 kind = d.rdU8(p++);
+        uint256 kind = d.u8At(p++);
         uint256 lOff = p + 1;
-        uint256 lLen = d.rdU8(p);
+        uint256 lLen = d.u8At(p);
         p = lOff + lLen;
         bytes memory label = d.slice(lOff, lLen);
 
@@ -297,7 +296,7 @@ abstract contract DisplayVM {
             t.fieldEth(value);
         } else if (kind == VDesc.K_ADDRESS) {
             (uint256 pos, ) = _pos(d, pathAt, cd);
-            _addressField(t, label, cd.rdAddr(pos), uint8(d.rdU8(p++)), c, h);
+            _addressField(t, label, cd.rdAddr(pos), uint8(d.u8At(p++)), c, h);
         } else if (kind == VDesc.K_TOKEN_AMOUNT) {
             (uint256 pos, ) = _pos(d, pathAt, cd);
             address token;
@@ -305,7 +304,7 @@ abstract contract DisplayVM {
             _amountField(t, label, token, cd.rdWord(pos), c);
         } else if (kind == VDesc.K_UINT) {
             (uint256 pos, ) = _pos(d, pathAt, cd);
-            t.fieldUint(label, cd.rdWord(pos), uint8(d.rdU8(p++)));
+            t.fieldUint(label, cd.rdWord(pos), uint8(d.u8At(p++)));
         } else if (kind == VDesc.K_BOOL) {
             (uint256 pos, ) = _pos(d, pathAt, cd);
             uint256 v = cd.rdWord(pos);
@@ -321,14 +320,14 @@ abstract contract DisplayVM {
         } else if (kind == VDesc.K_CALLDATA) {
             (uint256 off, uint256 len) = _dynAt(cd, d, pathAt);
             address nt = target;
-            uint256 tk = d.rdU8(p++);
+            uint256 tk = d.u8At(p++);
             if (tk == 1) {
                 (uint256 pos, uint256 nx) = _pos(d, p, cd);
                 nt = cd.rdAddr(pos);
                 p = nx;
             }
             uint256 nv;
-            uint256 vk = d.rdU8(p++);
+            uint256 vk = d.u8At(p++);
             if (vk == 1) {
                 (uint256 pos, uint256 nx) = _pos(d, p, cd);
                 nv = cd.rdWord(pos);
@@ -344,11 +343,11 @@ abstract contract DisplayVM {
     }
 
     function _enum(Buf.B memory t, bytes memory label, uint256 v, bytes memory d, uint256 p) private pure returns (uint256) {
-        uint256 n = d.rdU8(p++);
+        uint256 n = d.u8At(p++);
         bool found;
         for (uint256 j = 0; j < n; j++) {
             uint256 code = d.rdBe(p, 2);
-            uint256 sLen = d.rdU8(p + 2);
+            uint256 sLen = d.u8At(p + 2);
             if (code == v && !found) {
                 found = true;
                 uint256 at = t.begin(VTree.FIELD_ENUM);
@@ -364,7 +363,7 @@ abstract contract DisplayVM {
     }
 
     function _effect(Buf.B memory t, URRender.Ctx memory c, address target, uint256 value, bytes memory cd, bytes memory d, uint256 p, uint256 flags) private view returns (uint256) {
-        uint256 kind = d.rdU8(p++);
+        uint256 kind = d.u8At(p++);
         address token;
         (token, p) = _src(d, p, target, cd);
         if (kind == VDesc.E_IN_VALUE) {
@@ -408,7 +407,7 @@ abstract contract DisplayVM {
         } else if (kind == VDesc.E_P2_APPROVE_SET) {
             // token is the path's token field; (spender, amount), the call's target is Permit2.
             if (v2 >> 160 != 0) revert BadCalldata();
-            e.p2AllowLe(target, token, address(uint160(v1)), VSpec.P2_ABSOLUTE, v2);
+            e.p2AllowLe(target, token, address(uint160(v1)), v2);
             if (v2 != 0) _spenderCheck(t, c, address(uint160(v1)));
             t.risk(Risk.PERMIT2_ALLOWANCE_CHANGE);
             if (v2 >= type(uint160).max) {
@@ -463,7 +462,7 @@ abstract contract DisplayVM {
                 symbol = _UNKNOWN;
                 decimals = 0;
                 c.risk |= Risk.BIT_UNVERIFIED;
-            } else if (flags & 3 != 0) {
+            } else if (flags != 0) {
                 c.risk |= Risk.BIT_TOKEN_UNSAFE;
             }
         }

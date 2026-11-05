@@ -6,9 +6,12 @@ import {FrameEnv} from "./MockFrames.sol";
 import {VerbatimCore, VerbatimAccountBase} from "../src/account/VerbatimAccount.sol";
 import {RendererCore, RendererPaymasterBase} from "../src/paymaster/RendererPaymaster.sol";
 import {AssertionKit} from "../src/lib/AssertionKit.sol";
+import {VSpec} from "../src/lib/VTree.sol";
 import {GasBurner, Reenterer, ReturnBomb} from "../src/demo/EvilVault.sol";
 import {TrustStoreLayout} from "../src/trust/TrustStore.sol";
 import {SkimHook} from "../src/demo/SkimHook.sol";
+import {TestToken} from "../src/demo/TestTokens.sol";
+import {MockPermit2} from "./Base.t.sol";
 
 /// The attack kit (§15), under the mock protocol. docs/PROOFS.md has the same attacks on the live devnet.
 contract AttacksTest is Base {
@@ -108,13 +111,13 @@ contract AttacksTest is Base {
 
     function test_A3_self_pay_layout_rejected() public {
         load(plan(transferCall(BOB, 1e6), T0 + 100));
-        env.setFrameFlags(0, 3);
+        env.setFrameFlags(1, 3);
         expectFrame0(abi.encodeWithSelector(VerbatimAccountBase.BadLayout.selector, uint256(3)));
     }
 
     function test_A4_weaker_spec_signed_rejected() public {
         Plan memory p = plan(transferCall(BOB, 1e6), T0 + 100);
-        bytes memory weak = hex"565300010000";
+        bytes memory weak = hex"565300020000";
         bytes32 real = keccak256(p.spec);
         p.spec = weak;
         load(p, keccak256(p.tree), keccak256(weak));
@@ -126,7 +129,7 @@ contract AttacksTest is Base {
         Plan memory p = plan(transferCall(BOB, 1e6), T0 + 100);
         bytes32 specHash = keccak256(p.spec);
         bytes32 tree = keccak256(p.tree);
-        p.spec = hex"565300010000";
+        p.spec = hex"565300020000";
         load(p, tree, specHash);
         frame0();
         expectFrame1(abi.encodeWithSelector(RendererCore.SpecHashMismatch.selector, specHash, keccak256(p.spec)));
@@ -140,11 +143,14 @@ contract AttacksTest is Base {
         expectFrame1(abi.encodeWithSelector(RendererCore.PolicyRefused.selector, p.risk));
     }
 
+    /// No batch can leave these behind any more (D9, B14). This models an allowance granted before the account's rules
+    /// could see it, to show TRACKED_NO_DECREASE still holds if one ever exists.
     function _vaultApprovals() private {
-        (bool ok, ) = run(plan(one(address(usdc), abi.encodeWithSelector(0x095ea7b3, address(vault), uint256(500e6))), T0 + 100));
-        assertTrue(ok);
-        (ok, ) = run(plan(one(address(weth), abi.encodeWithSelector(0x095ea7b3, address(vault), uint256(50e18))), T0 + 100));
-        assertTrue(ok);
+        account.watchForTest(address(weth));
+        vm.startPrank(address(account));
+        usdc.approve(address(vault), 500e6);
+        weth.approve(address(vault), 50e18);
+        vm.stopPrank();
     }
 
     function test_A6_evil_vault_assertion_reverts_fee_kept() public {
@@ -159,7 +165,7 @@ contract AttacksTest is Base {
         assertEq(weth.balanceOf(address(account)), wethBefore, "pull undone");
         assertEq(usdc.balanceOf(address(account)), usdcBefore, "deposit undone");
         assertEq(weth.balanceOf(THIEF), 0);
-        assertEq(admin_().feesAccrued(address(0)) - feesBefore, p.fee.amount, "fee kept");
+        assertEq(admin_().feesAccrued(address(0)) - feesBefore, FEE, "fee kept");
     }
 
     function test_A7_stale_signature_past_validUntil_reverts() public {
@@ -201,15 +207,15 @@ contract AttacksTest is Base {
         frame0();
         frame1();
         frame2();
-        // Replaying the same nonce finds nothing, whatever the protocol does about the nonce itself.
-        load(p);
+        // The same content is refused outright (I13). A new sentence on the same nonce finds the ticket spent.
+        load(plan(transferCall(BOB, 2), T0 + 100));
         frame0();
         expectFrame1(abi.encodeWithSelector(RendererCore.NoTicket.selector, uint256(60), FEE));
     }
 
     function test_A15_revocation_drops_only_dependents() public {
         Plan memory dep = plan(transferCall(BOB, 1), T0 + 100);
-        Plan memory other = plan(one(address(usdc), abi.encodeWithSelector(0x095ea7b3, address(vault), uint256(1))), T0 + 100);
+        Plan memory other = plan(one(address(usdc), abi.encodeWithSelector(0x095ea7b3, address(p2), uint256(1))), T0 + 100);
         TrustStoreLayout.TrustUpdate memory u = emptyUpdate();
         u.revocations = new TrustStoreLayout.Revocation[](1);
         u.revocations[0] = TrustStoreLayout.Revocation(address(usdc).codehash, 0xa9059cbb);
@@ -276,7 +282,7 @@ contract AttacksTest is Base {
     }
 
     function _hasRisk(bytes memory tree, uint16 code) private pure returns (bool) {
-        uint256 p = 4 + 8 + 20 + 8;
+        uint256 p = 4 + 8 + 20 + 8 + 32 + 4 + 1;
         while (p < tree.length) {
             uint8 kind = uint8(tree[p]);
             uint256 len = (uint256(uint8(tree[p + 1])) << 8) | uint8(tree[p + 2]);
@@ -302,12 +308,12 @@ contract AttacksTest is Base {
         expectFrame1(abi.encodeWithSelector(RendererCore.NoTicket.selector, uint256(1000), FEE));
     }
 
-    function test_A9_fee_must_cover_max_cost() public {
+    function test_A9_ticket_must_cover_max_cost() public {
+        rpm.setTicketForTest(address(account), nonceNow, uint128(FEE - 1));
         Plan memory p = plan(transferCall(BOB, 1e6), T0 + 100);
         load(p);
-        env.setMaxCost(FEE + 1);
         frame0();
-        expectFrame1(abi.encodeWithSelector(RendererCore.FeeTooLow.selector, FEE + 1, FEE));
+        expectFrame1(abi.encodeWithSelector(RendererCore.NoTicket.selector, nonceNow, FEE));
     }
 
     function test_A9_reclaim_cannot_mature_inside_a_signature_lifetime() public {
@@ -349,19 +355,19 @@ contract AttacksTest is Base {
         TestAccount delegate = account;
         vm.store(address(delegate), bytes32(uint256(2)), bytes32(0));
         load(plan(transferCall(BOB, 1e6), T0 + 100));
-        (bool ok, ) = callFrame(0, address(delegate), address(0xaa));
+        (bool ok, ) = callFrame(1, address(delegate), address(0xaa));
         assertFalse(ok);
     }
 
     function test_A11_reentrancy_reverts() public {
         Reenterer r = new Reenterer();
-        bytes memory inner = abi.encodeCall(VerbatimAccountBase.executeVerified, (VerbatimCore.Fee(address(0), 0), transferCall(THIEF, 1e6), ""));
+        bytes memory inner = abi.encodeCall(VerbatimAccountBase.executeVerified, (transferCall(THIEF, 1e6), ""));
         // Direct, from outside.
         vm.expectRevert(VerbatimCore.NotSelf.selector);
         account.protectedBatch(transferCall(THIEF, 1), "", bytes32(0), 0);
         vm.prank(address(0xBAD));
         vm.expectRevert(VerbatimCore.NotSelf.selector);
-        VerbatimAccountBase(payable(address(account))).executeVerified(VerbatimCore.Fee(address(0), 0), transferCall(THIEF, 1e6), "");
+        VerbatimAccountBase(payable(address(account))).executeVerified(transferCall(THIEF, 1e6), "");
         // From inside a batch, via a called contract.
         TrustStoreLayout.TrustUpdate memory u = emptyUpdate();
         u.descriptors = new TrustStoreLayout.DescUpdate[](1);
@@ -391,8 +397,8 @@ contract AttacksTest is Base {
         load(p);
         frame0();
         frame1();
-        env.setCurrent(2);
-        bytes memory f2 = env.frame(2).data;
+        env.setCurrent(3);
+        bytes memory f2 = env.frame(3).data;
         vm.prank(address(account));
         (bool ok, ) = address(account).call{gas: 3_000_000}(f2);
         assertTrue(ok, "frame 2 survives");
@@ -414,8 +420,8 @@ contract AttacksTest is Base {
             load(p);
             frame0();
             frame1();
-            env.setCurrent(2);
-            bytes memory f2 = env.frame(2).data;
+            env.setCurrent(3);
+            bytes memory f2 = env.frame(3).data;
             vm.prank(address(account));
             // The execution gas the client gives frame 2.
             (bool ok, ) = address(account).call{gas: 1_200_000}(f2);
@@ -425,5 +431,160 @@ contract AttacksTest is Base {
             reached++;
         }
         assertEq(reached, sizes.length);
+    }
+
+    /// The deposit an account can really make under D9: ETH in, shares promised, nothing credited.
+    function test_A6_evil_vault_keeps_eth_credits_no_shares() public {
+        TrustStoreLayout.TrustUpdate memory u = emptyUpdate();
+        u.descriptors = new TrustStoreLayout.DescUpdate[](1);
+        u.descriptors[0] = _du(address(vault).codehash, vault.depositEth.selector, depositEthDesc());
+        refresh(u);
+        uint256 ethBefore = address(account).balance;
+        uint256 feesBefore = admin_().feesAccrued(address(0));
+        VerbatimCore.Call[] memory c = one(address(vault), abi.encodeCall(vault.depositEth, (1e18)));
+        c[0].value = 1e17;
+        (bool ok, bytes memory err) = run(plan(c, T0 + 100));
+        assertFalse(ok);
+        assertEq(errorName(err), AssertionKit.AssertionFailed.selector);
+        assertEq(address(account).balance, ethBefore, "the ETH came back");
+        assertEq(THIEF.balance, 0);
+        assertEq(admin_().feesAccrued(address(0)) - feesBefore, FEE, "fee kept");
+    }
+
+    /// A7b: an expiry frame starved of gas has status 0 and the deployed node still includes the transaction, so the limit is checked.
+    function test_A7b_failed_expiry_frame_is_refused() public {
+        load(plan(transferCall(BOB, 1e6), T0 + 100));
+        env.setFrameGas(0, 2_000);
+        expectFrame0(abi.encodeWithSelector(VerbatimAccountBase.BadLayout.selector, uint256(8)));
+    }
+
+    function test_A7c_expiry_frame_must_be_the_real_verifier() public {
+        Plan memory p = plan(transferCall(BOB, 1e6), T0 + 100);
+        load(p);
+        env.setFrameTarget(0, address(0x1234));
+        expectFrame0(abi.encodeWithSelector(VerbatimAccountBase.BadLayout.selector, uint256(8)));
+        load(p);
+        env.setFrameData(0, abi.encodePacked(uint256(1)));
+        expectFrame0(abi.encodeWithSelector(VerbatimAccountBase.BadLayout.selector, uint256(8)));
+    }
+
+    /// B12 and I13: the same signed content cannot run twice, whatever carries it.
+    function test_B12_I13_same_digest_cannot_execute_twice() public {
+        Plan memory p = plan(transferCall(BOB, 1e6), T0 + 100);
+        (bool ok, ) = run(p);
+        assertTrue(ok);
+        assertEq(usdc.balanceOf(BOB), 1e6);
+        nonceNow--; // same nonce sequence again, so the digest is the same; only a different key could carry it
+        load(p);
+        (, uint256 d) = (0, uint256(account.digestOf(keccak256(p.tree), keccak256(p.spec), p.expiry, ROOT, 2, txCommit())));
+        expectFrame0(abi.encodeWithSelector(VerbatimCore.Replayed.selector, bytes32(d)));
+        assertTrue(account.consumed(bytes32(d)));
+    }
+
+    /// A failed batch still consumes the digest: the signature does not stay live for a retry at a worse moment.
+    function test_I13_reverted_batch_also_consumes() public {
+        Plan memory p = plan(transferCall(BOB, 2000e6), T0 + 100); // more than it holds
+        load(p);
+        bytes32 d = account.digestOf(keccak256(p.tree), keccak256(p.spec), p.expiry, ROOT, 2, txCommit());
+        frame0();
+        frame1();
+        (bool ok, ) = frame2();
+        assertFalse(ok);
+        assertTrue(account.consumed(d));
+    }
+
+    /// B14 and I12: an approval still standing after the batch fails APPROVALS_CLEARED.
+    function test_B14_I12_erc20_approval_left_standing_reverts() public {
+        Plan memory p = plan(one(address(usdc), abi.encodeWithSelector(0x095ea7b3, address(vault), uint256(5))), T0 + 100);
+        (bool ok, bytes memory err) = run(p);
+        assertFalse(ok);
+        assertEq(errorName(err), AssertionKit.AssertionFailed.selector);
+        assertEq(usdc.allowance(address(account), address(vault)), 0);
+    }
+
+    function test_B14_I12_permit2_sub_allowance_left_standing_reverts() public {
+        TrustStoreLayout.TrustUpdate memory u = emptyUpdate();
+        u.descriptors = new TrustStoreLayout.DescUpdate[](1);
+        u.descriptors[0] = _du(address(p2).codehash, MockPermit2.approve.selector, p2ApproveDesc());
+        u.spenders = new address[](1);
+        u.spenders[0] = address(router);
+        refresh(u);
+        Plan memory p = plan(one(address(p2), abi.encodeCall(MockPermit2.approve, (address(usdc), address(router), 5, uint48(T0 + 100)))), T0 + 100);
+        (bool ok, bytes memory err) = run(p);
+        assertFalse(ok);
+        assertEq(errorName(err), AssertionKit.AssertionFailed.selector);
+        assertEq(p2.amounts(address(account), address(usdc), address(router)), 0);
+    }
+
+    function test_I12_base_allowance_to_permit2_is_the_one_exception_and_enters_the_ledger() public {
+        (bool ok, ) = run(plan(one(address(usdc), abi.encodeWithSelector(0x095ea7b3, address(p2), uint256(5))), T0 + 100));
+        assertTrue(ok);
+        assertEq(account.ledger().length, 1);
+        assertEq(account.ledger()[0], address(usdc));
+        // Back to zero, and the ledger prunes it.
+        (ok, ) = run(plan(one(address(usdc), abi.encodeWithSelector(0x095ea7b3, address(p2), uint256(0))), T0 + 100));
+        assertTrue(ok);
+        assertEq(account.ledger().length, 0);
+    }
+
+    function test_ledger_cap_is_enforced() public {
+        assertEq(account.MAX_LEDGER(), 16);
+        for (uint256 i = 0; i < 17; i++) {
+            TestToken t = new TestToken("T", "T", 6);
+            TrustStoreLayout.TrustUpdate memory u = emptyUpdate();
+            u.tokens = new TrustStoreLayout.TokenUpdate[](1);
+            u.tokens[0] = TrustStoreLayout.TokenUpdate(address(t), bytes11("T"), 1, 6, 0);
+            refresh(u);
+            (bool ok, bytes memory err) = run(plan(one(address(t), abi.encodeWithSelector(0x095ea7b3, address(p2), uint256(5))), T0 + 100));
+            if (i < 16) assertTrue(ok);
+            else {
+                assertFalse(ok);
+                assertEq(errorName(err), VerbatimCore.LedgerFull.selector);
+            }
+        }
+        assertEq(account.ledger().length, 16);
+    }
+
+    /// D2: the paymaster refuses entries signed over anything but its own render, even if the account's frame agreed.
+    function test_D2_paymaster_rebuilds_the_digest() public {
+        Plan memory p = plan(transferCall(BOB, 1e6), T0 + 100);
+        load(p);
+        frame0();
+        // Same claimed hashes in frame 1, different signed content: only the digest rebuild can see this.
+        bytes32 d = account.digestOf(keccak256(p.tree), keccak256(p.spec), p.expiry, keccak256("another root"), 2, txCommit());
+        (FrameEnv.Sig memory a, FrameEnv.Sig memory b) = (env.sig(0), env.sig(1));
+        a.msgHash = d;
+        b.msgHash = d;
+        env.setSig(0, a);
+        env.setSig(1, b);
+        bytes32 expected = account.digestOf(keccak256(p.tree), keccak256(p.spec), p.expiry, ROOT, 2, txCommit());
+        expectFrame1(abi.encodeWithSelector(RendererCore.DigestMismatch.selector, expected, d));
+    }
+
+    function test_policy_lives_in_the_account_and_a_snapshot_cannot_outlive_the_cap() public {
+        // A snapshot with too long a life is refused on the paymaster path.
+        TrustStoreLayout.TrustUpdate memory u = emptyUpdate();
+        u.expiry = uint64(block.timestamp + 7 hours);
+        refresh(u);
+        Plan memory p = plan(transferCall(BOB, 1), T0 + 100);
+        load(p);
+        frame0();
+        expectFrame1(abi.encodeWithSelector(RendererCore.SnapshotTtlTooLong.selector, uint256(7 hours), uint256(6 hours)));
+    }
+
+    function test_expiry_past_the_snapshot_is_refused() public {
+        TrustStoreLayout.TrustUpdate memory u = emptyUpdate();
+        u.expiry = uint64(block.timestamp + 50);
+        refresh(u);
+        Plan memory p = plan(transferCall(BOB, 1), T0 + 100);
+        load(p);
+        frame0();
+        expectFrame1(abi.encodeWithSelector(RendererCore.SnapshotExpiresTooSoon.selector, uint64(T0 + 100), uint64(block.timestamp + 50)));
+    }
+
+    /// The table in VSpec.itemSize, item by item.
+    function test_item_sizes_are_the_documented_ones() public pure {
+        uint256[15] memory want = [uint256(0), 72, 72, 72, 80, 41, 72, 52, 20, 0, 0, 1, 0, 44, 72];
+        for (uint8 op = 1; op <= 14; op++) assertEq(VSpec.itemSize(op), want[op]);
     }
 }

