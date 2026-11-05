@@ -7,7 +7,7 @@ import { createPublicClient, createTestClient, createWalletClient, http, type Ab
 import { privateKeyToAccount } from "viem/accounts";
 import { foundry } from "viem/chains";
 import type { RenderIn } from "@verbatim/displayvm-ts";
-import { CODE, PERMIT2, ROUTER_PUBLISHER, WETH, worldDescriptors, worldHooks, worldProxy, worldRouterCode, worldTokens } from "./world";
+import { CODE, NAME_RESOLVER, PERMIT2, ROUTER_PUBLISHER, WETH, worldDescriptors, worldHooks, worldLegacyRouterCode, worldNames, worldProxy, worldRouterCode, worldTokens } from "./world";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"; // anvil's well-known first key
@@ -38,6 +38,8 @@ export async function boot(port = 18545) {
   for (const d of worldDescriptors()) await send("setDesc", [d.codehash, d.selector, d.vdesc, d.publisher, d.epoch, d.status]);
   for (const t of worldTokens()) await send("setToken", [t.token, `0x${Buffer.from(t.symbol).toString("hex").padEnd(22, "0")}`, t.len, t.decimals, t.flags]);
   await send("setKind", [worldRouterCode, 1]);
+  await send("setKind", [worldLegacyRouterCode, 3]);
+  for (const [a, n] of Object.entries(worldNames)) await send("setName", [a, n, NAME_RESOLVER]);
   await send("setProxy", [worldProxy.codehash, worldProxy.upgrader, worldProxy.logic, worldProxy.impl, worldProxy.getter]);
   for (const h of worldHooks) await send("setHook", [h, true]);
   void createTestClient;

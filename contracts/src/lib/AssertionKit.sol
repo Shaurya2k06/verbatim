@@ -81,12 +81,37 @@ library AssertionKit {
         if (op == VSpec.TRACKED_NO_DECREASE || op == VSpec.TRACKED_NO_ALLOW_INC) return 0;
         if (op == VSpec.ACCOUNT_INVARIANT) return 1;
         if (op == VSpec.IMPL_EQ) return 44;
+        if (op == VSpec.NAME_EQ) return 72;
         revert BadSpec();
     }
 
     function header(bytes memory spec) internal pure returns (uint256 n) {
         if (spec.rdBe(0, 4) != VSpec.MAGIC) revert BadSpec();
         n = spec.rdBe(4, 2);
+    }
+
+    /// DNS-encodes a packed `label.label` ASCII name, and asks its resolver for the name's address.
+    function resolveAddr(address resolver, bytes32 packed) internal view returns (address) {
+        uint256 n = uint256(packed) & 0xff;
+        bytes memory dns = new bytes(n + 2);
+        uint256 lenAt = 0;
+        uint256 count = 0;
+        for (uint256 i = 0; i < n; i++) {
+            bytes1 c = packed[i];
+            if (c == ".") {
+                dns[lenAt] = bytes1(uint8(count));
+                lenAt = i + 1;
+                count = 0;
+            } else {
+                dns[i + 1] = c;
+                count++;
+            }
+        }
+        dns[lenAt] = bytes1(uint8(count));
+        // dns[n + 1] is the root terminator, already zero.
+        (bool ok, bytes memory out) = resolver.staticcall{gas: READ_GAS}(abi.encodeWithSignature("resolve(bytes,bytes)", dns, abi.encodeWithSignature("addr(bytes32)", bytes32(0))));
+        if (!ok) revert ReadFailed(resolver);
+        return abi.decode(abi.decode(out, (bytes)), (address));
     }
 
     function addrAt(bytes memory s, uint256 p) internal pure returns (address) {

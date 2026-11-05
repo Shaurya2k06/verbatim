@@ -25,6 +25,7 @@ export const PAYMASTER_ABI = parseAbi([
   "function proxyTemplates(bytes32) view returns (address upgrader, bytes32 logicCodehash, address impl, bytes4 getter)",
   "function attestedHooks(bytes32) view returns (bool)",
   "function names(address) view returns (bytes32)",
+  "function nameResolver(address) view returns (address)",
   "function PERMIT2() view returns (address)",
   "function WETH() view returns (address)",
   "function policyHashOf(address) view returns (bytes32)",
@@ -105,6 +106,9 @@ export class ChainTrust implements Trust {
   nameOf(a: Address): Hex {
     return this.legB ? this.get(`n:${a}`, () => this.read("names", [a])) : ZERO32;
   }
+  nameResolver(a: Address): Address {
+    return this.get(`nr:${a}`, () => this.read("nameResolver", [a]));
+  }
   /** Leg A renders no names (no ENS on the frames devnet). */
   legB = false;
   hookIsAttested(codehash: Hex) {
@@ -132,7 +136,7 @@ function noCodeAddresses(spec: Hex): Address[] {
   const n = Number(rdBe(s, 4, 2));
   let p = 6;
   const out: Address[] = [];
-  const size: Record<number, number> = { 1: 72, 2: 72, 3: 72, 4: 81, 5: 41, 6: 72, 7: 52, 8: 20, 9: 0, 10: 0, 11: 1, 12: 44 };
+  const size: Record<number, number> = { 1: 72, 2: 72, 3: 72, 4: 81, 5: 41, 6: 72, 7: 52, 8: 20, 9: 0, 10: 0, 11: 1, 12: 44, 13: 72 };
   for (let i = 0; i < n; i++) {
     const op = rdU8(s, p++);
     if (op === SPEC.NO_CODE) out.push(toAddr(rdBe(s, p, 20)));

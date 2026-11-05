@@ -15,9 +15,9 @@ export const TRUST_UPDATE_TUPLE = {
     { name: "revocations", type: "tuple[]", components: [{ name: "codehash", type: "bytes32" }, { name: "selector", type: "bytes4" }] },
     { name: "tokens", type: "tuple[]", components: [{ name: "token", type: "address" }, { name: "symbol", type: "bytes11" }, { name: "symLen", type: "uint8" }, { name: "decimals", type: "uint8" }, { name: "flags", type: "uint8" }] },
     { name: "proxies", type: "tuple[]", components: [{ name: "codehash", type: "bytes32" }, { name: "template", type: "tuple", components: [{ name: "upgrader", type: "address" }, { name: "logicCodehash", type: "bytes32" }, { name: "impl", type: "address" }, { name: "getter", type: "bytes4" }] }] },
-    { name: "routers", type: "bytes32[]" },
+    { name: "routers", type: "tuple[]", components: [{ name: "codehash", type: "bytes32" }, { name: "legacy", type: "bool" }] },
     { name: "hooks", type: "bytes32[]" },
-    { name: "names", type: "tuple[]", components: [{ name: "addr", type: "address" }, { name: "name", type: "bytes32" }] },
+    { name: "names", type: "tuple[]", components: [{ name: "addr", type: "address" }, { name: "name", type: "bytes32" }, { name: "resolver", type: "address" }] },
   ],
 } as const;
 
@@ -31,9 +31,9 @@ export interface TrustUpdate {
   revocations: { codehash: Hex; selector: Hex }[];
   tokens: { token: Address; symbol: Hex; symLen: number; decimals: number; flags: number }[];
   proxies: { codehash: Hex; template: { upgrader: Address; logicCodehash: Hex; impl: Address; getter: Hex } }[];
-  routers: Hex[];
+  routers: { codehash: Hex; legacy: boolean }[];
   hooks: Hex[];
-  names: { addr: Address; name: Hex }[];
+  names: { addr: Address; name: Hex; resolver: Address }[];
 }
 
 export const emptyUpdate = (epoch: bigint): TrustUpdate => ({ epoch, descriptors: [], revocations: [], tokens: [], proxies: [], routers: [], hooks: [], names: [] });
@@ -58,10 +58,10 @@ export const tokenEntry = (token: Address, symbol: string, decimals: number, fla
 });
 
 /** Collects 2 of 3 attestor signatures and submits `refreshTrust`. */
-export async function attest(paymaster: Address, u: TrustUpdate, chainId = 1337n) {
+export async function attest(paymaster: Address, u: TrustUpdate, chainId = 1337n, submit = (data: Hex) => send(key("DEPLOYER_KEY"), paymaster, data, 0n, 25_000_000n)) {
   const h = updateHash(chainId, paymaster, u);
   const signers = ["ATTESTOR1_KEY", "ATTESTOR2_KEY", "ATTESTOR3_KEY"].map((k) => privateKeyToAccount(key(k)));
   const sorted = signers.sort((x, y) => (BigInt(x.address) < BigInt(y.address) ? -1 : 1)).slice(0, 2);
   const sigs = await Promise.all(sorted.map((x) => x.sign({ hash: h })));
-  return send(key("DEPLOYER_KEY"), paymaster, encodeFunctionData({ abi: REFRESH_ABI, functionName: "refreshTrust", args: [u as never, sigs] }), 0n, 25_000_000n);
+  return submit(encodeFunctionData({ abi: REFRESH_ABI, functionName: "refreshTrust", args: [u as never, sigs] }));
 }

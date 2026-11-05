@@ -205,7 +205,7 @@ export const VT = {
 
 export const SPEC = {
   MAGIC: 0x56530001, DELTA_EQ: 0x01, DELTA_GE: 0x02, ALLOW_LE: 0x03, P2ALLOW_LE: 0x04, OPERATOR_EQ: 0x05, OWNER_EQ: 0x06, CODEHASH_EQ: 0x07, NO_CODE: 0x08,
-  TRACKED_NO_DECREASE: 0x09, TRACKED_NO_ALLOW_INC: 0x0a, ACCOUNT_INVARIANT: 0x0b, IMPL_EQ: 0x0c, P2_ABSOLUTE: 0, P2_RELATIVE: 1,
+  TRACKED_NO_DECREASE: 0x09, TRACKED_NO_ALLOW_INC: 0x0a, ACCOUNT_INVARIANT: 0x0b, IMPL_EQ: 0x0c, NAME_EQ: 0x0d, P2_ABSOLUTE: 0, P2_RELATIVE: 1,
 } as const;
 
 const INT_MIN = -(1n << 255n);
@@ -283,6 +283,13 @@ export class Effects {
     this.other.addr(target);
     this.other.be(getter, 4);
     this.other.addr(impl);
+    this.nOther++;
+  }
+  nameEq(a: string, resolver: string, packedName: bigint) {
+    this.other.u8(SPEC.NAME_EQ);
+    this.other.addr(a);
+    this.other.addr(resolver);
+    this.other.word(packedName);
     this.nOther++;
   }
   finish(trustChange: boolean): Uint8Array {

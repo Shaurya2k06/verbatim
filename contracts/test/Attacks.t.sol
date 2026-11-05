@@ -153,7 +153,7 @@ contract AttacksTest is Base {
         _vaultApprovals();
         uint256 wethBefore = weth.balanceOf(address(account));
         uint256 usdcBefore = usdc.balanceOf(address(account));
-        (uint128 depBefore, ) = rpm.deposits(address(account), address(0));
+        (uint128 depBefore, ) = admin_().deposits(address(account), address(0));
         Plan memory p = plan(one(address(vault), abi.encodeWithSelector(0xb6b55f25, uint256(100e6))), uint64(block.number));
         (bool ok, bytes memory err) = run(p);
         assertFalse(ok);
@@ -161,7 +161,7 @@ contract AttacksTest is Base {
         assertEq(weth.balanceOf(address(account)), wethBefore, "pull undone");
         assertEq(usdc.balanceOf(address(account)), usdcBefore, "deposit undone");
         assertEq(weth.balanceOf(THIEF), 0);
-        (uint128 depAfter, ) = rpm.deposits(address(account), address(0));
+        (uint128 depAfter, ) = admin_().deposits(address(account), address(0));
         assertEq(depBefore - depAfter, p.fee.amount, "fee kept");
     }
 
@@ -177,7 +177,7 @@ contract AttacksTest is Base {
     function test_A9_empty_deposit_rejected() public {
         // Drain the deposit through the account's own delayed withdrawal, then try again.
         vm.prank(address(account));
-        rpm.requestWithdraw(address(0), 1 ether);
+        admin_().requestWithdraw(address(0), 1 ether);
         Plan memory p = plan(transferCall(BOB, 1e6), 1000);
         load(p);
         frame0();
@@ -187,13 +187,13 @@ contract AttacksTest is Base {
     function test_A9_withdrawal_cannot_mature_inside_ttl() public {
         Plan memory p = plan(transferCall(BOB, 1e6), 1000);
         vm.prank(address(account));
-        rpm.requestWithdraw(address(0), 0.5 ether);
+        admin_().requestWithdraw(address(0), 0.5 ether);
         // The transaction's whole lifetime is 25 blocks of 6 s; the delay is an hour.
-        assertGt(rpm.WITHDRAW_DELAY(), rpm.ttlOf(address(account)) * 12);
+        assertGt(admin_().WITHDRAW_DELAY(), rpm.ttlOf(address(account)) * 12);
         vm.warp(block.timestamp + 25 * 12);
         vm.prank(address(account));
         vm.expectRevert();
-        rpm.withdraw(address(0));
+        admin_().withdraw(address(0));
         (bool ok, ) = run(p);
         assertTrue(ok, "the pending transaction's fee is still there");
     }

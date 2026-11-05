@@ -43,6 +43,7 @@ export interface Trust {
   descriptor(codehash: Hex, selector: Hex): Desc | null;
   tokenInfo(token: Address): TokenInfo;
   nameOf(a: Address): Hex;
+  nameResolver(a: Address): Address;
   hookIsAttested(codehash: Hex): boolean;
   codeKind(codehash: Hex): number;
   routerConfig(): { permit2: Address; weth: Address; publisher: Hex };
@@ -208,7 +209,8 @@ function renderCall(t: Buf, c: Ctx, target: Address, value: bigint, data: Uint8A
   let d = c.trust.descriptor(chHex, selHex);
   const kind = d === null ? c.trust.codeKind(chHex) : 0;
 
-  if (kind === 1) {
+  if (kind === 1 || kind === 3) {
+    c.legacyParams = kind === 3;
     const r = c.trust.routerConfig();
     const l = txt("Uniswap swap");
     callBegin(t, target, ch, sel, 0n, l, 0, l.length, hexToBigInt(r.publisher), 2);
@@ -435,6 +437,7 @@ function addressField(t: Buf, label: string | Uint8Array, a: Address, role: numb
   const self = same(a, c.account);
   const hasCode = self ? true : hinted(c, a) !== 0n;
   const name = hexToBigInt(c.trust.nameOf(a));
+  if (name !== 0n) c.effects.nameEq(a, c.trust.nameResolver(a), name);
   const at = VT.begin(t, NODE.FIELD_ADDRESS);
   VT.str(t, label);
   t.addr(a);

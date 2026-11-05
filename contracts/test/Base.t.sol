@@ -123,7 +123,7 @@ abstract contract Base is Test {
         rpm = new TestPaymaster(address(account).codehash, address(this), address(admin), address(p2), address(0x9090), PUBLISHER, attestors, 2, env);
         assertEq(account.RENDERER_PAYMASTER(), address(rpm));
         rpm.setFeeAsset(address(0), 1, true);
-        rpm.deposit{value: 1 ether}(address(account), address(0), 0);
+        admin_().deposit{value: 1 ether}(address(account), address(0), 0);
         vm.deal(address(account), 1 ether);
 
         usdc = new TestToken("Demo USD", "dUSDC", 6);
@@ -142,9 +142,14 @@ abstract contract Base is Test {
         u.tokens = new TrustStoreLayout.TokenUpdate[](2);
         u.tokens[0] = TrustStoreLayout.TokenUpdate(address(usdc), bytes11("dUSDC"), 5, 6, 0);
         u.tokens[1] = TrustStoreLayout.TokenUpdate(address(weth), bytes11("dWETH"), 5, 18, 0);
-        u.routers = new bytes32[](1);
-        u.routers[0] = address(router).codehash;
+        u.routers = new TrustStoreLayout.RouterUpdate[](1);
+        u.routers[0] = TrustStoreLayout.RouterUpdate(address(router).codehash, false);
         refresh(u);
+    }
+
+    /// The paymaster seen through its admin module's ABI.
+    function admin_() internal view returns (TrustAdmin) {
+        return TrustAdmin(payable(address(rpm)));
     }
 
     function emptyUpdate() internal returns (TrustStoreLayout.TrustUpdate memory u) {

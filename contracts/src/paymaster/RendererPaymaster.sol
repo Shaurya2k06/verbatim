@@ -2,7 +2,7 @@
 pragma solidity ^0.8.26;
 
 import {FrameIntrospection, DevnetFrames} from "../lib/FrameIntrospection.sol";
-import {TrustStore} from "../trust/TrustStore.sol";
+import {IERC20Min, TrustStore} from "../trust/TrustStore.sol";
 import {DisplayVM} from "../lib/DisplayVM.sol";
 import {Buf, Risk} from "../lib/VTree.sol";
 
@@ -12,33 +12,11 @@ interface IStakingRegistry {
     function withdrawStake(address payable to) external;
 }
 
-interface IERC20Min {
-    function transferFrom(address from, address to, uint256 amount) external returns (bool);
-    function transfer(address to, uint256 amount) external returns (bool);
-}
-
 /// Deposits, fees and policies shared by both legs (D16). Validation reads only this contract's own storage.
 abstract contract RendererCore is TrustStore {
     using Buf for bytes;
 
-    /// Policy `allowMask` bits lift the matching default refusal; they use the Risk.BIT_* positions.
-    struct Policy {
-        uint64 ttl;
-        uint64 allowMask;
-        bool set;
-    }
-
-    struct Deposit {
-        uint128 amount;
-        uint128 pendingWithdraw;
-    }
-
-    struct FeeAsset {
-        uint128 ratePerGas;
-        bool allowed;
-    }
-
-    uint256 public constant WITHDRAW_DELAY = 1 hours;
+    // Policy `allowMask` bits lift the matching default refusal; they use the Risk.BIT_* positions.
     uint256 public constant TOLERANCE_BPS = 2000;
     /// The sidecar lets one sender have 4 linear transactions pending, and a VERIFY frame cannot reserve. A deposit
     /// covering every pending fee keeps `charge` from failing after validation (A9).
@@ -50,12 +28,6 @@ abstract contract RendererCore is TrustStore {
     address public immutable WETH;
     bytes32 internal immutable ROUTER_PUBLISHER;
 
-    mapping(address => Policy) public policyOf;
-    mapping(address => mapping(address => Deposit)) public deposits;
-    mapping(address => mapping(address => uint256)) public withdrawReadyAt;
-    mapping(address => FeeAsset) public feeAssets;
-    mapping(address => uint256) public feesAccrued;
-
     error NotOwner();
     error PolicyRefused(uint256 risk);
     error TreeMismatch(bytes32 expected, bytes32 actual);
@@ -63,13 +35,8 @@ abstract contract RendererCore is TrustStore {
     error FeeAssetNotAllowed(address asset);
     error FeeTooLow(uint256 min, uint256 amount);
     error InsufficientDeposit(uint256 available, uint256 needed);
-    error WithdrawNotReady(uint256 readyAt);
-    error TransferFailed();
 
     event Charged(address indexed account, address indexed asset, uint256 amount);
-    event Deposited(address indexed account, address indexed asset, uint256 amount);
-    event WithdrawRequested(address indexed account, address indexed asset, uint256 amount, uint256 readyAt);
-    event PolicySet(address indexed account, bytes32 indexed policyHash);
 
     constructor(address owner_, address trustAdmin, address permit2, address weth, bytes32 routerPublisher, address[] memory attestors_, uint8 threshold) {
         OWNER = owner_;
@@ -78,7 +45,7 @@ abstract contract RendererCore is TrustStore {
         WETH = weth;
         ROUTER_PUBLISHER = routerPublisher;
         _setAttestors(attestors_, threshold);
-        feeAssets[address(0)] = FeeAsset(1, true);
+        _feeAssets[address(0)] = FeeAsset(1, true);
     }
 
     modifier onlyOwner() {
@@ -107,7 +74,7 @@ abstract contract RendererCore is TrustStore {
         uint256 sp = b.rdWord(96);
         bytes32 argSpec = b.hashRange(sp + 32, b.rdWord(sp));
         if (argSpec != specHash) revert SpecHashMismatch(specHash, argSpec);
-        _applyPolicy(o.risk, policyOf[i.account].allowMask);
+        _applyPolicy(o.risk, _policyOf[i.account].allowMask);
         _checkFee(i.account, i.feeAsset, i.feeAmount, i.gasLimitTotal);
     }
 
@@ -119,96 +86,55 @@ abstract contract RendererCore is TrustStore {
     }
 
     function _checkFee(address account, address asset, uint256 amount, uint256 gasLimitTotal) internal view {
-        FeeAsset memory f = feeAssets[asset];
+        FeeAsset memory f = _feeAssets[asset];
         if (!f.allowed) revert FeeAssetNotAllowed(asset);
         uint256 min = (gasLimitTotal * f.ratePerGas * (10_000 - TOLERANCE_BPS)) / 10_000;
         if (amount < min) revert FeeTooLow(min, amount);
-        Deposit memory d = deposits[account][asset];
+        Deposit memory d = _deposits[account][asset];
         uint256 available = d.amount > d.pendingWithdraw ? d.amount - d.pendingWithdraw : 0;
         if (available < amount * FEE_HEADROOM) revert InsufficientDeposit(available, amount * FEE_HEADROOM);
     }
 
-    // ------------------------------------------------------------------------------ deposits ----
-
-    /// Anyone may fund an account's deposit; only the account can spend it.
-    function deposit(address account, address asset, uint256 amount) external payable {
-        if (asset == address(0)) {
-            amount = msg.value;
-        } else if (!IERC20Min(asset).transferFrom(msg.sender, address(this), amount)) {
-            revert TransferFailed();
-        }
-        deposits[account][asset].amount += uint128(amount);
-        emit Deposited(account, asset, amount);
-    }
+    // ----------------------------------------------------- deposits (the rest is in TrustAdmin) ----
 
     function charge(address asset, uint256 amount) external virtual {
-        Deposit storage d = deposits[msg.sender][asset];
+        Deposit storage d = _deposits[msg.sender][asset];
         if (d.amount < amount) revert InsufficientDeposit(d.amount, amount);
         d.amount -= uint128(amount);
-        feesAccrued[asset] += amount;
+        _feesAccrued[asset] += amount;
         emit Charged(msg.sender, asset, amount);
     }
 
-    /// Lowers what validation counts as available at once, but the money stays until the delay passes, so a pending
-    /// transaction's fee cannot be raced away (WITHDRAW_DELAY > the TTL).
-    function requestWithdraw(address asset, uint256 amount) external {
-        Deposit storage d = deposits[msg.sender][asset];
-        d.pendingWithdraw = uint128(amount);
-        uint256 readyAt = block.timestamp + WITHDRAW_DELAY;
-        withdrawReadyAt[msg.sender][asset] = readyAt;
-        emit WithdrawRequested(msg.sender, asset, amount, readyAt);
-    }
-
-    function withdraw(address asset) external {
-        uint256 readyAt = withdrawReadyAt[msg.sender][asset];
-        if (readyAt == 0 || block.timestamp < readyAt) revert WithdrawNotReady(readyAt);
-        Deposit storage d = deposits[msg.sender][asset];
-        uint256 amount = d.pendingWithdraw < d.amount ? d.pendingWithdraw : d.amount;
-        d.amount -= uint128(amount);
-        d.pendingWithdraw = 0;
-        withdrawReadyAt[msg.sender][asset] = 0;
-        _pay(msg.sender, asset, amount);
-    }
-
-    function _pay(address to, address asset, uint256 amount) private {
+    function withdrawFees(address asset, address to, uint256 amount) external onlyOwner {
+        _feesAccrued[asset] -= amount;
         if (asset == address(0)) {
             (bool ok, ) = to.call{value: amount}("");
-            if (!ok) revert TransferFailed();
-        } else if (!IERC20Min(asset).transfer(to, amount)) {
-            revert TransferFailed();
+            require(ok);
+        } else {
+            require(IERC20Min(asset).transfer(to, amount));
         }
     }
 
-    function withdrawFees(address asset, address to, uint256 amount) external onlyOwner {
-        feesAccrued[asset] -= amount;
-        _pay(to, asset, amount);
-    }
-
     function setFeeAsset(address asset, uint128 ratePerGas, bool allowed) external onlyOwner {
-        feeAssets[asset] = FeeAsset(ratePerGas, allowed);
+        _feeAssets[asset] = FeeAsset(ratePerGas, allowed);
     }
 
     // ------------------------------------------------------------------------------ policies ----
 
-    function setPolicy(uint64 ttl, uint64 allowMask) external {
-        policyOf[msg.sender] = Policy(ttl, allowMask, true);
-        emit PolicySet(msg.sender, policyHashOf(msg.sender));
-    }
-
     function ttlOf(address account) public view returns (uint64) {
-        Policy memory p = policyOf[account];
+        Policy memory p = _policyOf[account];
         return p.set ? p.ttl : DEFAULT_TTL;
     }
 
     function policyHashOf(address account) public view returns (bytes32) {
-        Policy memory p = policyOf[account];
+        Policy memory p = _policyOf[account];
         return keccak256(abi.encode(p.set ? p.ttl : DEFAULT_TTL, p.allowMask));
     }
 
     receive() external payable {}
 
-    /// refreshTrust and its view live in the TrustAdmin module.
-    fallback() external {
+    /// refreshTrust, deposits and all storage getters live in the TrustAdmin module.
+    fallback() external payable {
         address m = TRUST_ADMIN;
         assembly ("memory-safe") {
             calldatacopy(0, 0, calldatasize())

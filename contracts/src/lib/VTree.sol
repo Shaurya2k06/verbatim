@@ -335,6 +335,7 @@ library VSpec {
     uint8 internal constant TRACKED_NO_ALLOW_INC = 0x0a;
     uint8 internal constant ACCOUNT_INVARIANT = 0x0b;
     uint8 internal constant IMPL_EQ = 0x0c;
+    uint8 internal constant NAME_EQ = 0x0d;
 
     uint8 internal constant P2_ABSOLUTE = 0;
     uint8 internal constant P2_RELATIVE = 1;
@@ -451,6 +452,15 @@ library VSpec {
         e.other.addr(target);
         e.other.be(uint32(getter), 4);
         e.other.addr(impl);
+        e.nOther++;
+    }
+
+    /// The name a sentence showed still resolves to this address when the batch runs (§12.3).
+    function nameEq(Effects memory e, address a, address resolver, bytes32 packedName) internal pure {
+        e.other.u8(NAME_EQ);
+        e.other.addr(a);
+        e.other.addr(resolver);
+        e.other.word(uint256(packedName));
         e.nOther++;
     }
 

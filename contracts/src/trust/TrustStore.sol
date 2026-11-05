@@ -5,6 +5,11 @@ import {DisplayVM} from "../lib/DisplayVM.sol";
 import {VDesc} from "../lib/VDesc.sol";
 import {SSTORE2} from "../lib/SSTORE2.sol";
 
+interface IERC20Min {
+    function transferFrom(address from, address to, uint256 amount) external returns (bool);
+    function transfer(address to, uint256 amount) external returns (bool);
+}
+
 /// The trust store's storage (§7.6). Shared by the render path and the admin module, which runs by DELEGATECALL
 /// from the paymaster, so both must see these slots first and in this order.
 abstract contract TrustStoreLayout {
@@ -53,9 +58,15 @@ abstract contract TrustStoreLayout {
         ProxyTemplate template;
     }
 
+    struct RouterUpdate {
+        bytes32 codehash;
+        bool legacy;
+    }
+
     struct NameUpdate {
         address addr;
         bytes32 name;
+        address resolver;
     }
 
     struct Revocation {
@@ -69,30 +80,64 @@ abstract contract TrustStoreLayout {
         Revocation[] revocations;
         TokenUpdate[] tokens;
         ProxyUpdate[] proxies;
-        bytes32[] routers;
+        RouterUpdate[] routers;
         bytes32[] hooks;
         NameUpdate[] names;
     }
 
-    uint64 public trustEpoch;
-    mapping(bytes32 => mapping(bytes4 => DescSlot)) public descOf;
-    mapping(bytes32 => mapping(bytes4 => bytes32)) public publisherOf;
-    mapping(bytes32 => bool) public everRevoked;
-    mapping(address => TokenSlot) public tokens;
-    mapping(bytes32 => uint8) public codeKind;
-    mapping(bytes32 => ProxyTemplate) public proxyTemplates;
-    mapping(bytes32 => bool) public attestedHooks;
-    mapping(address => bytes32) public names;
+    uint64 internal _trustEpoch;
+    mapping(bytes32 => mapping(bytes4 => DescSlot)) internal _descOf;
+    mapping(bytes32 => mapping(bytes4 => bytes32)) internal _publisherOf;
+    mapping(bytes32 => bool) internal _everRevoked;
+    mapping(address => TokenSlot) internal _tokens;
+    mapping(bytes32 => uint8) internal _codeKind_;
+    mapping(bytes32 => ProxyTemplate) internal _proxyTemplates;
+    mapping(bytes32 => bool) internal _attestedHooks;
+    mapping(address => bytes32) internal _names;
+    mapping(address => address) internal _nameResolvers;
 
-    address[] public attestors;
-    mapping(address => bool) public isAttestor;
-    uint8 public attestorThreshold;
+    address[] internal _attestors;
+    mapping(address => bool) internal _isAttestor;
+    uint8 internal _attestorThreshold;
+
+    // Deposits, fees and policies (§7.2). Declared here so the render path and the admin module share one layout.
+    struct Policy {
+        uint64 ttl;
+        uint64 allowMask;
+        bool set;
+    }
+
+    struct Deposit {
+        uint128 amount;
+        uint128 pendingWithdraw;
+    }
+
+    struct FeeAsset {
+        uint128 ratePerGas;
+        bool allowed;
+    }
+
+    mapping(address => Policy) internal _policyOf;
+    mapping(address => mapping(address => Deposit)) internal _deposits;
+    mapping(address => mapping(address => uint256)) internal _withdrawReadyAt;
+    mapping(address => FeeAsset) internal _feeAssets;
+    mapping(address => uint256) internal _feesAccrued;
+
+    uint256 internal constant WITHDRAW_DELAY_ = 1 hours;
+
+    event Deposited(address indexed account, address indexed asset, uint256 amount);
+    event WithdrawRequested(address indexed account, address indexed asset, uint256 amount, uint256 readyAt);
+    event PolicySet(address indexed account, bytes32 indexed policyHash);
+
+    error WithdrawNotReady(uint256 readyAt);
+    error TransferFailed();
 
     error EpochNotIncreasing();
     error NotEnoughAttestors();
     error AttestorsNotSorted();
     error DescriptorRevoked();
     error BadSymbol();
+    error NoNamesOnThisLeg();
 
     event TrustRefreshed(uint64 indexed epoch, bytes32 indexed updateHash);
 }
@@ -101,18 +146,18 @@ abstract contract TrustStoreLayout {
 /// validation reads only the entity's own state. One slot per lookup, read at most once per node.
 abstract contract TrustStore is DisplayVM, TrustStoreLayout {
     function _setAttestors(address[] memory list, uint8 threshold) internal {
-        attestors = list;
-        attestorThreshold = threshold;
-        for (uint256 i = 0; i < list.length; i++) isAttestor[list[i]] = true;
+        _attestors = list;
+        _attestorThreshold = threshold;
+        for (uint256 i = 0; i < list.length; i++) _isAttestor[list[i]] = true;
     }
 
     // ------------------------------------------------------------- DisplayVM lookups -------------
 
     function _descriptor(bytes32 codehash, bytes4 selector) internal view virtual override returns (Desc memory d) {
-        DescSlot memory s = descOf[codehash][selector];
+        DescSlot memory s = _descOf[codehash][selector];
         if (s.blob == address(0) || s.revoked) return d;
         d.blob = SSTORE2.read(s.blob);
-        d.publisher = publisherOf[codehash][selector];
+        d.publisher = _publisherOf[codehash][selector];
         d.epoch = s.epoch;
         d.status = s.status;
     }
@@ -122,7 +167,7 @@ abstract contract TrustStore is DisplayVM, TrustStoreLayout {
         uint256 w;
         assembly ("memory-safe") {
             mstore(0, token)
-            mstore(0x20, tokens.slot)
+            mstore(0x20, _tokens.slot)
             w := sload(keccak256(0, 0x40))
         }
         uint256 symLen = (w >> 88) & 0xff;
@@ -136,16 +181,20 @@ abstract contract TrustStore is DisplayVM, TrustStoreLayout {
         return bytes32(0);
     }
 
+    function _nameResolver(address a) internal view virtual override returns (address) {
+        return _nameResolvers[a];
+    }
+
     function _hookIsAttested(bytes32 codehash) internal view virtual override returns (bool) {
-        return attestedHooks[codehash];
+        return _attestedHooks[codehash];
     }
 
     function _codeKind(bytes32 codehash) internal view virtual override returns (uint8) {
-        return codeKind[codehash];
+        return _codeKind_[codehash];
     }
 
     function _proxyTemplate(bytes32 codehash) internal view virtual override returns (address, bytes32, address, bytes4) {
-        ProxyTemplate memory p = proxyTemplates[codehash];
+        ProxyTemplate memory p = _proxyTemplates[codehash];
         return (p.upgrader, p.logicCodehash, p.impl, p.getter);
     }
 }
@@ -158,45 +207,166 @@ contract TrustAdmin is TrustStoreLayout {
 
     /// Outside validation, so it may read anything. Monotonic epoch, k-of-n attestors, no un-revoking (I10).
     function refreshTrust(TrustUpdate calldata u, bytes[] calldata sigs) external {
-        if (u.epoch <= trustEpoch) revert EpochNotIncreasing();
+        if (u.epoch <= _trustEpoch) revert EpochNotIncreasing();
         bytes32 h = trustUpdateHash(u);
-        if (sigs.length < attestorThreshold) revert NotEnoughAttestors();
+        if (sigs.length < _attestorThreshold) revert NotEnoughAttestors();
         address last;
         for (uint256 i = 0; i < sigs.length; i++) {
             address s = _recover(h, sigs[i]);
-            if (s <= last || !isAttestor[s]) revert AttestorsNotSorted();
+            if (s <= last || !_isAttestor[s]) revert AttestorsNotSorted();
             last = s;
         }
-        trustEpoch = u.epoch;
+        _trustEpoch = u.epoch;
 
         for (uint256 i = 0; i < u.revocations.length; i++) {
             Revocation calldata r = u.revocations[i];
-            DescSlot storage slot = descOf[r.codehash][r.selector];
-            if (slot.blob != address(0)) everRevoked[keccak256(SSTORE2.read(slot.blob))] = true;
+            DescSlot storage slot = _descOf[r.codehash][r.selector];
+            if (slot.blob != address(0)) _everRevoked[keccak256(SSTORE2.read(slot.blob))] = true;
             slot.revoked = true;
         }
         for (uint256 i = 0; i < u.descriptors.length; i++) {
             DescUpdate calldata d = u.descriptors[i];
             bytes32 descHash = keccak256(d.vdesc);
-            if (everRevoked[descHash]) revert DescriptorRevoked();
+            if (_everRevoked[descHash]) revert DescriptorRevoked();
             VDesc.validate(d.vdesc);
             uint8 status = _checkPublisher(d.publisher, descHash);
-            descOf[d.codehash][d.selector] = DescSlot(SSTORE2.write(d.vdesc), u.epoch, status, false);
-            publisherOf[d.codehash][d.selector] = d.publisher;
+            _descOf[d.codehash][d.selector] = DescSlot(SSTORE2.write(d.vdesc), u.epoch, status, false);
+            _publisherOf[d.codehash][d.selector] = d.publisher;
         }
         for (uint256 i = 0; i < u.tokens.length; i++) {
             TokenUpdate calldata t = u.tokens[i];
             if (t.symLen > 11) revert BadSymbol();
-            tokens[t.token] = TokenSlot(t.symbol, t.symLen, t.decimals, t.flags, true);
+            _tokens[t.token] = TokenSlot(t.symbol, t.symLen, t.decimals, t.flags, true);
         }
         for (uint256 i = 0; i < u.proxies.length; i++) {
-            codeKind[u.proxies[i].codehash] = 2;
-            proxyTemplates[u.proxies[i].codehash] = u.proxies[i].template;
+            _codeKind_[u.proxies[i].codehash] = 2;
+            _proxyTemplates[u.proxies[i].codehash] = u.proxies[i].template;
         }
-        for (uint256 i = 0; i < u.routers.length; i++) codeKind[u.routers[i]] = 1;
-        for (uint256 i = 0; i < u.hooks.length; i++) attestedHooks[u.hooks[i]] = true;
-        for (uint256 i = 0; i < u.names.length; i++) names[u.names[i].addr] = u.names[i].name;
+        for (uint256 i = 0; i < u.routers.length; i++) _codeKind_[u.routers[i].codehash] = u.routers[i].legacy ? 3 : 1;
+        for (uint256 i = 0; i < u.hooks.length; i++) _attestedHooks[u.hooks[i]] = true;
+        for (uint256 i = 0; i < u.names.length; i++) {
+            NameUpdate calldata n = u.names[i];
+            _checkName(n.addr, n.name, n.resolver);
+            _names[n.addr] = n.name;
+            _nameResolvers[n.addr] = n.resolver;
+        }
         emit TrustRefreshed(u.epoch, h);
+    }
+
+    // ------------------------------------------------------------------------------ getters -----
+
+    function trustEpoch() external view returns (uint64) {
+        return _trustEpoch;
+    }
+
+    function descOf(bytes32 c, bytes4 s) external view returns (address blob, uint64 epoch, uint8 status, bool revoked) {
+        DescSlot memory d = _descOf[c][s];
+        return (d.blob, d.epoch, d.status, d.revoked);
+    }
+
+    function publisherOf(bytes32 c, bytes4 s) external view returns (bytes32) {
+        return _publisherOf[c][s];
+    }
+
+    function tokens(address t) external view returns (bytes11 symbol, uint8 symLen, uint8 decimals, uint8 flags, bool known) {
+        TokenSlot memory x = _tokens[t];
+        return (x.symbol, x.symLen, x.decimals, x.flags, x.known);
+    }
+
+    function codeKind(bytes32 c) external view returns (uint8) {
+        return _codeKind_[c];
+    }
+
+    function proxyTemplates(bytes32 c) external view returns (address upgrader, bytes32 logicCodehash, address impl, bytes4 getter) {
+        ProxyTemplate memory p = _proxyTemplates[c];
+        return (p.upgrader, p.logicCodehash, p.impl, p.getter);
+    }
+
+    function attestedHooks(bytes32 c) external view returns (bool) {
+        return _attestedHooks[c];
+    }
+
+    function names(address a) external view returns (bytes32) {
+        return _names[a];
+    }
+
+    function nameResolver(address a) external view returns (address) {
+        return _nameResolvers[a];
+    }
+
+    function everRevoked(bytes32 h) external view returns (bool) {
+        return _everRevoked[h];
+    }
+
+    function policyOf(address a) external view returns (uint64 ttl, uint64 allowMask, bool set) {
+        Policy memory p = _policyOf[a];
+        return (p.ttl, p.allowMask, p.set);
+    }
+
+    function deposits(address a, address asset) external view returns (uint128 amount, uint128 pendingWithdraw) {
+        Deposit memory d = _deposits[a][asset];
+        return (d.amount, d.pendingWithdraw);
+    }
+
+    function feeAssets(address asset) external view returns (uint128 ratePerGas, bool allowed) {
+        FeeAsset memory f = _feeAssets[asset];
+        return (f.ratePerGas, f.allowed);
+    }
+
+    function feesAccrued(address asset) external view returns (uint256) {
+        return _feesAccrued[asset];
+    }
+
+    function WITHDRAW_DELAY() external pure returns (uint256) {
+        return WITHDRAW_DELAY_;
+    }
+
+    // ----------------------------------------------------------------------------- deposits -----
+
+    /// Anyone may fund an account's deposit; only the account can spend it.
+    function deposit(address account, address asset, uint256 amount) external payable {
+        if (asset == address(0)) {
+            amount = msg.value;
+        } else if (!IERC20Min(asset).transferFrom(msg.sender, address(this), amount)) {
+            revert TransferFailed();
+        }
+        _deposits[account][asset].amount += uint128(amount);
+        emit Deposited(account, asset, amount);
+    }
+
+    /// Lowers what validation counts as available at once, but the money stays until the delay passes, so a pending
+    /// transaction's fee cannot be raced away (WITHDRAW_DELAY > the TTL).
+    function requestWithdraw(address asset, uint256 amount) external {
+        _deposits[msg.sender][asset].pendingWithdraw = uint128(amount);
+        uint256 readyAt = block.timestamp + WITHDRAW_DELAY_;
+        _withdrawReadyAt[msg.sender][asset] = readyAt;
+        emit WithdrawRequested(msg.sender, asset, amount, readyAt);
+    }
+
+    function withdraw(address asset) external {
+        uint256 readyAt = _withdrawReadyAt[msg.sender][asset];
+        if (readyAt == 0 || block.timestamp < readyAt) revert WithdrawNotReady(readyAt);
+        Deposit storage d = _deposits[msg.sender][asset];
+        uint256 amount = d.pendingWithdraw < d.amount ? d.pendingWithdraw : d.amount;
+        d.amount -= uint128(amount);
+        d.pendingWithdraw = 0;
+        _withdrawReadyAt[msg.sender][asset] = 0;
+        if (asset == address(0)) {
+            (bool ok, ) = msg.sender.call{value: amount}("");
+            if (!ok) revert TransferFailed();
+        } else if (!IERC20Min(asset).transfer(msg.sender, amount)) {
+            revert TransferFailed();
+        }
+    }
+
+    function setPolicy(uint64 ttl, uint64 allowMask) external {
+        _policyOf[msg.sender] = Policy(ttl, allowMask, true);
+        emit PolicySet(msg.sender, keccak256(abi.encode(ttl, allowMask)));
+    }
+
+    /// Leg A has no ENS and caches no names.
+    function _checkName(address, bytes32, address) internal view virtual {
+        revert NoNamesOnThisLeg();
     }
 
     /// Leg A has no ENS: attestors only, marked as such.

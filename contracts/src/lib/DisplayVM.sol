@@ -69,8 +69,10 @@ abstract contract DisplayVM {
     function _descriptor(bytes32 codehash, bytes4 selector) internal view virtual returns (Desc memory);
     function _tokenInfo(address token) internal view virtual returns (bytes32 symbol, uint8 decimals, uint8 flags, bool known);
     function _nameOf(address a) internal view virtual returns (bytes32);
+    /// The resolver a cached name was verified against; only read when `_nameOf` returned a name.
+    function _nameResolver(address a) internal view virtual returns (address);
     function _hookIsAttested(bytes32 codehash) internal view virtual returns (bool);
-    /// 0 plain, 1 Universal Router, 2 known proxy.
+    /// 0 plain, 1 Universal Router, 2 known proxy, 3 Universal Router with the older params layout.
     function _codeKind(bytes32 codehash) internal view virtual returns (uint8);
     function _routerConfig() internal view virtual returns (address permit2, address weth, bytes32 publisher);
     function _proxyTemplate(bytes32 codehash) internal view virtual returns (address upgrader, bytes32 logicCodehash, address impl, bytes4 getter);
@@ -181,7 +183,8 @@ abstract contract DisplayVM {
         Desc memory d = _descriptor(ch, sel);
         uint8 kind = d.blob.length == 0 ? _codeKind(ch) : 0;
 
-        if (kind == 1) {
+        if (kind == 1 || kind == 3) {
+            c.cfg.legacyParams = kind == 3;
             (address permit2, address weth, bytes32 publisher) = _routerConfig();
             bytes memory l = "Uniswap swap";
             _callBegin(t, target, ch, sel, bytes32(0), l, 0, l.length, publisher, 2);
@@ -424,6 +427,7 @@ abstract contract DisplayVM {
         bool hasCode = self;
         if (!self) hasCode = _hinted(h, c.effects, a) != bytes32(0);
         bytes32 name = _nameOf(a);
+        if (name != bytes32(0)) c.effects.nameEq(a, _nameResolver(a), name);
         uint256 at = t.begin(VTree.FIELD_ADDRESS);
         t.str(label);
         t.addr(a);

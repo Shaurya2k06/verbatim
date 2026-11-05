@@ -28,6 +28,8 @@ export interface URCtx {
   permit2: Address;
   weth: Address;
   value: bigint;
+  /** Older routers (such as the official Sepolia one) have no minHopPriceX36 in ExactInputSingleParams. */
+  legacyParams?: boolean;
   effects: Effects;
   risk: number;
   amount(t: Buf, label: string, token: Address, raw: bigint, c: URCtx): void;
@@ -144,7 +146,8 @@ function param(d: Uint8Array, pArr: bigint, i: bigint, end: bigint): [bigint, bi
 
 function v4Single(t: Buf, d: Uint8Array, pArr: bigint, i: bigint, end: bigint, c: URCtx) {
   const [p, pn] = param(d, pArr, i, end);
-  if (pn < 0x160n) fail("MalformedUR");
+  const legacy = !!c.legacyParams;
+  if (pn < (legacy ? 0x140n : 0x160n)) fail("MalformedUR");
   const s = p + rdWord(d, p);
   const c0 = rdAddr(d, s);
   const c1 = rdAddr(d, s + 32n);
@@ -155,8 +158,8 @@ function v4Single(t: Buf, d: Uint8Array, pArr: bigint, i: bigint, end: bigint, c
   if (z > 1n) fail("MalformedUR");
   const amountIn = rdWord(d, s + 192n);
   const minOut = rdWord(d, s + 224n);
-  const minHop = rdWord(d, s + 256n);
-  const hd = s + rdWord(d, s + 288n);
+  const minHop = legacy ? 0n : rdWord(d, s + 256n);
+  const hd = s + rdWord(d, s + (legacy ? 256n : 288n));
   const hdLen = rdWord(d, hd);
   if (amountIn === 0n || amountIn >> 128n !== 0n || minOut >> 128n !== 0n) fail("MalformedUR");
 

@@ -104,7 +104,7 @@ if (!s.trustEpoch) {
     ...descriptorsFor("attack-kit-burner.json", await chOf(s.gasBurner)),
   ];
   u.tokens = [tokenEntry(s.tokenA, "dUSDC", 6), tokenEntry(s.tokenB, "dWETH", 18), tokenEntry(WETH9, "WETH", 18)];
-  u.routers = [await chOf(ROUTER)];
+  u.routers = [{ codehash: await chOf(ROUTER), legacy: false }];
   const r = await attest(s.paymaster, u);
   console.log("refreshTrust", r.transactionHash, "gas", r.gasUsed);
   writeState({ trustEpoch: 1, refreshTx: r.transactionHash });

@@ -72,6 +72,7 @@ abstract contract VerbatimCore {
     error LedgerFull();
     error WatchFull();
     error LedgerEntryLive();
+    error NameChanged(address target);
 
     event VerbatimResult(bool indexed ok, bytes err);
 
@@ -185,6 +186,9 @@ abstract contract VerbatimCore {
             } else if (op == VSpec.NO_CODE) {
                 address t = AssertionKit.addrAt(s, p);
                 if (t.code.length != 0) revert CodeAppeared(t);
+            } else if (op == VSpec.NAME_EQ) {
+                address a = AssertionKit.addrAt(s, p);
+                if (AssertionKit.resolveAddr(AssertionKit.addrAt(s, p + 20), bytes32(s.rdWord(p + 40))) != a) revert NameChanged(a);
             } else if (op == VSpec.IMPL_EQ) {
                 address t = AssertionKit.addrAt(s, p);
                 (bool ok, bytes memory out) = t.staticcall{gas: AssertionKit.READ_GAS}(abi.encodeWithSelector(bytes4(bytes32(s.rdBe(p + 20, 4) << 224))));

@@ -44,6 +44,8 @@ library URRender {
         address account;
         address permit2;
         address weth;
+        /// Older routers (such as the official Sepolia one) have no minHopPriceX36 in ExactInputSingleParams.
+        bool legacyParams;
     }
 
     struct Lookups {
@@ -190,7 +192,8 @@ library URRender {
 
     function _v4Single(Buf.B memory t, bytes memory d, uint256 pArr, uint256 i, uint256 end, Ctx memory c) private view {
         (uint256 p, uint256 pn) = _param(d, pArr, i, end);
-        if (pn < 0x160) revert MalformedUR();
+        bool legacy = c.cfg.legacyParams;
+        if (pn < (legacy ? 0x140 : 0x160)) revert MalformedUR();
         uint256 s = p + d.rdWord(p);
         address c0 = d.rdAddr(s);
         address c1 = d.rdAddr(s + 32);
@@ -201,8 +204,8 @@ library URRender {
         if (z > 1) revert MalformedUR();
         uint256 amountIn = d.rdWord(s + 192);
         uint256 minOut = d.rdWord(s + 224);
-        uint256 minHop = d.rdWord(s + 256);
-        uint256 hd = s + d.rdWord(s + 288);
+        uint256 minHop = legacy ? 0 : d.rdWord(s + 256);
+        uint256 hd = s + d.rdWord(s + (legacy ? 256 : 288));
         uint256 hdLen = d.rdWord(hd);
         if (amountIn == 0 || amountIn >> 128 != 0 || minOut >> 128 != 0) revert MalformedUR();
 

@@ -14,10 +14,13 @@ export const ROUTER_ABI = parseAbi(["function execute(bytes commands, bytes[] in
 
 const POOL_KEY = { type: "tuple", components: [{ name: "currency0", type: "address" }, { name: "currency1", type: "address" }, { name: "fee", type: "uint24" }, { name: "tickSpacing", type: "int24" }, { name: "hooks", type: "address" }] } as const;
 
-export function v4ExactInSingleInput(a: { key: PoolKey; zeroForOne: boolean; amountIn: bigint; amountOutMinimum: bigint; minHopPriceX36?: bigint; hookData?: Hex; settleMax?: bigint; takeMin?: bigint }): Hex {
+export function v4ExactInSingleInput(a: { key: PoolKey; zeroForOne: boolean; amountIn: bigint; amountOutMinimum: bigint; minHopPriceX36?: bigint; hookData?: Hex; settleMax?: bigint; takeMin?: bigint; legacyParams?: boolean }): Hex {
   const tokenIn = a.zeroForOne ? a.key.currency0 : a.key.currency1;
   const tokenOut = a.zeroForOne ? a.key.currency1 : a.key.currency0;
-  const swap = encodeAbiParameters(
+  const swap = a.legacyParams ? encodeAbiParameters(
+    [{ type: "tuple", components: [{ name: "poolKey", ...POOL_KEY }, { name: "zeroForOne", type: "bool" }, { name: "amountIn", type: "uint128" }, { name: "amountOutMinimum", type: "uint128" }, { name: "hookData", type: "bytes" }] }],
+    [{ poolKey: a.key, zeroForOne: a.zeroForOne, amountIn: a.amountIn, amountOutMinimum: a.amountOutMinimum, hookData: a.hookData ?? "0x" }],
+  ) : encodeAbiParameters(
     [{ type: "tuple", components: [{ name: "poolKey", ...POOL_KEY }, { name: "zeroForOne", type: "bool" }, { name: "amountIn", type: "uint128" }, { name: "amountOutMinimum", type: "uint128" }, { name: "minHopPriceX36", type: "uint256" }, { name: "hookData", type: "bytes" }] }],
     [{ poolKey: a.key, zeroForOne: a.zeroForOne, amountIn: a.amountIn, amountOutMinimum: a.amountOutMinimum, minHopPriceX36: a.minHopPriceX36 ?? 0n, hookData: a.hookData ?? "0x" }],
   );

@@ -18,29 +18,30 @@ contract RenderHarness is RendererCore {
     }
 
     function setDesc(bytes32 ch, bytes4 sel, bytes calldata vdesc, bytes32 publisher, uint64 epoch, uint8 status) external {
-        descOf[ch][sel] = DescSlot(SSTORE2.write(vdesc), epoch, status, false);
-        publisherOf[ch][sel] = publisher;
+        _descOf[ch][sel] = DescSlot(SSTORE2.write(vdesc), epoch, status, false);
+        _publisherOf[ch][sel] = publisher;
     }
 
     function setToken(address t, bytes11 symbol, uint8 symLen, uint8 decimals, uint8 flags) external {
-        tokens[t] = TokenSlot(symbol, symLen, decimals, flags, true);
+        _tokens[t] = TokenSlot(symbol, symLen, decimals, flags, true);
     }
 
     function setKind(bytes32 ch, uint8 kind) external {
-        codeKind[ch] = kind;
+        _codeKind_[ch] = kind;
     }
 
     function setProxy(bytes32 ch, address upgrader, bytes32 logic, address impl, bytes4 getter) external {
-        codeKind[ch] = 2;
-        proxyTemplates[ch] = ProxyTemplate(upgrader, logic, impl, getter);
+        _codeKind_[ch] = 2;
+        _proxyTemplates[ch] = ProxyTemplate(upgrader, logic, impl, getter);
     }
 
     function setHook(bytes32 ch, bool v) external {
-        attestedHooks[ch] = v;
+        _attestedHooks[ch] = v;
     }
 
-    function setName(address a, bytes32 n) external {
-        names[a] = n;
+    function setName(address a, bytes32 n, address resolver) external {
+        _names[a] = n;
+        _nameResolvers[a] = resolver;
         useNames = true;
     }
 
@@ -49,7 +50,7 @@ contract RenderHarness is RendererCore {
     }
 
     function _nameOf(address a) internal view override returns (bytes32) {
-        return useNames ? names[a] : bytes32(0);
+        return useNames ? _names[a] : bytes32(0);
     }
 
     function render(DisplayVM.In memory i) external view returns (bytes memory tree, bytes memory spec, uint256 risk) {

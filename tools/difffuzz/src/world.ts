@@ -14,6 +14,8 @@ export const MULTI: Address = "0x0000000000000000000000000000000000006666";
 export const PROXY: Address = "0x0000000000000000000000000000000000007777";
 export const UNATTESTED: Address = "0x000000000000000000000000000000000000dead";
 export const ROUTER: Address = "0x0000000000000000000000000000000000003333";
+export const LEGACY_ROUTER: Address = "0x0000000000000000000000000000000000003334";
+export const NAME_RESOLVER: Address = "0x0000000000000000000000000000000000004444";
 export const PERMIT2: Address = "0x0000000000000000000000000000000000002222";
 export const WETH: Address = "0x0000000000000000000000000000000000009090";
 export const BOB: Address = "0x0000000000000000000000000000000000000b0b";
@@ -37,6 +39,7 @@ export const CODE: Record<string, Hex> = {
   [PROXY]: ch("proxy"),
   [UNATTESTED]: ch("unattested"),
   [ROUTER]: ch("router"),
+  [LEGACY_ROUTER]: ch("legacy router"),
   [CONTRACT_RECIPIENT]: ch("wallet"),
   [SKIM_HOOK]: ch("skim"),
   [INPUT_HOOK]: ch("inputhook"),
@@ -97,6 +100,8 @@ export const worldTokens = () => Object.entries(TOKENS).map(([token, t]) => ({ t
 export const worldProxy = { codehash: ch("proxy"), upgrader: UPGRADER, logic: LOGIC, impl: IMPL, getter: "0x5c60da1b" as Hex };
 export const worldHooks = [ch("inputhook"), ch("plainhook")];
 export const worldRouterCode = ch("router");
+export const worldLegacyRouterCode = ch("legacy router");
+export const worldNames: Record<string, Hex> = { [BOB]: packStr("bob-demo.eth"), [CONTRACT_RECIPIENT]: packStr("contract-demo.eth") };
 
 export function tsTrust(): Trust {
   const descs = new Map(worldDescriptors().map((d) => [`${d.codehash}:${d.selector}`, d]));
@@ -108,9 +113,10 @@ export function tsTrust(): Trust {
       return d ? ({ blob: d.vdesc, publisher: d.publisher, epoch: BigInt(d.epoch), status: d.status } satisfies Desc) : null;
     },
     tokenInfo: (t) => TOKENS[t.toLowerCase()] ?? { symbol: ZERO32, decimals: 0, flags: 0, known: false },
-    nameOf: () => ZERO32,
+    nameOf: (a) => worldNames[a.toLowerCase()] ?? ZERO32,
+    nameResolver: () => NAME_RESOLVER,
     hookIsAttested: (c) => worldHooks.includes(c),
-    codeKind: (c) => (c === worldRouterCode ? 1 : c === worldProxy.codehash ? 2 : 0),
+    codeKind: (c) => (c === worldRouterCode ? 1 : c === worldLegacyRouterCode ? 3 : c === worldProxy.codehash ? 2 : 0),
     routerConfig: () => ({ permit2: PERMIT2, weth: WETH, publisher: ROUTER_PUBLISHER }),
     proxyTemplate: () => ({ upgrader: UPGRADER, logicCodehash: LOGIC, impl: IMPL, getter: worldProxy.getter }),
   };
@@ -170,6 +176,7 @@ function urCall(r: ReturnType<typeof rng>): Call {
   const hook = r.pick(["0x0000000000000000000000000000000000000000" as Address, "0x0000000000000000000000000000000000000000" as Address, SKIM_HOOK, INPUT_HOOK, PLAIN_HOOK]);
   const key: PoolKey = { currency0: TOKEN, currency1: TOKEN2, fee: r.pick([100, 500, 3000, 0x800000]), tickSpacing: r.pick([1, 60, 200]), hooks: hook };
   const z = r.next() < 0.5;
+  const legacyParams = r.next() < 0.25;
   const value = r.next() < 0.2 ? BigInt(r.int(1e6)) : 0n;
   const commands: number[] = [];
   const inputs: Hex[] = [];
@@ -180,7 +187,7 @@ function urCall(r: ReturnType<typeof rng>): Call {
     const rcpt = r.pick([MSG_SENDER, MSG_SENDER, ADDRESS_THIS, BOB, CONTRACT_RECIPIENT]);
     if (kind <= 2) {
       commands.push(CMD.V4_SWAP | flag);
-      inputs.push(v4ExactInSingleInput({ key, zeroForOne: z, amountIn: 1n + BigInt(r.int(1e9)), amountOutMinimum: r.next() < 0.3 ? 0n : BigInt(r.int(1e9)), minHopPriceX36: r.next() < 0.2 ? r.uint() : 0n, hookData: r.next() < 0.2 ? r.bytes(r.int(40)) : "0x", settleMax: r.next() < 0.2 ? r.uint() : undefined, takeMin: r.next() < 0.2 ? BigInt(r.int(1e9)) : undefined }));
+      inputs.push(v4ExactInSingleInput({ key, zeroForOne: z, amountIn: 1n + BigInt(r.int(1e9)), amountOutMinimum: r.next() < 0.3 ? 0n : BigInt(r.int(1e9)), minHopPriceX36: r.next() < 0.2 ? r.uint() : 0n, hookData: r.next() < 0.2 ? r.bytes(r.int(40)) : "0x", settleMax: r.next() < 0.2 ? r.uint() : undefined, takeMin: r.next() < 0.2 ? BigInt(r.int(1e9)) : undefined, legacyParams }));
     } else if (kind === 3) {
       commands.push(CMD.WRAP_ETH | flag);
       inputs.push(wrapInput(rcpt, r.next() < 0.9 ? value : BigInt(r.int(100))));
@@ -202,7 +209,7 @@ function urCall(r: ReturnType<typeof rng>): Call {
       inputs.push(r.bytes(r.int(96)));
     }
   }
-  return { target: ROUTER, value, data: executeData(commands, inputs, r.next() < 0.8 ? BigInt(2e9) : undefined) };
+  return { target: legacyParams ? LEGACY_ROUTER : ROUTER, value, data: executeData(commands, inputs, r.next() < 0.8 ? BigInt(2e9) : undefined) };
 }
 
 function call(r: ReturnType<typeof rng>, depth = 0): Call {

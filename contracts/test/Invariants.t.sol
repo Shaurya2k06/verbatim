@@ -119,7 +119,7 @@ contract InvariantsTest is Base {
         frame0();
         frame1();
         // The deposit disappears between validation and execution, which the real deposit rules prevent.
-        (uint128 amount, ) = rpm.deposits(address(account), address(0));
+        (uint128 amount, ) = admin_().deposits(address(account), address(0));
         vm.prank(address(account));
         rpm.charge(address(0), amount);
         (bool ok, ) = callFrame(2, address(account), address(account));
@@ -129,7 +129,7 @@ contract InvariantsTest is Base {
 
     function test_I5_assert_failure_undoes_everything_and_fee_is_paid() public {
         // A token that moves less than the sentence said: it underdelivers the output, so DELTA_GE fails.
-        (uint128 before, ) = rpm.deposits(address(account), address(0));
+        (uint128 before, ) = admin_().deposits(address(account), address(0));
         uint256 usdcBefore = usdc.balanceOf(BOB);
         vm.prank(address(account));
         usdc.approve(address(p2), 1);
@@ -139,7 +139,7 @@ contract InvariantsTest is Base {
         (bool ok, ) = callFrame(2, address(account), address(account));
         assertTrue(ok, "the frame itself succeeds");
         assertEq(usdc.balanceOf(BOB), usdcBefore, "no effect persists");
-        (uint128 afterDep, ) = rpm.deposits(address(account), address(0));
+        (uint128 afterDep, ) = admin_().deposits(address(account), address(0));
         assertEq(before - afterDep, p.fee.amount, "fee paid");
     }
 
