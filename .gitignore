@@ -1,0 +1,12 @@
+node_modules/
+out/
+cache/
+broadcast/
+dist/
+.env
+.env.*
+!.env.example
+.state/
+*.log
+.DS_Store
+coverage/
