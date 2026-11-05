@@ -35,6 +35,8 @@ for (const id of ["HONEST", "SWAP", "WRAP", "A6", "A7", "A11", "A12", "F7"]) {
 
 const legB = ["B-honest-pimlico", "B-honest-alchemy", "B-swap"].filter((k) => proofs[k]?.txHash).map((k) => `| ${proofs[k].title} | ${proofs[k].extra.bundler ?? "pimlico"} | ${fmt(Number(proofs[k].extra.actualGasUsed))} | [tx](https://sepolia.etherscan.io/tx/${proofs[k].txHash}) |`);
 
+const sepoliaGas = async (hash: string) => Number(BigInt((await rpc<any>(env.SEPOLIA_RPC_URL, "eth_getTransactionReceipt", [hash])).gasUsed));
+const legBTxGas = (await Promise.all(["B-honest-pimlico", "B-honest-alchemy", "B-swap"].filter((k) => proofs[k]?.txHash).map(async (k) => `${fmt(await sepoliaGas(proofs[k].txHash))} (${k})`))).join(", ");
 const max = Math.max(...measured.filter((m) => ["HONEST", "SWAP", "WRAP"].includes(m.id)).map((m) => m.f.frames[1].execution));
 const gas = `# Gas
 
@@ -67,6 +69,8 @@ descriptor costs one SLOAD.
 62,213 (1), 83,778 (2), 105,330 (3), 148,466 (5): about 21,500 per extra call, so a second call overflows the cap. ERC-8421's 1M staked
 budget would hold over 40 calls, against the renderer's own limit of 16.
 
+**Frame 2 grows with the account's history.** The assertion snapshot reads every approval-ledger entry and tracked token, so the same transfer measured 127,909 on a fresh account and more once the demo's approvals exist. The ledger is capped at 64 entries, and \`pruneLedger\` removes dead ones.
+
 **State gas:** this devnet charges EIP-8037 state gas, about 1,530 per byte of new state. It is why frame 2 declares
 1,500,000 of it, why a first approval costs much more than a later one (ledger entries are new slots), and why deploying the
 paymaster took about 34M gas.
@@ -79,7 +83,7 @@ paymaster took about 34M gas.
 |---|---|---:|---|
 ${legB.join("\n")}
 
-**Read that column with care.** \`actualGasUsed\` is what the EntryPoint bills: it includes \`preVerificationGas\` and the 10% penalty on unused call gas, and our limits are deliberately generous. The bundle transactions themselves used far less: 344,611 and 344,587 gas for the two transfers, and 479,515 for the swap (checked against each receipt and its \`UserOperationEvent\`).
+**Read that column with care.** \`actualGasUsed\` is what the EntryPoint bills: it includes \`preVerificationGas\` and the 10% penalty on unused call gas, and our limits are deliberately generous. The bundle transactions themselves used far less, read from their receipts: ${legBTxGas}.
 
 Bundler limits met (F8): Alchemy requires at least 40% of the verification limits to be used, which rejected a generous first plan
 (33%). The plan in \`tools/scripts/lib/userop.ts\` passes both Alchemy and Pimlico.
@@ -94,7 +98,6 @@ const all = Object.values(proofs) as any[];
 const failing = all.filter((p) => !p.pass);
 const dep = JSON.parse(readFileSync(resolve(ROOT, "deployments/devnet.json"), "utf8"));
 const sep = JSON.parse(readFileSync(resolve(ROOT, "deployments/sepolia.json"), "utf8"));
-void env;
 
 const md = `# Proofs
 

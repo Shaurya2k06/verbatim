@@ -39,10 +39,12 @@ Also found on the deployed sidecar: precompile calls are blocked (`precompiles: 
 
 ## Measured gas
 
-| | Frame 0 | Frame 1 | Prefix with signatures | Frame 2 |
-|---|---:|---:|---:|---:|
-| Transfer | 19,376 | 62,213 | 87,189 | 127,909 |
-| v4 swap | 19,972 | 68,249 | 93,821 | 344,729 |
+| | Frame 0 | Frame 1 | Prefix with signatures |
+|---|---:|---:|---:|
+| Transfer | 19,376 | 62,213 | 87,189 |
+| v4 swap | 19,972 | 68,249 | 93,821 |
+
+Frame 2 depends on the account's history, because the assertion snapshot reads every ledger entry: a transfer measured 127,909 on a fresh account and 222,308 after the demo's approvals. Latest figures are in `docs/GAS.md`.
 
 Sepolia `actualGasUsed` figures are in `docs/GAS.md`. Full tables in `docs/GAS.md`.
 
@@ -52,6 +54,7 @@ Sepolia `actualGasUsed` figures are in `docs/GAS.md`. Full tables in `docs/GAS.m
 - More than 4 pending transactions from one sender could make `charge` fail on Leg A. Nothing protected would run, and the paymaster absorbs that gas.
 - The resolver pin covers one resolver instance, so each publisher needs its own checker today.
 - The APPROVE byte patch is a deploy step, not a compiler feature.
+- Demo pools drift as swaps sell into them, and an honest "at least 2000" then correctly fails. `tools/scripts/rebalance-pool.ts` restores them. Run it before a live demo if the pools have seen heavy use.
 - The devnet may reset. `tools/scripts/fresh-deploy.sh` then rebuilds it, and the addresses in the docs change.
 
 ## Remaining manual steps

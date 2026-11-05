@@ -114,6 +114,8 @@ pnpm --filter @verbatim/ens-demo dev       # :5177  ENS exclusivity for any name
 
 The account is 2-of-3, so each page needs two owners. Paste an owner key into the signer, and another into the page's "Laptop owner" field. Keys stay in the browser. The camera needs HTTPS or localhost; otherwise copy and paste the request and signature. `pnpm --filter @verbatim/signer build` gives a single `dist/index.html` to load once and use in airplane mode.
 
+If the honest swap fails with `V4TooLittleReceived`, the slippage check is working: enough demo swaps have moved the pool. Run `tools/scripts/rebalance-pool.ts`.
+
 **Everything in a browser, unattended,** or a captioned fallback video (needs `ffmpeg`, and `pnpm exec playwright install chromium` once):
 
 ```sh
@@ -129,6 +131,7 @@ cd tools/scripts
 npx tsx attacks.ts                  # the attack kit, against the live mempool
 npx tsx swap.ts                     # honest swap, WRAP_ETH, A2
 npx tsx invalidation.ts             # revoking one descriptor
+npx tsx rebalance-pool.ts devnet    # restore the demo pool's price if repeated swaps have drifted it (also: sepolia)
 npx tsx legb-ens.ts my-label        # Leg B: ENSv2 name and lock-down (edit LABEL in legb-deploy.ts)
 npx tsx legb-deploy.ts && npx tsx legb-run.ts
 cd ../gas-report && pnpm report     # regenerate docs/GAS.md and docs/PROOFS.md

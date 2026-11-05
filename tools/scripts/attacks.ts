@@ -184,11 +184,14 @@ const steps: Step[] = [
     title: "Reentrancy into executeVerified",
     expected: "reverts",
     run: async () => {
+      // The attacker address also collects the A2 skim, so compare before and after rather than against zero.
+      const thiefBefore = await bal(s.tokenA, thief);
+      const accountBefore = await bal(s.tokenA, s.account);
       const inner = encodeFunctionData({ abi: ACCOUNT_ABI, functionName: "executeVerified", args: [{ asset: ZERO, amount: 0n }, [transferCall(s.tokenA, thief, 1_000_000n)], "0x"] });
       const call: Call = { target: s.reenterer, value: 0n, data: encodeFunctionData({ abi: parseAbi(["function attack(address,bytes)"]), functionName: "attack", args: [s.account, inner] }) };
       const { h, r } = await land(await sign(await prepareTx([call])));
       const res = batchResult(r, s.account);
-      record({ id: "A11", title: "Reentrancy into executeVerified", expected: "reverts", pass: res.ok === false && /CallFailed/.test(res.err) && (await bal(s.tokenA, thief)) === 0n, outcome: "reverted-in-batch", txHash: h, block: Number(r.blockNumber), message: res.err, frameGas: frameGas(r) });
+      record({ id: "A11", title: "Reentrancy into executeVerified", expected: "reverts", pass: res.ok === false && /CallFailed/.test(res.err) && (await bal(s.tokenA, thief)) === thiefBefore && (await bal(s.tokenA, s.account)) === accountBefore, outcome: "reverted-in-batch", txHash: h, block: Number(r.blockNumber), message: res.err, frameGas: frameGas(r) });
     },
   },
   {
