@@ -1,0 +1,9 @@
+{
+  "name": "@verbatim/e2e",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "scripts": { "demo": "tsx demo.ts", "record": "tsx demo.ts --record" },
+  "dependencies": { "playwright": "^1.48.0", "viem": "^2.21.0" },
+  "devDependencies": { "tsx": "^4.19.0" }
+}
