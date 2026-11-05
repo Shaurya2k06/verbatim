@@ -1,0 +1,21 @@
+{
+  "$schema": "https://eips.ethereum.org/assets/eip-7730/erc7730-v1.schema.json",
+  "context": { "contract": { "abi": "permit2" } },
+  "metadata": { "owner": "Verbatim demo attestors" },
+  "display": {
+    "formats": {
+      "approve(address,address,uint160,uint48)": {
+        "intent": "Permit2 approve",
+        "x-verbatim": {
+          "exactWords": 4,
+          "fields": [
+            { "path": "1", "label": "Spender", "format": "address", "role": "spender" },
+            { "path": "2", "label": "Amount", "format": "tokenAmount", "token": { "kind": "field", "path": "0" } },
+            { "path": "3", "label": "Expires", "format": "uint", "unit": "timestamp" }
+          ],
+          "effects": [{ "kind": "P2_APPROVE_SET", "token": { "kind": "field", "path": "0" }, "spender": "1", "amount": "2" }]
+        }
+      }
+    }
+  }
+}

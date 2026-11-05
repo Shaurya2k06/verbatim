@@ -2,6 +2,13 @@
   "name": "@verbatim/scripts",
   "private": true,
   "type": "module",
-  "dependencies": { "viem": "^2.21.0", "@verbatim/frames-sdk": "workspace:*" },
+  "dependencies": {
+    "viem": "^2.21.0",
+    "@verbatim/frames-sdk": "workspace:*",
+    "@verbatim/client": "workspace:*",
+    "@verbatim/displayvm-ts": "workspace:*",
+    "@verbatim/vdesc-compiler": "workspace:*",
+    "@verbatim/urrender": "workspace:*"
+  },
   "devDependencies": { "tsx": "^4.19.0" }
 }

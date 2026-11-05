@@ -1,0 +1,15 @@
+{
+  "$schema": "https://eips.ethereum.org/assets/eip-7730/erc7730-v1.schema.json",
+  "context": { "contract": { "abi": "verbatim-account" } },
+  "metadata": { "owner": "Verbatim demo attestors" },
+  "display": {
+    "formats": {
+      "addOwner(address)": { "intent": "Add an owner", "x-verbatim": { "exactWords": 1, "fields": [{ "path": "0", "label": "New owner", "format": "address" }], "flags": ["ADMIN"] } },
+      "removeOwner(address)": { "intent": "Remove an owner", "x-verbatim": { "exactWords": 1, "fields": [{ "path": "0", "label": "Owner", "format": "address" }], "flags": ["ADMIN"] } },
+      "setThreshold(uint8)": { "intent": "Change signature threshold", "x-verbatim": { "exactWords": 1, "fields": [{ "path": "0", "label": "Threshold", "format": "uint" }], "flags": ["ADMIN"] } },
+      "addWatch(address)": { "intent": "Watch a token", "x-verbatim": { "exactWords": 1, "fields": [{ "path": "0", "label": "Token", "format": "address" }], "flags": ["ADMIN"] } },
+      "removeWatch(address)": { "intent": "Stop watching a token", "x-verbatim": { "exactWords": 1, "fields": [{ "path": "0", "label": "Token", "format": "address" }], "flags": ["ADMIN"] } },
+      "pruneLedger(uint256)": { "intent": "Prune approval ledger", "x-verbatim": { "exactWords": 1, "fields": [{ "path": "0", "label": "Entry", "format": "uint" }], "flags": ["ADMIN"] } }
+    }
+  }
+}

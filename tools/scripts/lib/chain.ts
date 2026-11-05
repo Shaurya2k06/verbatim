@@ -18,7 +18,7 @@ export const wallet = (k: Hex) => createWalletClient({ account: privateKeyToAcco
 
 // The devnet base fee is 7 wei; state gas makes creations far more expensive than on mainnet.
 export const LEGACY_GAS_PRICE = 2_000_000n;
-export const DEPLOY_GAS = 30_000_000n;
+export const DEPLOY_GAS = 50_000_000n;
 
 export function artifact(file: string, name: string) {
   const a = JSON.parse(readFileSync(resolve(ROOT, `contracts/out/${file}/${name}.json`), "utf8"));

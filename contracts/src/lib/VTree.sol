@@ -124,9 +124,11 @@ library Buf {
     /// A new `bytes` view copying `d[off:off+n]`.
     function slice(bytes memory d, uint256 off, uint256 n) internal pure returns (bytes memory out) {
         if (off + n > d.length) revert OutOfBounds();
-        out = new bytes(n);
         assembly ("memory-safe") {
+            out := mload(0x40)
+            mstore(out, n)
             mcopy(add(out, 0x20), add(add(d, 0x20), off), n)
+            mstore(0x40, add(add(out, 0x20), and(add(n, 0x1f), not(0x1f))))
         }
     }
 }
@@ -168,7 +170,12 @@ library VTree {
     }
 
     function end(Buf.B memory t, uint256 at) internal pure {
-        t.patchBe(at, t.len - at - 2, 2);
+        uint256 n = t.len - at - 2;
+        uint256 p = t.ptr + at;
+        assembly ("memory-safe") {
+            mstore8(p, shr(8, n))
+            mstore8(add(p, 1), n)
+        }
     }
 
     /// A `str` from memory bytes `d[off:off+n]`.
@@ -317,15 +324,10 @@ library VSpec {
 
     uint256 internal constant MAX_DELTAS = 16;
 
-    struct Delta {
-        address holder;
-        address asset;
-        int256 value;
-        bool ge;
-    }
-
+    /// Deltas are a flat, uninitialised run of 3 words each, guarded by `nDeltas`: holder (with the GE flag at
+    /// bit 160), asset, value. Allocating sixteen structs per render costs more than the rest of derive.
     struct Effects {
-        Delta[16] deltas;
+        uint256 deltas;
         uint256 nDeltas;
         Buf.B other;
         uint256 nOther;
@@ -339,20 +341,45 @@ library VSpec {
 
     function init(Effects memory e, uint256 cap) internal pure {
         e.other = Buf.alloc(cap);
+        uint256 p;
+        assembly ("memory-safe") {
+            p := mload(0x40)
+            mstore(0x40, add(p, mul(MAX_DELTAS, 0x60)))
+        }
+        e.deltas = p;
     }
 
     /// Effects on one (holder, asset) merge: EQ sums with EQ, GE with GE, and mixing kinds fails closed.
     function addDelta(Effects memory e, address holder, address asset, int256 value, bool ge) internal pure {
-        for (uint256 i = 0; i < e.nDeltas; i++) {
-            Delta memory d = e.deltas[i];
-            if (d.holder == holder && d.asset == asset) {
-                if (d.ge != ge) revert ConflictingEffects();
-                d.value += value;
+        uint256 p = e.deltas;
+        uint256 n = e.nDeltas;
+        for (uint256 i = 0; i < n; i++) {
+            uint256 h;
+            uint256 a;
+            int256 v;
+            assembly ("memory-safe") {
+                h := mload(p)
+                a := mload(add(p, 0x20))
+                v := mload(add(p, 0x40))
+            }
+            if (address(uint160(h)) == holder && address(uint160(a)) == asset) {
+                if ((h >> 160 == 1) != ge) revert ConflictingEffects();
+                int256 sum = v + value;
+                assembly ("memory-safe") {
+                    mstore(add(p, 0x40), sum)
+                }
                 return;
             }
+            p += 0x60;
         }
-        if (e.nDeltas == MAX_DELTAS) revert TooManyEffects();
-        e.deltas[e.nDeltas++] = Delta(holder, asset, value, ge);
+        if (n == MAX_DELTAS) revert TooManyEffects();
+        uint256 head = uint256(uint160(holder)) | (ge ? 1 << 160 : 0);
+        assembly ("memory-safe") {
+            mstore(p, head)
+            mstore(add(p, 0x20), asset)
+            mstore(add(p, 0x40), value)
+        }
+        e.nDeltas = n + 1;
     }
 
     function allowLe(Effects memory e, address token, address spender, uint256 max) internal pure {
@@ -415,12 +442,21 @@ library VSpec {
         Buf.B memory s = Buf.alloc(e.nDeltas * 73 + e.other.len + 16);
         s.be(MAGIC, 4);
         s.be(e.nDeltas + e.nOther + 3, 2);
+        uint256 p = e.deltas;
         for (uint256 i = 0; i < e.nDeltas; i++) {
-            Delta memory d = e.deltas[i];
-            s.u8(d.ge ? DELTA_GE : DELTA_EQ);
-            s.addr(d.holder);
-            s.addr(d.asset);
-            s.word(uint256(d.value));
+            uint256 h;
+            uint256 a;
+            uint256 v;
+            assembly ("memory-safe") {
+                h := mload(p)
+                a := mload(add(p, 0x20))
+                v := mload(add(p, 0x40))
+            }
+            s.u8(h >> 160 == 1 ? DELTA_GE : DELTA_EQ);
+            s.addr(address(uint160(h)));
+            s.addr(address(uint160(a)));
+            s.word(v);
+            p += 0x60;
         }
         s.copy(e.other.toBytes(), 0, e.other.len);
         s.u8(TRACKED_NO_DECREASE);

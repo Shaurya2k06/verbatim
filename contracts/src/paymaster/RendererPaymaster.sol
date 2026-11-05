@@ -238,15 +238,15 @@ abstract contract RendererPaymasterBase is RendererCore, FrameIntrospection {
     /// hash check pins. `hints` is bound by `sig_hash`, like all frame data on this build.
     function verifyFrame(address[] calldata hints) external {
         if (msg.sender != address(0xaa)) revert NotEntryPoint();
-        if (_txparam(TX_CURRENT_FRAME) != 1) revert BadFrame();
-        address sender = address(uint160(_txparam(TX_SENDER)));
+        Layout memory l = _layout();
+        if (l.current != 1) revert BadFrame();
+        address sender = address(uint160(l.sender));
         bytes32 ch = sender.codehash;
         if (ch != VERBATIM_ACCOUNT_CODEHASH) revert NotCanonicalSender(ch);
 
         bytes memory f0 = _framedatacopy(4, 96, 0);
-        bytes memory body = _framedatacopy(4, _frameparam(2, FP_DATA_LENGTH) - 4, 2);
-        uint256 gasTotal;
-        for (uint256 k = 0; k < 3; k++) gasTotal += _frameparam(k, FP_GAS) + _frameparam(k, FP_STATE_GAS);
+        bytes memory body = _framedatacopy(4, l.l2 - 4, 2);
+        uint256 gasTotal = l.g0 + l.s0 + l.g1 + l.s1 + l.g2 + l.s2;
 
         DisplayVM.In memory i;
         i.chainId = uint64(block.chainid);

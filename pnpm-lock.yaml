@@ -28,6 +28,21 @@ importers:
         specifier: ^2.1.0
         version: 2.1.9(@types/node@22.20.5)
 
+  packages/client:
+    dependencies:
+      '@verbatim/displayvm-ts':
+        specifier: workspace:*
+        version: link:../displayvm-ts
+      '@verbatim/frames-sdk':
+        specifier: workspace:*
+        version: link:../frames-sdk
+      '@verbatim/urrender':
+        specifier: workspace:*
+        version: link:../urrender
+      viem:
+        specifier: ^2.21.0
+        version: 2.57.16(typescript@5.9.3)
+
   packages/displayvm-ts:
     dependencies:
       '@verbatim/urrender':
@@ -73,9 +88,21 @@ importers:
 
   tools/scripts:
     dependencies:
+      '@verbatim/client':
+        specifier: workspace:*
+        version: link:../../packages/client
+      '@verbatim/displayvm-ts':
+        specifier: workspace:*
+        version: link:../../packages/displayvm-ts
       '@verbatim/frames-sdk':
         specifier: workspace:*
         version: link:../../packages/frames-sdk
+      '@verbatim/urrender':
+        specifier: workspace:*
+        version: link:../../packages/urrender
+      '@verbatim/vdesc-compiler':
+        specifier: workspace:*
+        version: link:../../packages/vdesc-compiler
       viem:
         specifier: ^2.21.0
         version: 2.57.16(typescript@5.9.3)

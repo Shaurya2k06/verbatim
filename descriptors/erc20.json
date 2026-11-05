@@ -1,0 +1,32 @@
+{
+  "$schema": "https://eips.ethereum.org/assets/eip-7730/erc7730-v1.schema.json",
+  "context": { "contract": { "abi": "erc20" } },
+  "metadata": { "owner": "Verbatim demo attestors" },
+  "display": {
+    "formats": {
+      "transfer(address,uint256)": {
+        "intent": "Send tokens",
+        "x-verbatim": {
+          "exactWords": 2,
+          "fields": [
+            { "path": "0", "label": "To", "format": "address", "role": "recipient" },
+            { "path": "1", "label": "Amount", "format": "tokenAmount", "token": { "kind": "target" } }
+          ],
+          "effects": [{ "kind": "OUT_EXACT", "token": { "kind": "target" }, "amount": "1", "to": "0" }]
+        }
+      },
+      "approve(address,uint256)": {
+        "intent": "Approve spending",
+        "x-verbatim": {
+          "exactWords": 2,
+          "fields": [
+            { "path": "0", "label": "Spender", "format": "address", "role": "spender" },
+            { "path": "1", "label": "Amount", "format": "tokenAmount", "token": { "kind": "target" } }
+          ],
+          "effects": [{ "kind": "APPROVE_SET", "token": { "kind": "target" }, "spender": "0", "amount": "1" }],
+          "flags": ["UNLIMITED_IF"]
+        }
+      }
+    }
+  }
+}

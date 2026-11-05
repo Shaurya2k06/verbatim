@@ -1,0 +1,11 @@
+{
+  "$schema": "https://eips.ethereum.org/assets/eip-7730/erc7730-v1.schema.json",
+  "context": { "contract": { "abi": "renderer-paymaster" } },
+  "metadata": { "owner": "Verbatim demo attestors" },
+  "display": {
+    "formats": {
+      "setPolicy(uint64,uint64)": { "intent": "Change signing policy", "x-verbatim": { "exactWords": 2, "fields": [{ "path": "0", "label": "TTL blocks", "format": "uint" }, { "path": "1", "label": "Allow mask", "format": "uint" }], "flags": ["ADMIN"] } },
+      "requestWithdraw(address,uint256)": { "intent": "Withdraw fee deposit", "x-verbatim": { "exactWords": 2, "fields": [{ "path": "0", "label": "Asset", "format": "address" }, { "path": "1", "label": "Amount", "format": "uint" }], "flags": ["ADMIN"] } }
+    }
+  }
+}

@@ -34,7 +34,7 @@ abstract contract VerbatimCore {
     uint256 internal constant SECP256K1N_HALF = 0x7fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a0;
 
     bytes32 internal constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
-    bytes32 internal constant TX_TYPEHASH = keccak256("VerbatimTx(bytes32 sigHash,bytes32 treeHash,bytes32 specHash,uint64 signedAtBlock)");
+    bytes32 internal constant TX_TYPEHASH = keccak256("VerbatimTx(bytes32 txCommit,bytes32 treeHash,bytes32 specHash,uint64 signedAtBlock)");
     bytes32 internal constant NAME_HASH = keccak256("Verbatim");
     bytes32 internal constant VERSION_HASH = keccak256("1");
 
@@ -103,9 +103,9 @@ abstract contract VerbatimCore {
 
     // ----------------------------------------------------------------------- signatures ---------
 
-    function digestOf(bytes32 sigHash, bytes32 treeHash, bytes32 specHash, uint64 signedAtBlock) public view returns (bytes32) {
+    function digestOf(bytes32 txCommit, bytes32 treeHash, bytes32 specHash, uint64 signedAtBlock) public view returns (bytes32) {
         bytes32 domain = keccak256(abi.encode(DOMAIN_TYPEHASH, NAME_HASH, VERSION_HASH, block.chainid, address(this)));
-        bytes32 structHash = keccak256(abi.encode(TX_TYPEHASH, sigHash, treeHash, specHash, signedAtBlock));
+        bytes32 structHash = keccak256(abi.encode(TX_TYPEHASH, txCommit, treeHash, specHash, signedAtBlock));
         return keccak256(abi.encodePacked(hex"1901", domain, structHash));
     }
 
@@ -452,25 +452,46 @@ abstract contract VerbatimAccountBase is VerbatimCore, FrameIntrospection {
 
     constructor(address renderer, uint64 ttlMax, address[] memory owners_, uint8 threshold_) VerbatimCore(renderer, ttlMax, owners_, threshold_) {}
 
-    /// Frame 0. Data: treeHash, specHash, signedAtBlock. Owner signatures sit in signature entry 0 (ARBITRARY, empty msg).
+    /// Frame 0. Data: treeHash, specHash, signedAtBlock. Owners sign in protocol-validated SECP256K1 entries with an
+    /// explicit `msg`: the deployed sidecar refuses calls to the ecrecover precompile, so the protocol recovers them.
+    /// An explicit `msg` cannot contain `sig_hash`, so `_txCommit` covers what it would have: see docs/DECISIONS.md.
     function verifyFrame(bytes32 treeHash, bytes32 specHash, uint64 signedAtBlock) external {
         if (msg.sender != ENTRY_POINT) revert NotEntryPoint();
-        _layoutLock();
-        if (_txparam(TX_SIG_COUNT) != 1 || _sigparam(0, SP_SCHEME) != SCHEME_ARBITRARY || _sigparam(0, SP_MSG) != 0) revert BadSignatureEntry();
-        uint256 len = _sigparam(0, SP_LENGTH);
-        bytes memory sigs = _sigdatacopy(0, len, 0);
-        _checkSignatures(digestOf(bytes32(_txparam(TX_SIG_HASH)), treeHash, specHash, signedAtBlock), sigs);
+        Layout memory l = _layoutLock();
+        uint256 digest = uint256(digestOf(_txCommit(l), treeHash, specHash, signedAtBlock));
+        uint256 k = threshold;
+        if (l.sigCount != k) revert BadSignatureEntry();
+        address last;
+        for (uint256 i = 0; i < k; i++) {
+            if (_sigparam(i, SP_SCHEME) != SCHEME_SECP256K1 || _sigparam(i, SP_MSG) != digest) revert BadSignatureEntry();
+            address signer = address(uint160(_sigparam(i, SP_SIGNER)));
+            if (signer <= last || !isOwner[signer]) revert SignersNotSortedOrUnknown();
+            last = signer;
+        }
         _approve(SCOPE_EXECUTION);
     }
 
+    /// Everything `sig_hash` covers beyond the frame 0 data the digest already holds. Keyed nonces and blobs are refused
+    /// rather than committed to.
+    function _txCommit(Layout memory l) private view returns (bytes32) {
+        TxFields memory f = _txFields();
+        if (f.blobCount != 0 || f.nonceKeyCount != 1 || f.nonceKey0 != 0) revert BadLayout(7);
+        bytes32 h1 = keccak256(_framedatacopy(0, l.l1, 1));
+        bytes32 h2 = keccak256(_framedatacopy(0, l.l2, 2));
+        return keccak256(abi.encode(f.nonce, f.maxPriorityFee, f.maxFee, l.g0, l.s0, l.g1, l.s1, l.g2, l.s2, h1, h2));
+    }
+
     /// I3: exactly [VERIFY self, VERIFY canonical renderer, SENDER self.executeVerified], no flags beyond the scopes.
-    function _layoutLock() private view {
-        if (_txparam(TX_FRAME_COUNT) != 3) revert BadLayout(0);
-        if (_txparam(TX_CURRENT_FRAME) != 0) revert BadLayout(1);
-        if (_txparam(TX_SENDER) != uint160(address(this))) revert BadLayout(2);
-        if (_frameparam(0, FP_MODE) != MODE_VERIFY || _frameparam(0, FP_TARGET) != uint160(address(this)) || _frameparam(0, FP_FLAGS) != SCOPE_EXECUTION) revert BadLayout(3);
-        if (_frameparam(1, FP_MODE) != MODE_VERIFY || _frameparam(1, FP_TARGET) != uint160(RENDERER_PAYMASTER) || _frameparam(1, FP_FLAGS) != SCOPE_PAYMENT) revert BadLayout(4);
-        if (_frameparam(2, FP_MODE) != MODE_SENDER || _frameparam(2, FP_TARGET) != uint160(address(this)) || _frameparam(2, FP_FLAGS) != 0 || _frameparam(2, FP_VALUE) != 0) revert BadLayout(5);
+    /// A transaction without exactly 3 frames fails inside `_layout`.
+    function _layoutLock() private view returns (Layout memory l) {
+        l = _layout();
+        uint256 self = uint160(address(this));
+        if (l.frameCount != 3) revert BadLayout(0);
+        if (l.current != 0) revert BadLayout(1);
+        if (l.sender != self) revert BadLayout(2);
+        if (l.m0 != MODE_VERIFY || l.t0 != self || l.f0 != SCOPE_EXECUTION) revert BadLayout(3);
+        if (l.m1 != MODE_VERIFY || l.t1 != uint160(RENDERER_PAYMASTER) || l.f1 != SCOPE_PAYMENT) revert BadLayout(4);
+        if (l.m2 != MODE_SENDER || l.t2 != self || l.f2 != 0 || l.v2 != 0) revert BadLayout(5);
         if (bytes4(bytes32(_framedataload(0, 2))) != this.executeVerified.selector) revert BadLayout(6);
     }
 

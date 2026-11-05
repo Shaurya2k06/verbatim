@@ -34,3 +34,8 @@ A shared Yul `FrameReader` serves reads by STATICCALL. APPROVE stays in the cont
 
 ### D-A4: use the predeployed Uniswap stack
 §11.4 says self-deploy. The devnet already has the real PoolManager, PositionManager, Universal Router, Permit2 and WETH9 (replayed mainnet bytecode), which is stronger evidence than our own build. We add only demo tokens, pools and SkimHook.
+
+### D-A5: signatures are protocol-validated with an explicit digest, bound through `txCommit` (supersedes D-A1's ARBITRARY entry)
+The deployed sidecar has `precompiles: []` and rejects any call to precompile 0x01 as an "un-deployed contract", although CALLING-040 allows core precompiles. Frame 0 therefore cannot run `ecrecover`.
+Owners cannot simply sign `sig_hash`: the device cannot check it, so that would reopen v4's fatal bug (a lying frontend gets a signature on a transaction whose tree is the lie). So each owner signs the EIP-712 digest over the tree, in a SECP256K1 entry with that digest as its explicit `msg`; the protocol recovers the signer and the account checks signer, scheme and `msg` with SIGPARAM.
+An explicit `msg` cannot contain `sig_hash` (it is part of what `sig_hash` covers), so §8.2's first field becomes `txCommit = keccak(nonce, maxPriorityFee, maxFee, all frame gas limits, keccak(frame 1 data), keccak(frame 2 data))`, computed by frame 0 from introspection. With frame 0's own data in the digest and the layout lock fixing modes, flags, targets and value, this covers what `sig_hash` would, closing EIP-8141's "open-ended SENDER frames" warning. Blobs and keyed nonces are refused rather than committed to. On Leg B the field is `userOpHash`, as specified.
