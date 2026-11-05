@@ -694,5 +694,27 @@
     "txHash": "0xace999157d8832fcafddff539746fb4b4ce7575059423bcfdf30a87228c1fa4d",
     "message": "LeafRevokedInEns(0x855303e467745419d6be80bbb9f5d7c68f7286761e53355bcdffd7fd2506fdd1)",
     "at": "2026-11-05T23:35:05.296Z"
+  },
+  "B-A2-eoa": {
+    "id": "B-A2-eoa",
+    "title": "The evil route on an ordinary wallet, Sepolia",
+    "expected": "the skim works: this is what Verbatim prevents",
+    "pass": true,
+    "outcome": "mined",
+    "txHash": "0x2e4d20458e11e4afe41c14ff5bb8928a96ce2e3f0dcac6b08813ca73e891edea",
+    "extra": {
+      "victimGot": "29508",
+      "hookTook": "2921208"
+    },
+    "at": "2026-11-05T23:37:27.730Z"
+  },
+  "B-A2b": {
+    "id": "B-A2b",
+    "title": "The same route, signed on the true sentence",
+    "expected": "the device shows the risks; refused",
+    "pass": true,
+    "outcome": "rejected-at-mempool",
+    "message": "! NO MINIMUM OUTPUT | ! HOOK CAN TAKE YOUR OUTPUT | ! UNVERIFIED HOOK || Internal error from bundler (trace id: 9752e61b84104681bcb00d5ff96e1d83)",
+    "at": "2026-11-05T23:37:30.041Z"
   }
 }

@@ -106,6 +106,35 @@ const steps: Record<string, () => Promise<void>> = {
     }
     record({ id: "B-A1", title: "Swapped recipient under an honest sentence, on Sepolia", expected: "bundler rejects; the account's reason is TreeMismatch", pass: /TreeMismatch/.test(reason), outcome: "rejected-at-mempool", message: `${bundler.slice(0, 80)} | ${reason.split("\n").find((l) => /TreeMismatch/.test(l)) ?? reason.slice(0, 200)}` });
   },
+  async B_A2() {
+    // The same route on an ordinary wallet, then on this one. ETH in on the official PoolManager; the hook is unattested.
+    const victimKey = key("OWNER3_KEY");
+    const victim = addr("OWNER3_KEY");
+    const w0 = wallet();
+    if ((await pub.getBalance({ address: victim })) < parseEther("0.005")) {
+      const h0 = await w0.sendTransaction({ to: victim, value: parseEther("0.02"), account: w0.account!, chain: w0.chain });
+      await pub.waitForTransactionReceipt({ hash: h0 });
+    }
+    const thief = addr("ATTACKER_KEY");
+    const before = await bal(dUSDC, victim);
+    const thiefBefore = await bal(dUSDC, thief);
+    const data = swap(s.poolEthEvil.key, 0n);
+    const v = wallet(victimKey);
+    const hash = await v.sendTransaction({ to: UNI.router, data: data.data, value: ONE, account: v.account!, chain: v.chain, gas: 2_000_000n });
+    const rc = await pub.waitForTransactionReceipt({ hash, timeout: 180_000 });
+    const got = (await bal(dUSDC, victim)) - before;
+    const stolen = (await bal(dUSDC, thief)) - thiefBefore;
+    record({ id: "B-A2-eoa", title: "The evil route on an ordinary wallet, Sepolia", expected: "the skim works: this is what Verbatim prevents", pass: rc.status === "success" && stolen > got * 50n, outcome: "mined", txHash: hash, extra: { victimGot: String(got), hookTook: String(stolen) } });
+    const truth = await build([swap(s.poolEthEvil.key, 0n)], env.BUNDLER_URL);
+    const lines = formatForDevice(decodeTree(truth.tree)).filter((l) => l.risk).map((l) => l.text);
+    let reason = "";
+    try {
+      await sendOp(env.BUNDLER_URL, truth.op);
+    } catch (e) {
+      reason = (e as Error).message;
+    }
+    record({ id: "B-A2b", title: "The same route, signed on the true sentence", expected: "the device shows the risks; refused", pass: reason.length > 0 && lines.some((l) => /HOOK CAN TAKE YOUR OUTPUT/.test(l)) && lines.some((l) => /NO MINIMUM OUTPUT/.test(l)), outcome: "rejected-at-mempool", message: `${lines.join(" | ")} || ${reason.slice(0, 100)}` });
+  },
   async B13() {
     // Governance drops every attestor from the ENS record while an operation is on its way: validation is unaffected, execution refuses.
     const b = await build([transfer(named, 1_000_000n)], env.BUNDLER_URL);
