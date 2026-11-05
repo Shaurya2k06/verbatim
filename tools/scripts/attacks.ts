@@ -1,51 +1,19 @@
 // The attack kit against the live devnet. Each entry submits to the real alt-mempool gateway; results land in
 // docs/proofs.json. Usage: tsx attacks.ts [ids...]
-import { decodeErrorResult, encodeFunctionData, keccak256, parseAbi, parseAbiItem, parseEther, toHex, type Address, type Hex } from "viem";
+import { encodeFunctionData, keccak256, parseAbi, parseEther, type Address, type Hex } from "viem";
 import { privateKeyToAccount, generatePrivateKey } from "viem/accounts";
-import { RpcError, Scope, newTx, submit, waitReceipt, type FrameReceipt } from "@verbatim/frames-sdk";
+import { RpcError, Scope, newTx, submit, waitReceipt } from "@verbatim/frames-sdk";
 import { ACCOUNT_ABI, PAYMASTER_ABI, frame2Data, prepare, withSignatures, type Call, type Prepared } from "@verbatim/client";
 import { addr, key, readState, writeState } from "./lib/env";
 import { artifact, deploy, pub, send, wallet } from "./lib/chain";
 import { ERC20, OWNER_KEYS, ZERO, prepareTx, sign, state, transferCall, trust } from "./lib/verbatim";
 import { record } from "./lib/proofs";
+import { batchResult, decodeRevert, frameGas } from "./lib/results";
 import { attest, descriptorsFor, emptyUpdate, tokenEntry } from "./lib/trust-update";
 
 const s = state();
 const victim = addr("OWNER3_KEY");
 const thief = addr("ATTACKER_KEY");
-
-const ERRORS = [...artifact("VerbatimAccount.sol", "VerbatimAccount").abi.filter((x: any) => x.type === "error"), ...artifact("RendererPaymaster.sol", "RendererPaymaster").abi.filter((x: any) => x.type === "error"), ...parseAbi(["error AssertionFailed(uint256 index, uint256 expected, uint256 actual)", "error ReadFailed(address target)", "error BadSpec()"])];
-
-/** Decodes revert data anywhere in a node's message. */
-export function decodeRevert(text: string): string {
-  const m = text.match(/0x[0-9a-fA-F]{8,}/);
-  if (!m) return text;
-  try {
-    const d = decodeErrorResult({ abi: ERRORS as never, data: m[0] as Hex });
-    const args = (d.args ?? []).map((a: unknown) => (typeof a === "bigint" ? `0x${a.toString(16)}` : String(a)));
-    const inner = d.errorName === "CallFailed" ? ` [${decodeRevert(String(d.args?.[1]))}]` : "";
-    return `${text} => ${d.errorName}(${args.join(", ")})${inner}`;
-  } catch {
-    return text;
-  }
-}
-
-const frameGas = (r: FrameReceipt) => (r.frameReceipts ?? []).map((f: any) => ({ execution: Number(f.gasUsed?.execution ?? f.gasUsed), state: Number(f.gasUsed?.state ?? 0) }));
-
-function batchResult(r: FrameReceipt, account: Address): { ok: boolean | null; err: string } {
-  const sig = keccak256(toHex("VerbatimResult(bool,bytes)"));
-  for (const f of r.frameReceipts ?? []) {
-    for (const l of f.logs ?? []) {
-      if (l.topics?.[0] === sig && l.address?.toLowerCase() === account.toLowerCase()) {
-        const ok = BigInt(l.topics[1]) === 1n;
-        const hex = l.data as Hex;
-        const len = hex.length > 130 ? parseInt(hex.slice(66, 130), 16) : 0;
-        return { ok, err: len ? decodeRevert(`0x${hex.slice(130, 130 + len * 2)}`) : "" };
-      }
-    }
-  }
-  return { ok: null, err: "" };
-}
 
 type Step = { id: string; title: string; expected: string; run: () => Promise<void> };
 

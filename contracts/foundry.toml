@@ -3,6 +3,7 @@ src = "src"
 out = "out"
 test = "test"
 libs = ["lib"]
+remappings = ["forge-std/=lib/forge-std/src/"]
 solc_version = "0.8.28"
 evm_version = "cancun"
 optimizer = true

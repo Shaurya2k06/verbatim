@@ -232,5 +232,98 @@
       ]
     },
     "at": "2026-11-05T17:21:30.313Z"
+  },
+  "SWAP": {
+    "id": "SWAP",
+    "title": "Honest v4 swap through the real Universal Router",
+    "expected": "admitted, mined, min out respected",
+    "pass": true,
+    "outcome": "mined",
+    "txHash": "0x95910914a4fb466add54191c3d3c8e3eb8f36bc53ba48fc767767c035d2c352f",
+    "block": 405058,
+    "frameGas": [
+      {
+        "execution": 19972,
+        "state": 0
+      },
+      {
+        "execution": 68223,
+        "state": 0
+      },
+      {
+        "execution": 303189,
+        "state": 0
+      }
+    ],
+    "message": "",
+    "extra": {
+      "receivedRaw": "2836125055",
+      "paidRaw": "1000000000000000000"
+    },
+    "at": "2026-11-05T17:37:59.497Z"
+  },
+  "WRAP": {
+    "id": "WRAP",
+    "title": "WRAP_ETH through the real Universal Router",
+    "expected": "admitted, mined, exact WETH delta",
+    "pass": true,
+    "outcome": "mined",
+    "txHash": "0x57379ce37ef2cc7f9cb7926b1320761c04b922883003a8fc5e2df497d865a74a",
+    "block": 405063,
+    "frameGas": [
+      {
+        "execution": 19532,
+        "state": 0
+      },
+      {
+        "execution": 53392,
+        "state": 0
+      },
+      {
+        "execution": 201979,
+        "state": 0
+      }
+    ],
+    "message": "",
+    "at": "2026-11-05T17:38:29.611Z"
+  },
+  "A2-eoa": {
+    "id": "A2-eoa",
+    "title": "Same evil route on an ordinary wallet",
+    "expected": "the skim works: this is what Verbatim prevents",
+    "pass": true,
+    "outcome": "mined",
+    "txHash": "0x2813008d2752b5026def6737d23b77a7c8b9e6fd345d8f63e18d7d076780e15b",
+    "block": 405069,
+    "extra": {
+      "victimReceivedRaw": "28361251",
+      "hookTookRaw": "2807763804"
+    },
+    "at": "2026-11-05T17:39:05.605Z"
+  },
+  "A2": {
+    "id": "A2",
+    "title": "minOut=0 via SkimHook under an honest sentence",
+    "expected": "mempool reject (tree mismatch)",
+    "pass": true,
+    "outcome": "rejected-at-mempool",
+    "message": "validation frame 1: reverted with data 0x669a6fecc93259451b6de9637e71c502d9806c5386a9ce842768e7e37525fdf32a41afa401344d55d7fdd8b57a7819c71bb4f8ef23407194dee85794d3cc015132286ae3 => TreeMismatch(0xc93259451b6de9637e71c502d9806c5386a9ce842768e7e37525fdf32a41afa4, 0x01344d55d7fdd8b57a7819c71bb4f8ef23407194dee85794d3cc015132286ae3)",
+    "at": "2026-11-05T17:39:28.198Z"
+  },
+  "A2b": {
+    "id": "A2b",
+    "title": "User signs the true SkimHook sentence",
+    "expected": "policy rejects",
+    "pass": true,
+    "outcome": "rejected-at-mempool",
+    "message": "validation frame 1: reverted with data 0xa42253ed0000000000000000000000000000000000000000000000000000000000000038 => PolicyRefused(0x38)",
+    "extra": {
+      "deviceRiskLines": [
+        "! NO MINIMUM OUTPUT",
+        "! HOOK CAN TAKE YOUR OUTPUT",
+        "! UNVERIFIED HOOK"
+      ]
+    },
+    "at": "2026-11-05T17:39:39.101Z"
   }
 }

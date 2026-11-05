@@ -218,12 +218,12 @@ library URRender {
 
         c.fn.amount(t, "You pay", tokenIn, amountIn, c);
         c.fn.amount(t, "Minimum received", tokenOut, min, c);
-        c.fn.amount(t, "Maximum paid", tokenIn, maxIn, c);
+        // Fields that only restate the defaults stay out, to keep the sentence short and cheap.
+        if (maxIn != amountIn) c.fn.amount(t, "Maximum paid", tokenIn, maxIn, c);
         t.fieldUint("Pool fee", fee, VTree.UNIT_NONE);
         t.fieldUint("Tick spacing", spacing, VTree.UNIT_NONE);
-        t.fieldUint("Min hop price", minHop, VTree.UNIT_NONE);
-        t.fieldBytes("Hook data", d.hashRange(hd + 32, hdLen), hdLen);
-        c.fn.addressField(t, "Recipient", c.cfg.account, c);
+        if (minHop != 0) t.fieldUint("Min hop price", minHop, VTree.UNIT_NONE);
+        if (hdLen != 0) t.fieldBytes("Hook data", d.hashRange(hd + 32, hdLen), hdLen);
 
         if (min == 0) {
             t.risk(Risk.NO_MIN_OUT);

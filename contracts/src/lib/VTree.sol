@@ -33,9 +33,13 @@ library Buf {
     }
 
     function _reserve(B memory b, uint256 n) private pure returns (uint256 at) {
-        at = b.ptr + b.len;
-        b.len += n;
-        if (b.len > b.cap) revert BufOverflow();
+        unchecked {
+            uint256 len = b.len;
+            at = b.ptr + len;
+            len += n;
+            if (len > b.cap) revert BufOverflow();
+            b.len = len;
+        }
     }
 
     function u8(B memory b, uint256 v) internal pure {
@@ -63,7 +67,7 @@ library Buf {
 
     /// Copies `data[off:off+n]`.
     function copy(B memory b, bytes memory data, uint256 off, uint256 n) internal pure {
-        if (off + n > data.length) revert OutOfBounds();
+        _in(data, off, n);
         uint256 at = _reserve(b, n);
         assembly ("memory-safe") {
             mcopy(at, add(add(data, 0x20), off), n)
@@ -85,22 +89,30 @@ library Buf {
 
     // ------------------------------------------------------------ readers over `bytes memory` ----
 
+    /// `off + n <= d.length`, written so a hostile 256-bit offset cannot wrap past it.
+    function _in(bytes memory d, uint256 off, uint256 n) private pure {
+        unchecked {
+            uint256 len = d.length;
+            if (off > len || n > len - off) revert OutOfBounds();
+        }
+    }
+
     function rdWord(bytes memory d, uint256 off) internal pure returns (uint256 v) {
-        if (off + 32 > d.length) revert OutOfBounds();
+        _in(d, off, 32);
         assembly ("memory-safe") {
             v := mload(add(add(d, 0x20), off))
         }
     }
 
     function rdU8(bytes memory d, uint256 off) internal pure returns (uint256 v) {
-        if (off >= d.length) revert OutOfBounds();
+        _in(d, off, 1);
         assembly ("memory-safe") {
             v := byte(0, mload(add(add(d, 0x20), off)))
         }
     }
 
     function rdBe(bytes memory d, uint256 off, uint256 n) internal pure returns (uint256 v) {
-        if (off + n > d.length) revert OutOfBounds();
+        _in(d, off, n);
         assembly ("memory-safe") {
             v := shr(mul(sub(32, n), 8), mload(add(add(d, 0x20), off)))
         }
@@ -108,7 +120,7 @@ library Buf {
 
     /// Keccak of `d[off:off+n]`, no copy.
     function hashRange(bytes memory d, uint256 off, uint256 n) internal pure returns (bytes32 h) {
-        if (off + n > d.length) revert OutOfBounds();
+        _in(d, off, n);
         assembly ("memory-safe") {
             h := keccak256(add(add(d, 0x20), off), n)
         }
@@ -123,7 +135,7 @@ library Buf {
 
     /// A new `bytes` view copying `d[off:off+n]`.
     function slice(bytes memory d, uint256 off, uint256 n) internal pure returns (bytes memory out) {
-        if (off + n > d.length) revert OutOfBounds();
+        _in(d, off, n);
         assembly ("memory-safe") {
             out := mload(0x40)
             mstore(out, n)
@@ -164,14 +176,19 @@ library VTree {
 
     /// Starts a node; the length is patched by `end`.
     function begin(Buf.B memory t, uint8 kind) internal pure returns (uint256 at) {
-        t.u8(kind);
-        at = t.len;
-        t.be(0, 2);
+        t.be(uint256(kind) << 16, 3);
+        unchecked {
+            at = t.len - 2;
+        }
     }
 
     function end(Buf.B memory t, uint256 at) internal pure {
-        uint256 n = t.len - at - 2;
-        uint256 p = t.ptr + at;
+        uint256 n;
+        uint256 p;
+        unchecked {
+            n = t.len - at - 2;
+            p = t.ptr + at;
+        }
         assembly ("memory-safe") {
             mstore8(p, shr(8, n))
             mstore8(add(p, 1), n)

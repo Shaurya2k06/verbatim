@@ -118,11 +118,18 @@ abstract contract TrustStore is DisplayVM, TrustStoreLayout {
     }
 
     function _tokenInfo(address token) internal view virtual override returns (bytes32 symbol, uint8 decimals, uint8 flags, bool known) {
-        TokenSlot memory t = tokens[token];
-        symbol = bytes32(uint256(uint88(t.symbol)) << 168) | bytes32(uint256(t.symLen));
-        decimals = t.decimals;
-        flags = t.flags;
-        known = t.known;
+        // One raw SLOAD; reading the struct field by field would pay for the slot once per field.
+        uint256 w;
+        assembly ("memory-safe") {
+            mstore(0, token)
+            mstore(0x20, tokens.slot)
+            w := sload(keccak256(0, 0x40))
+        }
+        uint256 symLen = (w >> 88) & 0xff;
+        symbol = bytes32(((w & ((1 << 88) - 1)) << 168) | symLen);
+        decimals = uint8(w >> 96);
+        flags = uint8(w >> 104);
+        known = (w >> 112) & 1 == 1;
     }
 
     function _nameOf(address) internal view virtual override returns (bytes32) {

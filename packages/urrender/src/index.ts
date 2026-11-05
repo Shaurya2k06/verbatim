@@ -172,12 +172,11 @@ function v4Single(t: Buf, d: Uint8Array, pArr: bigint, i: bigint, end: bigint, c
 
   c.amount(t, "You pay", tokenIn, amountIn, c);
   c.amount(t, "Minimum received", tokenOut, min, c);
-  c.amount(t, "Maximum paid", tokenIn, maxIn, c);
+  if (maxIn !== amountIn) c.amount(t, "Maximum paid", tokenIn, maxIn, c);
   VT.fieldUint(t, "Pool fee", fee, UNIT.NONE);
   VT.fieldUint(t, "Tick spacing", spacing, UNIT.NONE);
-  VT.fieldUint(t, "Min hop price", minHop, UNIT.NONE);
-  VT.fieldBytes(t, "Hook data", hashRange(d, hd + 32n, hdLen), hdLen);
-  c.addressField(t, "Recipient", c.account, c);
+  if (minHop !== 0n) VT.fieldUint(t, "Min hop price", minHop, UNIT.NONE);
+  if (hdLen !== 0n) VT.fieldBytes(t, "Hook data", hashRange(d, hd + 32n, hdLen), hdLen);
 
   if (min === 0n) {
     VT.risk(t, RISK.NO_MIN_OUT);
@@ -295,3 +294,4 @@ function v3Swap(t: Buf, d: Uint8Array, inp: bigint, len: bigint, c: URCtx) {
 
 export { bytesToHex };
 export type { Hex };
+export * from "./build";
