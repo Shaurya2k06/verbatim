@@ -1,6 +1,6 @@
 // TypeScript twin of contracts/src/lib/DisplayVM.sol. Untrusted by design: on-chain render is the authority and any
 // mismatch fails closed, so this only has to be right to be useful. tools/difffuzz holds it to byte equality.
-import { bytesToHex, encodeFunctionData, hexToBigInt, hexToBytes, keccak256, type Address, type Hex } from "viem";
+import { bytesToHex, hexToBigInt, hexToBytes, keccak256, type Address, type Hex } from "viem";
 import { BIT, Buf, Effects, NODE, RISK, RenderError, VT, rdAddr, rdBe, rdU8, rdWord, renderUR, slice, toAddr, toInt, type URCtx } from "@verbatim/urrender";
 
 export { RenderError } from "@verbatim/urrender";
@@ -76,7 +76,6 @@ const fail = (code: string): never => {
 };
 const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
 const hexWord = (v: bigint): Hex => `0x${v.toString(16).padStart(64, "0")}` as Hex;
-const asciiText = (d: Uint8Array) => d;
 
 interface Ctx extends URCtx {
   hints: Address[];
@@ -490,9 +489,7 @@ export function policyRefuses(risk: number, allow = 0): boolean {
 /** Packs a short ASCII string into the bytes32 form used for symbols and publisher names. */
 export function packStr(s: string): Hex {
   if (s.length > 31) throw new Error("packed strings hold at most 31 bytes");
-  const hex = Buffer.from(s, "ascii").toString("hex").padEnd(62, "0");
+  const hex = bytesToHex(new TextEncoder().encode(s)).slice(2).padEnd(62, "0");
   return `0x${hex}${s.length.toString(16).padStart(2, "0")}` as Hex;
 }
 
-export const asciiBytes = asciiText;
-export { encodeFunctionData };

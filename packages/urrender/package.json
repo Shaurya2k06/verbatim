@@ -7,7 +7,7 @@
   "main": "src/index.ts",
   "exports": { ".": "./src/index.ts" },
   "files": ["src", "solidity", "README.md"],
-  "scripts": { "test": "vitest run", "sync": "cp ../../contracts/src/uniswap/URRender.sol ../../contracts/src/uniswap/HookFlags.sol ../../contracts/src/lib/VTree.sol solidity/" },
+  "scripts": { "test": "vitest run", "sync": "cp ../../contracts/src/uniswap/URRender.sol ../../contracts/src/uniswap/HookFlags.sol ../../contracts/src/lib/VTree.sol solidity/ && sed -i.bak 's#\"../lib/VTree.sol\"#\"./VTree.sol\"#' solidity/URRender.sol && rm solidity/*.bak" },
   "dependencies": { "viem": "^2.21.0" },
   "devDependencies": { "vitest": "^2.1.0" }
 }

@@ -1,0 +1,66 @@
+{
+  "network": "frames-devnet",
+  "chainId": 1337,
+  "mempool": "https://altmempoolgateway.forshtat.com/rpc",
+  "node": "https://altmempool.forshtat.com",
+  "explorer": "https://explorer.altmempool.wtf/",
+  "stakingRegistry": "0xd51c04d7a0b01124e84de152f4e56d9eecb22d2f",
+  "frameReader": "0xd0d73854916c7bed37313fd14e7292749da75922",
+  "trustAdmin": "0xc73d912702c0ce9c4cf0c553dc865748fa54fcc4",
+  "account": "0x81ba72a4e268af79a9639756679f1aea3f00cbe0",
+  "emptyDepositAccount": "0xa6099806b77984975db038df6d52be13acd4ddda",
+  "paymaster": "0x3379119f5004aaf659e2cfaa31c2696ace242ae1",
+  "accountCodehash": "0xab9253b0826d595ff5339989227dca7008aa2cf39b0a74024b5330e676203ebe",
+  "deployTxs": {
+    "admin": "0xa918bbb15815a508d81b1d6580a14a373210d916daf29f87b9008abc7c414ddc",
+    "account": "0xb7c4d9b522545c6209a4e3fde24c93b4a37807af0028ff64609b3dba1a4391c1",
+    "paymaster": "0xa7c266366ac1dbbd18f5032ea8070fbbd845ebeac38d8ef2deab96946b1aa9d3"
+  },
+  "stakeTx": "0x48e5f00f73ec3b8672883543755387a068d71095fcda67f444ea0f090472eff1",
+  "refreshTrustTx": "0xdf492e534646c2541ff02cbcf0606b5fa353cec91014805d630bfcf58e08e429",
+  "tokens": {
+    "dUSDC": "0xa705f15997529f31be0d8127805df12547efc327",
+    "dWETH": "0xdab65f1e7dde0345bf5d46a68a80e509a438ab50"
+  },
+  "evilVault": "0xa6d32067018265801405ca63ed6246d700251ce2",
+  "skimHook": "0x5922EaBd0E54cAb41215937A531C71562e748044",
+  "gasBurner": "0x33c07a27d0dc27d8de319ea8fd144e54f44cddee",
+  "reenterer": "0x018f9bf465e6b966ab1ddf03db84ebb622648ecc",
+  "pools": {
+    "honest": {
+      "key": {
+        "currency0": "0xa705f15997529f31be0d8127805df12547efc327",
+        "currency1": "0xdab65f1e7dde0345bf5d46a68a80e509a438ab50",
+        "fee": 3000,
+        "tickSpacing": 60,
+        "hooks": "0x0000000000000000000000000000000000000000"
+      },
+      "init": "0x1b7bb1e180c6dd5cfc5d40d68b5c78fe57e0d7623f189ad2590e1ae3d661f737",
+      "liquidity": "0xcff1e169248d3b3399614f873524ee27df7ca3a30efdd6f59065261f6fb99da8"
+    },
+    "evil": {
+      "key": {
+        "currency0": "0xa705f15997529f31be0d8127805df12547efc327",
+        "currency1": "0xdab65f1e7dde0345bf5d46a68a80e509a438ab50",
+        "fee": 3000,
+        "tickSpacing": 60,
+        "hooks": "0x5922EaBd0E54cAb41215937A531C71562e748044"
+      },
+      "init": "0x70247389b27f25f34b88eb0a810fa5db623b3512e129f98868c1cb03f4fc5d46",
+      "liquidity": "0x7e194ca507f8927196ab2d456bedb7fbcf6b373cbb16d55e00f525190595d3d1"
+    }
+  },
+  "uniswap": {
+    "router": "0x5e2250a42608a5cc9f62e23ab24824ee25b5e2be",
+    "permit2": "0x000000000022D473030F116dDEE9F6B43aC78BA3",
+    "poolManager": "0x6bF9Aa9c04fd001385742d61f6818C3236429848",
+    "positionManager": "0x5bF24B2CD6f4cc0057F4BeD53264d591620Af57B",
+    "weth9": "0x1b7d32025F7cA633943BbCC9Ec61a98ef66187b6"
+  },
+  "owners": [
+    "0x2204106a7df983EEf9bd2aC0882dAbd6851fbEA8",
+    "0x82e0559476FfDA4be044B46aAff50D3F8279f5C2",
+    "0xA2d21fD462698bA40e96F84147F86E11d744c2Cf"
+  ],
+  "threshold": 2
+}

@@ -1,0 +1,21 @@
+{
+  "name": "@verbatim/difffuzz",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "fuzz": "tsx src/fuzz.ts",
+    "vectors": "tsx src/vectors.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "viem": "^2.21.0",
+    "@verbatim/displayvm-ts": "workspace:*",
+    "@verbatim/urrender": "workspace:*",
+    "@verbatim/vdesc-compiler": "workspace:*"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "vitest": "^2.1.0"
+  }
+}
