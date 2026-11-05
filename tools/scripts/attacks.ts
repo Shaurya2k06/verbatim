@@ -313,9 +313,9 @@ const steps: Step[] = [
       await mustReject("A17", "Unknown router command (PERMIT2_PERMIT)", "BLIND, then refusal", await sign(p), (m) => /PolicyRefused/.test(m));
       await sleep(3000);
       const params = ["0x01", "0x02", "0x03"].map((x) => encodeAbiParameters([{ type: "uint256" }], [BigInt(x)]));
-      const input = encodeAbiParameters([{ type: "bytes" }, { type: "bytes[]" }], ["0x070c0f", params]);
+      const input = encodeAbiParameters([{ type: "bytes" }, { type: "bytes[]" }], ["0x090c0f", params]);
       const q = await prepareTx([{ target: ROUTER, value: 0n, data: executeData([CMD.V4_SWAP], [input], dl) }]);
-      await mustReject("A17b", "Unknown v4 action (SWAP_EXACT_IN)", "BLIND, then refusal", await sign(q), (m) => /PolicyRefused/.test(m));
+      await mustReject("A17b", "Unknown v4 action (SWAP_EXACT_OUT)", "BLIND, then refusal", await sign(q), (m) => /PolicyRefused/.test(m));
     },
   },
   {

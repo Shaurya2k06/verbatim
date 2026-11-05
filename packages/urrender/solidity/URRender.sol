@@ -32,6 +32,8 @@ library URRender {
     uint8 internal constant V4_SWAP = 0x10;
 
     uint8 internal constant SWAP_EXACT_IN_SINGLE = 0x06;
+    uint8 internal constant SWAP_EXACT_IN = 0x07;
+    uint256 internal constant MAX_HOPS = 4;
     uint8 internal constant SETTLE_ALL = 0x0c;
     uint8 internal constant TAKE_ALL = 0x0f;
 
@@ -174,14 +176,16 @@ library URRender {
         if (d.rdWord(pArr - 32) != nActions) revert MalformedUR();
 
         for (uint256 i = 0; i < nActions; i += 3) {
-            bool known = d.rdU8(actions + i) == SWAP_EXACT_IN_SINGLE && d.rdU8(actions + i + 1) == SETTLE_ALL && d.rdU8(actions + i + 2) == TAKE_ALL;
+            uint256 swapAction = d.rdU8(actions + i);
+            bool known = (swapAction == SWAP_EXACT_IN_SINGLE || swapAction == SWAP_EXACT_IN) && d.rdU8(actions + i + 1) == SETTLE_ALL && d.rdU8(actions + i + 2) == TAKE_ALL;
             if (!known) {
                 t.blind("v4 actions", d.hashRange(inp, len), len);
                 c.risk |= Risk.BIT_BLIND;
                 t.groupEnd();
                 return;
             }
-            _v4Single(t, d, pArr, i, inp + len, c);
+            if (swapAction == SWAP_EXACT_IN) _v4Multi(t, d, pArr, i, inp + len, c);
+            else _v4Single(t, d, pArr, i, inp + len, c);
         }
         t.groupEnd();
     }
@@ -234,6 +238,12 @@ library URRender {
             t.risk(Risk.NO_MIN_OUT);
             c.risk |= Risk.BIT_NO_MIN_OUT;
         }
+        _poolRisks(t, fee, hook, c);
+
+        _swapEffects(tokenIn, tokenOut, amountIn, min, c);
+    }
+
+    function _poolRisks(Buf.B memory t, uint256 fee, address hook, Ctx memory c) private view {
         if (fee == HookFlags.DYNAMIC_FEE) t.risk(Risk.HOOK_DYNAMIC_FEE);
         if (hook != address(0)) {
             if (HookFlags.canTakeInput(hook)) {
@@ -249,7 +259,9 @@ library URRender {
                 c.risk |= Risk.BIT_HOOK_UNVERIFIED;
             }
         }
+    }
 
+    function _swapEffects(address tokenIn, address tokenOut, uint256 amountIn, uint256 min, Ctx memory c) private pure {
         address account = c.cfg.account;
         c.effects.addDelta(account, tokenIn, -VSpec.toInt(amountIn), false);
         c.effects.addDelta(account, tokenOut, VSpec.toInt(min), true);
@@ -259,6 +271,53 @@ library URRender {
         } else {
             c.effects.p2AllowLe(c.cfg.permit2, tokenIn, c.cfg.router, 0);
         }
+    }
+
+    /// SWAP_EXACT_IN: ExactInputParams, where the older router's layout has no per-hop price array.
+    function _v4Multi(Buf.B memory t, bytes memory d, uint256 pArr, uint256 i, uint256 end, Ctx memory c) private view {
+        (uint256 p, uint256 pn) = _param(d, pArr, i, end);
+        bool legacy = c.cfg.legacyParams;
+        if (pn < 0x20) revert MalformedUR();
+        uint256 s = p + d.rdWord(p);
+        address tokenIn = d.rdAddr(s);
+        uint256 path = s + d.rdWord(s + 32);
+        uint256 amountIn = d.rdWord(s + (legacy ? 64 : 96));
+        uint256 minOut = d.rdWord(s + (legacy ? 96 : 128));
+        uint256 hops = d.rdWord(path);
+        if (hops == 0 || hops > MAX_HOPS || amountIn == 0 || amountIn >> 128 != 0 || minOut >> 128 != 0) revert MalformedUR();
+        uint256 pathEls = path + 32;
+
+        // The output is the last hop's currency, which must also be what TAKE_ALL takes.
+        uint256 last = pathEls + d.rdWord(pathEls + (hops - 1) * 32);
+        address tokenOut = d.rdAddr(last);
+        (uint256 sp, uint256 sn) = _param(d, pArr, i + 1, end);
+        (uint256 tp, uint256 tn) = _param(d, pArr, i + 2, end);
+        if (sn < 64 || tn < 64) revert MalformedUR();
+        if (d.rdAddr(sp) != tokenIn || d.rdAddr(tp) != tokenOut) revert MalformedUR();
+        uint256 maxIn = d.rdWord(sp + 32);
+        uint256 takeMin = d.rdWord(tp + 32);
+        uint256 min = takeMin > minOut ? takeMin : minOut;
+
+        c.fn.amount(t, "You pay", tokenIn, amountIn, c);
+        c.fn.amount(t, "Minimum received", tokenOut, min, c);
+        if (maxIn != amountIn) c.fn.amount(t, "Maximum paid", tokenIn, maxIn, c);
+        if (min == 0) {
+            t.risk(Risk.NO_MIN_OUT);
+            c.risk |= Risk.BIT_NO_MIN_OUT;
+        }
+        for (uint256 h = 0; h < hops; h++) {
+            uint256 el = pathEls + d.rdWord(pathEls + h * 32);
+            address via = d.rdAddr(el);
+            uint256 fee = d.rdWord(el + 32);
+            address hook = d.rdAddr(el + 96);
+            uint256 hd = el + d.rdWord(el + 128);
+            uint256 hdLen = d.rdWord(hd);
+            if (h + 1 < hops) c.fn.amount(t, "Through", via, 0, c);
+            t.fieldUint("Pool fee", fee, VTree.UNIT_NONE);
+            if (hdLen != 0) t.fieldBytes("Hook data", d.hashRange(hd + 32, hdLen), hdLen);
+            _poolRisks(t, fee, hook, c);
+        }
+        _swapEffects(tokenIn, tokenOut, amountIn, min, c);
     }
 
     function _wrap(Buf.B memory t, bytes memory d, uint256 inp, uint256 len, Ctx memory c) private view {

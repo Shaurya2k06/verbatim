@@ -255,7 +255,7 @@ contract AttacksTest is Base {
         params[0] = abi.encode(uint256(1));
         params[1] = abi.encode(uint256(2));
         params[2] = abi.encode(uint256(3));
-        Plan memory p = plan(_routerRaw(hex"10", abi.encode(hex"070c0f", params)), T0 + 100);
+        Plan memory p = plan(_routerRaw(hex"10", abi.encode(hex"090c0f", params)), T0 + 100);
         load(p);
         frame0();
         expectFrame1(abi.encodeWithSelector(RendererCore.PolicyRefused.selector, p.risk));

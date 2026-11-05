@@ -2,7 +2,7 @@
 import { encodeAbiParameters, encodeFunctionData, keccak256, parseAbi, toHex, type Address, type Hex } from "viem";
 import { packStr, type Desc, type RenderIn, type TokenInfo, type Trust } from "@verbatim/displayvm-ts";
 import { compile, type FunctionSpec } from "@verbatim/vdesc-compiler";
-import { v4ExactInSingleInput, executeData, wrapInput, sweepInput, payPortionInput, v3Input, MSG_SENDER, ADDRESS_THIS, CMD, type PoolKey } from "@verbatim/urrender";
+import { v4ExactInSingleInput, v4ExactInInput, executeData, wrapInput, sweepInput, payPortionInput, v3Input, MSG_SENDER, ADDRESS_THIS, CMD, type PoolKey } from "@verbatim/urrender";
 
 export const ACCOUNT: Address = "0x00000000000000000000000000000000000a11ce";
 export const TOKEN: Address = "0x0000000000000000000000000000000000007070";
@@ -189,6 +189,13 @@ function urCall(r: ReturnType<typeof rng>): Call {
     const rcpt = r.pick([MSG_SENDER, MSG_SENDER, ADDRESS_THIS, BOB, CONTRACT_RECIPIENT]);
     if (kind <= 2) {
       commands.push(CMD.V4_SWAP | flag);
+      if (r.next() < 0.3) {
+        // Multi-hop, with hops that sometimes lie about their last currency relative to TAKE_ALL by way of hostile hooks.
+        const hops = 1 + r.int(5);
+        const path = Array.from({ length: hops }, (_, h) => ({ currency: h % 2 ? TOKEN : TOKEN2, fee: r.pick([100, 500, 3000, 0x800000]), tickSpacing: 60, hooks: r.pick([hook, "0x0000000000000000000000000000000000000000" as Address]), hookData: (r.next() < 0.2 ? "0x1234" : "0x") as Hex }));
+        inputs.push(v4ExactInInput({ currencyIn: TOKEN, path, amountIn: 1n + BigInt(r.int(1e9)), amountOutMinimum: r.next() < 0.3 ? 0n : BigInt(r.int(1e9)), legacyParams }));
+        continue;
+      }
       inputs.push(v4ExactInSingleInput({ key, zeroForOne: z, amountIn: 1n + BigInt(r.int(1e9)), amountOutMinimum: r.next() < 0.3 ? 0n : BigInt(r.int(1e9)), minHopPriceX36: r.next() < 0.2 ? r.uint() : 0n, hookData: r.next() < 0.2 ? r.bytes(r.int(40)) : "0x", settleMax: r.next() < 0.2 ? r.uint() : undefined, takeMin: r.next() < 0.2 ? BigInt(r.int(1e9)) : undefined, legacyParams }));
     } else if (kind === 3) {
       commands.push(CMD.WRAP_ETH | flag);
@@ -346,6 +353,10 @@ export function namedCases(): [string, RenderIn][] {
     ["ur.v4_swap skim hook, no minimum", ur([CMD.V4_SWAP], [v4ExactInSingleInput({ key: { ...key, hooks: SKIM_HOOK }, zeroForOne: true, amountIn: 1000n, amountOutMinimum: 0n })])],
     ["ur.v4_swap attested input hook", ur([CMD.V4_SWAP], [v4ExactInSingleInput({ key: { ...key, hooks: INPUT_HOOK }, zeroForOne: true, amountIn: 1000n, amountOutMinimum: 900n })])],
     ["ur.v4_swap dynamic fee", ur([CMD.V4_SWAP], [v4ExactInSingleInput({ key: { ...key, fee: 0x800000 }, zeroForOne: true, amountIn: 1000n, amountOutMinimum: 900n })])],
+    ["ur.v4_swap_exact_in two hops", ur([CMD.V4_SWAP], [v4ExactInInput({ currencyIn: TOKEN, path: [{ currency: TOKEN2, fee: 3000, tickSpacing: 60, hooks: ZERO_ADDR() }, { currency: WETH, fee: 500, tickSpacing: 10, hooks: INPUT_HOOK }], amountIn: 1000n, amountOutMinimum: 900n })])],
+    ["ur.v4_swap_exact_in legacy layout", ur([CMD.V4_SWAP], [v4ExactInInput({ currencyIn: TOKEN, path: [{ currency: TOKEN2, fee: 3000, tickSpacing: 60, hooks: ZERO_ADDR() }], amountIn: 1000n, amountOutMinimum: 900n, legacyParams: true })], 0n, LEGACY_ROUTER)],
+    ["ur.v4_swap_exact_in no minimum through a skim hook", ur([CMD.V4_SWAP], [v4ExactInInput({ currencyIn: TOKEN, path: [{ currency: TOKEN2, fee: 3000, tickSpacing: 60, hooks: SKIM_HOOK }], amountIn: 1000n, amountOutMinimum: 0n })])],
+    ["ur.v3_swap_exact_in two hops", ur([CMD.V3_SWAP_EXACT_IN], [v3Input({ recipient: MSG_SENDER, amountIn: 1000n, amountOutMin: 900n, path: `0x${TOKEN.slice(2)}000bb8${TOKEN2.slice(2)}0001f4${WETH.slice(2)}` as Hex, payerIsUser: true })])],
     ["ur.wrap_eth", ur([CMD.WRAP_ETH], [wrapInput(MSG_SENDER, 5n)], 5n)],
     ["ur.unwrap_weth", ur([CMD.UNWRAP_WETH], [wrapInput(MSG_SENDER, 5n)])],
     ["ur.sweep", ur([CMD.SWEEP], [sweepInput(TOKEN, MSG_SENDER, 5n)])],

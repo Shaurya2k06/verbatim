@@ -29,6 +29,27 @@ export function v4ExactInSingleInput(a: { key: PoolKey; zeroForOne: boolean; amo
   return encodeAbiParameters([{ type: "bytes" }, { type: "bytes[]" }], [encodePacked(["uint8", "uint8", "uint8"], [ACTION.SWAP_EXACT_IN_SINGLE, ACTION.SETTLE_ALL, ACTION.TAKE_ALL]), [swap, settle, take]]);
 }
 
+export interface PathHop {
+  currency: Address;
+  fee: number;
+  tickSpacing: number;
+  hooks: Address;
+  hookData?: Hex;
+}
+
+/** SWAP_EXACT_IN + SETTLE_ALL + TAKE_ALL. Pass `legacyParams` for the older router's layout, with no per-hop price array. */
+export function v4ExactInInput(a: { currencyIn: Address; path: PathHop[]; amountIn: bigint; amountOutMinimum: bigint; legacyParams?: boolean }): Hex {
+  const out = a.path[a.path.length - 1].currency;
+  const path = a.path.map((h) => ({ intermediateCurrency: h.currency, fee: h.fee, tickSpacing: h.tickSpacing, hooks: h.hooks, hookData: h.hookData ?? ("0x" as Hex) }));
+  const HOP = { name: "path", type: "tuple[]", components: [{ name: "intermediateCurrency", type: "address" }, { name: "fee", type: "uint24" }, { name: "tickSpacing", type: "int24" }, { name: "hooks", type: "address" }, { name: "hookData", type: "bytes" }] };
+  const swap = a.legacyParams
+    ? encodeAbiParameters([{ type: "tuple", components: [{ name: "currencyIn", type: "address" }, HOP, { name: "amountIn", type: "uint128" }, { name: "amountOutMinimum", type: "uint128" }] }], [{ currencyIn: a.currencyIn, path, amountIn: a.amountIn, amountOutMinimum: a.amountOutMinimum }] as never)
+    : encodeAbiParameters([{ type: "tuple", components: [{ name: "currencyIn", type: "address" }, HOP, { name: "minHopPriceX36", type: "uint256[]" }, { name: "amountIn", type: "uint128" }, { name: "amountOutMinimum", type: "uint128" }] }], [{ currencyIn: a.currencyIn, path, minHopPriceX36: [], amountIn: a.amountIn, amountOutMinimum: a.amountOutMinimum }] as never);
+  const settle = encodeAbiParameters([{ type: "address" }, { type: "uint256" }], [a.currencyIn, a.amountIn]);
+  const take = encodeAbiParameters([{ type: "address" }, { type: "uint256" }], [out, a.amountOutMinimum]);
+  return encodeAbiParameters([{ type: "bytes" }, { type: "bytes[]" }], [encodePacked(["uint8", "uint8", "uint8"], [ACTION.SWAP_EXACT_IN, ACTION.SETTLE_ALL, ACTION.TAKE_ALL]), [swap, settle, take]]);
+}
+
 export const executeData = (commands: number[], inputs: Hex[], deadline?: bigint): Hex =>
   deadline === undefined
     ? encodeFunctionData({ abi: ROUTER_ABI, functionName: "execute", args: [`0x${commands.map((c) => c.toString(16).padStart(2, "0")).join("")}`, inputs] })
