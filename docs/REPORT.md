@@ -7,7 +7,7 @@ State of the build at the end of the run. Evidence for every claim: `docs/PROOFS
 | Goal item | Status |
 |---|---|
 | 1. Leg A on the public EF devnet (not Kurtosis): honest 3-frame tx admitted and landed; A1-A7, A9-A12 fail as specified | Done, each with a test and a live proof |
-| 2. I1-I10 tested, all tests pass | Done. 61 Foundry tests, 48 TypeScript tests, 10k-case differential fuzz per CI run |
+| 2. I1-I10 tested, all tests pass | Done. 62 Foundry tests, 48 TypeScript tests, 10k-case differential fuzz per CI run |
 | 3. URRender: v4 swap, WRAP_ETH, hook-flag nodes checked against Hooks.sol, honest swap lands, minOut=0 SkimHook rejected, standalone package | Done |
 | 4. Leg B: official Uniswap contracts, refreshTrust with ENS exclusivity, A8 | Done on Sepolia, via Pimlico and Alchemy |
 | 5. README and all docs | Done |
