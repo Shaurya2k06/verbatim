@@ -28,6 +28,19 @@ importers:
         specifier: ^2.1.0
         version: 2.1.9(@types/node@22.20.5)
 
+  apps/ens-demo:
+    dependencies:
+      '@verbatim/app-kit':
+        specifier: workspace:*
+        version: link:../../packages/app-kit
+      viem:
+        specifier: ^2.21.0
+        version: 2.57.16(typescript@5.9.3)
+    devDependencies:
+      vite:
+        specifier: ^5.4.0
+        version: 5.4.21(@types/node@22.20.5)
+
   apps/evil-frontend:
     dependencies:
       '@verbatim/app-kit':
@@ -130,6 +143,25 @@ importers:
       '@types/qrcode':
         specifier: ^1.5.5
         version: 1.5.6
+
+  packages/attestor-cli:
+    dependencies:
+      '@verbatim/displayvm-ts':
+        specifier: workspace:*
+        version: link:../displayvm-ts
+      '@verbatim/vdesc-compiler':
+        specifier: workspace:*
+        version: link:../vdesc-compiler
+      viem:
+        specifier: ^2.21.0
+        version: 2.57.16(typescript@5.9.3)
+    devDependencies:
+      tsx:
+        specifier: ^4.19.0
+        version: 4.23.15
+      vitest:
+        specifier: ^2.1.0
+        version: 2.1.9(@types/node@22.20.5)
 
   packages/client:
     dependencies:
@@ -250,6 +282,19 @@ importers:
       playwright:
         specifier: ^1.48.0
         version: 1.64.1
+      viem:
+        specifier: ^2.21.0
+        version: 2.57.16(typescript@5.9.3)
+    devDependencies:
+      tsx:
+        specifier: ^4.19.0
+        version: 4.23.15
+
+  tools/gas-report:
+    dependencies:
+      '@verbatim/frames-sdk':
+        specifier: workspace:*
+        version: link:../../packages/frames-sdk
       viem:
         specifier: ^2.21.0
         version: 2.57.16(typescript@5.9.3)

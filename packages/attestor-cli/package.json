@@ -1,0 +1,11 @@
+{
+  "name": "@verbatim/attestor-cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "bin": { "verbatim-attest": "src/cli.ts" },
+  "scripts": { "test": "vitest run" },
+  "dependencies": { "viem": "^2.21.0", "@verbatim/displayvm-ts": "workspace:*", "@verbatim/vdesc-compiler": "workspace:*" },
+  "devDependencies": { "tsx": "^4.19.0", "vitest": "^2.1.0" }
+}

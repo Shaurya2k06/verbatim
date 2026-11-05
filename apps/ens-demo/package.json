@@ -1,0 +1,1 @@
+{ "name": "@verbatim/ens-demo", "private": true, "type": "module", "license": "MIT", "scripts": { "dev": "vite --port 5177 --strictPort", "build": "vite build" }, "dependencies": { "viem": "^2.21.0", "@verbatim/app-kit": "workspace:*" }, "devDependencies": { "vite": "^5.4.0" } }

@@ -18,7 +18,7 @@ export function decodeRevert(text: string): string {
   }
 }
 
-export const frameGas = (r: FrameReceipt) => (r.frameReceipts ?? []).map((f: any) => ({ execution: Number(f.gasUsed?.execution ?? f.gasUsed), state: Number(f.gasUsed?.state ?? 0) }));
+export const frameGas = (r: FrameReceipt) => (r.frameReceipts ?? []).map((f: any) => ({ execution: Number(f.gasUsed?.execution ?? f.gasUsed), state: Number(f.stateGasUsed ?? f.gasUsed?.state ?? 0) }));
 
 export function batchResult(r: FrameReceipt, account: Address): { ok: boolean | null; err: string } {
   const sig = keccak256(toHex("VerbatimResult(bool,bytes)"));
