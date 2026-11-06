@@ -6,6 +6,7 @@
  "scripts": {
   "demo": "tsx demo.ts",
   "record": "tsx demo.ts --record",
+  "record-site": "tsx site-demo.ts",
   "walletconnect": "tsx walletconnect.ts"
  },
  "dependencies": {

@@ -6,7 +6,7 @@
   "license": "MIT",
   "main": "src/core.ts",
   "exports": { ".": "./src/core.ts" },
-  "scripts": { "dev": "vite --port 5173 --strictPort", "build": "vite build", "test": "vitest run" },
+  "scripts": { "dev": "vite --port 5173 --strictPort", "build": "vite build", "android": "./android/build.sh", "test": "vitest run" },
   "dependencies": { "viem": "^2.21.0", "fflate": "^0.8.2", "jsqr": "^1.4.0", "qrcode": "^1.5.4", "@verbatim/displayvm-ts": "workspace:*", "@verbatim/urrender": "workspace:*" },
   "devDependencies": { "vite": "^5.4.0", "vite-plugin-singlefile": "^2.0.0", "vitest": "^2.1.0", "@types/qrcode": "^1.5.5" }
 }

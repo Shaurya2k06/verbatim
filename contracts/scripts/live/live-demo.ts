@@ -2,9 +2,9 @@
 // swap, the honest swap landing, the attack kit, and ENS as the trust root. Owner keys come from the git-ignored .env and sign
 // here, standing in for the offline signer; the device's own refusal rules (packages/signer) are applied to every sentence.
 //
-//   npx tsx live-demo.ts          everything, including 3 mined transactions (about 0.002 Sepolia ETH plus gas)
+//   npx tsx live-demo.ts          everything, including the mined transactions (about 0.003 Sepolia ETH plus gas)
 //   npx tsx live-demo.ts --dry    only what is refused before the mempool: nothing is mined, nothing is paid
-//   npx tsx live-demo.ts --only=B14,A1   just those steps (EOA A2 A2b SWAP A1 A4 A5 A16 A17 A13 B14 ENS)
+//   npx tsx live-demo.ts --only=B14,A1   just those steps (EOA A2 A2b SWAP SWAP-multi SWAP-erc20 A1 A4 A5 A16 A17 A13 UNLIM SPENDER A7 REPLAY WRAP-UR B14 ENS)
 //
 // It does not write contracts/docs/proofs.json: `legb-run.ts` records proofs. This is for watching.
 import { readFileSync } from "node:fs";
@@ -15,7 +15,7 @@ import { sepolia } from "viem/chains";
 import { decodeTree, formatForDevice, packStr } from "@verbatim/displayvm-ts";
 import { review } from "@verbatim/signer";
 import { snapshotTypedData, type PublishedSnapshot } from "@verbatim/snapshot-cli";
-import { CMD, executeData, v4ExactInSingleInput, v4SwapCall } from "@verbatim/urrender";
+import { ADDRESS_THIS, CMD, MSG_SENDER, executeData, sweepInput, v4ExactInInput, v4ExactInSingleInput, v4SwapCall, wrapInput } from "@verbatim/urrender";
 import { ROOT, key, loadEnv } from "./lib/env";
 import { artifact } from "./lib/chain";
 import { RESOLVER_ABI, dnsName, pub } from "./lib/sepolia";
@@ -58,6 +58,7 @@ const CHECKER = artifact("EnsTrustChecker.sol", "EnsTrustChecker").abi as Abi;
 const ERC20 = parseAbi(["function balanceOf(address) view returns (uint256)", "function approve(address,uint256)", "function transfer(address,uint256)"]);
 const PERMIT2 = parseAbi(["function approve(address token, address spender, uint160 amount, uint48 expiration)"]);
 const QUOTER = parseAbi(["struct PoolKey { address currency0; address currency1; uint24 fee; int24 tickSpacing; address hooks; }", "struct QuoteExactSingleParams { PoolKey poolKey; bool zeroForOne; uint128 exactAmount; bytes hookData; }", "function quoteExactInputSingle(QuoteExactSingleParams params) returns (uint256 amountOut, uint256 gasEstimate)"]);
+const QUOTER_PATH = parseAbi(["struct PathKey { address intermediateCurrency; uint24 fee; int24 tickSpacing; address hooks; bytes hookData; }", "struct QuoteExactParams { address exactCurrency; PathKey[] path; uint128 exactAmount; }", "function quoteExactInput(QuoteExactParams params) returns (uint256 amountOut, uint256 gasEstimate)"]);
 const VERBATIM_RESULT = keccak256(toHex("VerbatimResult(bool,bytes)"));
 const TRANSFER = keccak256(toHex("Transfer(address,address,uint256)"));
 
@@ -128,7 +129,7 @@ async function mustReject(id: string, title: string, expect: RegExp, b: Built, s
 }
 
 // ---- the run --------------------------------------------------------------------------------------------------------------
-say(bold("\nVerbatim, live on Sepolia") + dim(`  ${DRY ? "dry run: only what is refused before the mempool" : "full run: includes 3 mined transactions"}`));
+say(bold("\nVerbatim, live on Sepolia") + dim(`  ${DRY ? "dry run: only what is refused before the mempool" : "full run: mines the swaps, the replayed transfer and the standing approval"}`));
 
 step("0", "Preflight", "Sepolia and the bundler answer; the snapshot is fresh; the wallets are funded");
 const [head, eps, accEth, owners, threshold] = await Promise.all([
@@ -200,8 +201,53 @@ if (DRY) {
 }
 
 }
+
+// 4b. The other kinds of swap
+const SWAPS = ["SWAP-multi", "SWAP-erc20"];
+if (SWAPS.some(want)) step("4b", "Other kinds of swap, through the same account", "each is rendered into a sentence, signed, mined, and its guarantees hold: a two-hop route, and tokens in with ETH out");
+const ETH0: Address = "0x0000000000000000000000000000000000000000";
+const deadline = () => BigInt(Math.floor(Date.now() / 1000) + 3600);
+/** Mines one batch and reports what the account received. Shows the device sentence first. */
+async function landed(id: string, title: string, calls: Parameters<typeof build>[0], proof: (r: { ok: boolean; err: string; logs: any[]; gas: bigint }) => { ok: boolean; got: string }) {
+  const b = await build(calls);
+  device(b.tree);
+  if (DRY) return say(dim("   skipped (dry run)"));
+  const r = await submit(b);
+  if ("rejected" in r) return verdict(id, title, false, `refused in validation: ${r.rejected}`);
+  const p = proof(r);
+  verdict(id, title, r.ok && p.ok, r.ok ? `landed: ${p.got}, ${r.gas} gas` : `mined but the batch reverted: ${r.err}`, r.txHash);
+}
+if (want("SWAP-multi")) {
+  say(bold("   SWAP-multi · two hops: ETH → dUSDC → dWETH"));
+  const path = [
+    { currency: dep.tokens.dUSDC as Address, fee: dep.pools.eth.key.fee, tickSpacing: dep.pools.eth.key.tickSpacing, hooks: dep.pools.eth.key.hooks as Address },
+    { currency: dep.tokens.dWETH as Address, fee: dep.pools.erc20.key.fee, tickSpacing: dep.pools.erc20.key.tickSpacing, hooks: dep.pools.erc20.key.hooks as Address },
+  ];
+  const { result: [q] } = await pub.simulateContract({ address: dep.uniswap.quoter, abi: QUOTER_PATH, functionName: "quoteExactInput", args: [{ exactCurrency: ETH0, path: path.map((h) => ({ intermediateCurrency: h.currency, fee: h.fee, tickSpacing: h.tickSpacing, hooks: h.hooks, hookData: "0x" as Hex })), exactAmount: ONE }] });
+  const min = (q * 95n) / 100n;
+  const call = { target: dep.uniswap.router as Address, value: ONE, data: executeData([CMD.V4_SWAP], [v4ExactInInput({ currencyIn: ETH0, path, amountIn: ONE, amountOutMinimum: min, legacyParams: true })], deadline()) };
+  await landed("SWAP-multi", "Two-hop swap", [call], (r) => { const got = received(r.logs, dep.tokens.dWETH, account); return { ok: got >= min, got: `received ${green(formatUnits(got, 18))} dWETH (signed minimum ${formatUnits(min, 18)})` }; });
+}
+if (want("SWAP-erc20")) {
+  say(bold("   SWAP-erc20 · tokens in, ETH out: dUSDC → ETH, with the Permit2 allowance cleared afterwards"));
+  const IN = 1_000_000n;
+  const { result: [q] } = await pub.simulateContract({ address: dep.uniswap.quoter, abi: QUOTER, functionName: "quoteExactInputSingle", args: [{ poolKey: dep.pools.eth.key, zeroForOne: false, exactAmount: IN, hookData: "0x" }] });
+  const min = (q * 95n) / 100n;
+  const calls = [
+    { target: dep.tokens.dUSDC as Address, value: 0n, data: encodeFunctionData({ abi: ERC20, functionName: "approve", args: [dep.uniswap.permit2, IN] }) },
+    { target: dep.uniswap.permit2 as Address, value: 0n, data: encodeFunctionData({ abi: PERMIT2, functionName: "approve", args: [dep.tokens.dUSDC, dep.uniswap.router, IN, Math.floor(Date.now() / 1000) + 600] }) },
+    { target: dep.uniswap.router as Address, value: 0n, data: v4SwapCall({ key: dep.pools.eth.key, zeroForOne: false, amountIn: IN, amountOutMinimum: min, legacyParams: true }, deadline()) },
+  ];
+  await landed("SWAP-erc20", "Tokens in, ETH out", calls, () => ({ ok: true, got: `sold 1 dUSDC for at least ${formatEther(min)} ETH, enforced at execution` }));
+}
+if (want("WRAP-UR")) {
+  say(bold("   WRAP-UR · wrap ETH through the router into a token nobody attested (WETH9 is not in this snapshot)"));
+  const amt = parseEther("0.0001");
+  const call = { target: dep.uniswap.router as Address, value: amt, data: executeData([CMD.WRAP_ETH, CMD.SWEEP], [wrapInput(ADDRESS_THIS, amt), sweepInput(dep.uniswap.weth9, MSG_SENDER, amt)], deadline()) };
+  await mustReject("WRAP-UR", "Wrap into an unattested token", /PolicyRefused/, await build([call]));
+}
 // 5. The attack kit
-if (["A1", "A4", "A5", "A16", "A17", "A13", "B14"].some(want)) step("5", "Attack kit", "every lie about the sentence dies in validation; a lie about effects reverts");
+if (["A1", "A4", "A5", "A16", "A17", "A13", "UNLIM", "SPENDER", "A7", "REPLAY", "WRAP-UR", "B14"].some(want)) step("5", "Attack kit", "every lie about the sentence dies in validation; a lie about effects reverts");
 const bob = dep.ens.recipient as Address;
 const honestT = await build([transfer(bob, 1_000_000n)]);
 if (want("A1")) {
@@ -210,7 +256,9 @@ await mustReject("A1", "Swap the recipient", /TreeMismatch/, await build([transf
 }
 if (want("A4")) {
 say(bold("   A4 · keep the sentence, empty the assertions"));
-await mustReject("A4", "Weaker spec", /SignersNotSortedOrUnknown|SpecMismatch|SpecHashMismatch/, await build([transfer(bob, 1_000_000n)], { override: { tree: honestT.tree, spec: "0x565300020000" } }), honestT.tree);
+// The sentence includes the fee cap, which follows the gas price. Build both copies back to back so only the assertions differ.
+const base4 = await build([transfer(bob, 1_000_000n)]);
+await mustReject("A4", "Weaker spec", /SignersNotSortedOrUnknown|SpecMismatch|SpecHashMismatch/, await build([transfer(bob, 1_000_000n)], { expiry: base4.expiry, override: { tree: base4.tree, spec: "0x565300020000" } }), base4.tree);
 }
 if (want("A5")) {
 say(bold("   A5 · call a contract nobody attested"));
@@ -230,6 +278,45 @@ say(bold("   A13 · a signature that stays valid for hours"));
   const b = await build([transfer(bob, 1_000_000n)], { expiry: BigInt(snapshot.expiry) - 60n });
   const why = deviceRefuses(b);
   verdict("A13", "Future-dated expiry", !!why, why ? `the device refuses to sign: ${bold(why)}` : "the device would have signed it");
+}
+}
+if (want("UNLIM")) {
+say(bold("   UNLIM · an unlimited approval"));
+await mustReject("UNLIM", "Unlimited approval", /PolicyRefused/, await build([{ target: dep.tokens.dUSDC as Address, value: 0n, data: encodeFunctionData({ abi: ERC20, functionName: "approve", args: [dep.uniswap.router, 2n ** 256n - 1n] }) }]));
+}
+if (want("SPENDER")) {
+say(bold("   SPENDER · an approval to a spender nobody vouched for"));
+await mustReject("SPENDER", "Unattested spender", /PolicyRefused/, await build([{ target: dep.tokens.dUSDC as Address, value: 0n, data: encodeFunctionData({ abi: ERC20, functionName: "approve", args: [hookAttacker, 1_000_000n] }) }]));
+}
+if (want("A7")) {
+say(bold("   A7 · a held signature, sent after it expired"));
+{
+  const exp = (await pub.getBlock()).timestamp + 25n;
+  const b = await build([transfer(bob, 1_000_000n)], { expiry: exp });
+  say(dim("   signed with 25 seconds of validity; the host holds it back until it has expired…"));
+  while (BigInt(Math.floor(Date.now() / 1000)) <= exp + 20n) await new Promise((r) => setTimeout(r, 2000));
+  device(b.tree);
+  const r = await submit(b);
+  if ("rejected" in r) verdict("A7", "Stale signature", true, `rejected in validation, never reached the mempool: ${bold(r.rejected)}`);
+  else verdict("A7", "Stale signature", false, `it was mined (${r.ok ? "batch ok" : r.err})`, r.txHash);
+}
+}
+if (want("REPLAY")) {
+say(bold("   REPLAY · the same signed operation, sent twice"));
+if (DRY) say(dim("   skipped (dry run): the first copy is mined"));
+else {
+  const b = await build([transfer(bob, 1_000_000n)]);
+  const first = await submit(b);
+  if ("rejected" in first) verdict("REPLAY", "Replay", false, `the first copy was refused: ${first.rejected}`);
+  else {
+    say(dim(`   the first copy landed; sending the identical operation again`));
+    try {
+      await sendOp(BUNDLER, b.op);
+      verdict("REPLAY", "Replay", false, "the second copy was admitted");
+    } catch (e) {
+      verdict("REPLAY", "Replay", true, `the second copy was refused by the bundler: ${bold(String((e as Error).message).split("\n")[0].slice(0, 110))}`, first.txHash);
+    }
+  }
 }
 }
 if (want("B14")) {
@@ -277,7 +364,7 @@ const check = async (fn: string, args: unknown[]) => {
 say(`\n${bold("── Summary")}`);
 for (const r of results) say(`   ${r.ok ? green("✓") : red("✗")} ${r.id.padEnd(9)} ${r.title}${r.link ? dim(`  ${r.link.slice(0, 12)}…`) : ""}`);
 const failed = results.filter((r) => !r.ok);
-const attacks = results.filter((r) => !["EOA", "SWAP", "ENS-pub", "ENS-name"].includes(r.id));
+const attacks = results.filter((r) => !["EOA", "SWAP", "SWAP-multi", "SWAP-erc20", "ENS-pub", "ENS-name"].includes(r.id));
 say(`\n   ${attacks.filter((r) => r.ok).length} of ${attacks.length} attacks stopped where expected · ${bold(green("$0 stolen from the Verbatim account"))}${DRY ? "" : `\n   ${results.filter((r) => r.link).length} transactions mined this run`}`);
 if (failed.length) {
   say(red(`   ${failed.length} step(s) did not go as expected`));

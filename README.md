@@ -113,7 +113,7 @@ Trusted: the device's decoder and screen, the owners' keys, the attestor quorum 
 | `contracts/src/trust/` | TrustStore, `refreshTrust`, the ENS exclusivity proof, the ENS trust anchor |
 | `contracts/src/stateless/` | The proof-reading renderer and the revocation registry |
 | `contracts/src/leg-b/` | The same logic behind ERC-4337: any bundler, no paymaster |
-| `packages/signer` | Offline signer: one HTML file |
+| `packages/signer` | Offline signer: one HTML file, or an Android app with no internet permission (`android/`) |
 | `client/` | The hosted site. `client/apps/` holds the earlier wallet, swap demo, attack kit and ENS check |
 | `server/` | The API and the only place secrets live |
 | `contracts/scripts/` | `live` (deploys and proofs), `difffuzz`, `gas-report`, `e2e` (demo and video), `uniswap-evil` (the real-interface attack) |
@@ -144,7 +144,7 @@ pnpm --filter @verbatim/ens-demo dev       # :5177  ENS exclusivity for any name
 pnpm --filter @verbatim/hook-xray dev      # :5178  what a v4 hook may do, from its address
 ```
 
-The account is 2-of-3, so each page needs two owners. Paste an owner key into the signer, and another into the page's "Laptop owner" field. Keys stay in the browser. The camera needs HTTPS or localhost; otherwise copy and paste the request and signature. `pnpm --filter @verbatim/signer build` gives a single `dist/index.html` to load once and use in airplane mode.
+The account is 2-of-3, so each page needs two owners. Paste an owner key into the signer, and another into the page's "Laptop owner" field. Keys stay in the browser. The camera needs HTTPS or localhost; otherwise copy and paste the request and signature. `pnpm --filter @verbatim/signer build` gives a single `dist/index.html` to load once and use in airplane mode. For a phone, `pnpm --filter @verbatim/signer android` builds `packages/signer/android/build/verbatim-signer.apk` (Android SDK and JDK 17, no Gradle); install it with `adb install -r`. Its only permission is the camera, so Android gives it no network at all, which anyone can check in the phone's app settings.
 
 If the honest swap fails with `V4TooLittleReceived`, the slippage check is working: enough demo swaps have moved the pool. Snapshots last 6 hours, so before a demo rerun `legb-deploy.ts` on Sepolia and refresh the devnet.
 

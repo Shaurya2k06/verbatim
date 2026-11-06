@@ -2,7 +2,8 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { ROOT } from "./env";
 
-const FILE = resolve(ROOT, "contracts/docs/proofs.json");
+// VERBATIM_PROOFS_FILE sends a verification run somewhere else, so watching the demo never rewrites the committed evidence.
+const FILE = process.env.VERBATIM_PROOFS_FILE ?? resolve(ROOT, "contracts/docs/proofs.json");
 
 export interface Proof {
   id: string;

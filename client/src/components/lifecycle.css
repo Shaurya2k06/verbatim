@@ -1,0 +1,158 @@
+/* The lifecycle walkthrough on /demo. Uses the site's theme variables, so it follows whichever theme the page is in. */
+.lifecycle .lc-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0 8px;
+}
+.lc-flow {
+  position: relative;
+  display: grid;
+  gap: 12px;
+  margin: 20px 0 12px;
+}
+.lc-phase {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  transition:
+    border-color 300ms ease,
+    opacity 300ms ease;
+}
+.lc-phase.is-pending {
+  opacity: 0.5;
+}
+.lc-phase.is-active {
+  border-color: var(--warn, var(--ink));
+}
+.lc-phase.is-done {
+  border-color: color-mix(in srgb, var(--ok) 45%, var(--line));
+}
+.lc-phase.is-stopped {
+  border-color: var(--risk);
+}
+.lc-phase > header {
+  display: grid;
+  grid-template-columns: 32px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+}
+.lc-phase h3 {
+  margin: 0;
+  font-size: 15px;
+}
+.lc-phase header p {
+  margin: 2px 0 0;
+}
+.lc-id {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--soft, rgba(255, 255, 255, 0.06));
+  font-weight: 700;
+}
+.lc-body {
+  padding: 0 14px 14px 58px;
+  min-width: 0;
+}
+@media (max-width: 600px) {
+  .lc-body {
+    padding-left: 14px;
+  }
+}
+.lc-steps {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 12px;
+}
+.lc-steps li {
+  min-width: 0;
+}
+.lc-steps .sentence {
+  margin: 8px 0;
+}
+.lc-guarantees {
+  margin: 6px 0;
+  padding-left: 18px;
+}
+.lc-guarantees li {
+  margin: 2px 0;
+}
+.lc-risks {
+  margin-top: 8px;
+}
+.lifecycle code {
+  overflow-wrap: anywhere;
+  word-break: break-all;
+}
+.lc-table {
+  width: 100%;
+  margin: 8px 0;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.lc-table th,
+.lc-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+.lc-table th {
+  color: var(--mute);
+  font-weight: 500;
+}
+.lc-log {
+  margin: 8px 0 0;
+  padding-left: 0;
+  list-style: none;
+  font-size: 12px;
+}
+.lc-log li {
+  padding: 2px 0;
+}
+.lc-log li > span {
+  display: inline-block;
+  min-width: 44px;
+  color: var(--mute);
+}
+.lc-log li.is-bad {
+  color: var(--risk);
+}
+.lc-log li.is-ok {
+  color: var(--ok);
+}
+
+/* The transactions dropdown on /demo */
+.txlog > summary {
+  cursor: pointer;
+}
+.txlog-table td,
+.txlog-table th {
+  vertical-align: top;
+}
+.txlog .lc-table {
+  margin-top: 12px;
+}
+
+/* The recorded attack on Uniswap's real interface, on /demo */
+.uni-video {
+  margin: 16px 0;
+}
+.uni-video video {
+  display: block;
+  width: 100%;
+  max-width: 960px;
+  aspect-ratio: 1280 / 900;
+  border-radius: 12px;
+  background: #000;
+  box-shadow: 0 0 0 1px var(--line);
+}
+.uni-video figcaption {
+  max-width: 960px;
+  margin-top: 8px;
+}

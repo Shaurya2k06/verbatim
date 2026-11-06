@@ -1,7 +1,7 @@
 // The device's whole trust base: decode strictly, show every node, sign only what was shown.
 // `treeHash` is computed here from the displayed bytes and never accepted from the host.
 import { gunzipSync, gzipSync, strFromU8, strToU8 } from "fflate";
-import { hashTypedData, keccak256, type Hex } from "viem";
+import { hashTypedData, keccak256, toBytes, type Hex } from "viem";
 import { decodeTree, formatForDevice, specOf, type DecodedTree, type DeviceLine } from "@verbatim/displayvm-ts";
 
 export interface Request {
@@ -36,26 +36,59 @@ export function decodeRequest(text: string): Request {
   return { tree: o.t, txCommit: o.c };
 }
 
-/** Splits for an animated QR, when one code would be too dense to scan. */
-export function toFrames(payload: string, size = 700): string[] {
+/**
+ * Splits a request into a rotating QR. Small frames scan quickly from a laptop screen, and the host shows them in a loop, so a
+ * missed frame simply comes round again. Each frame names the whole payload by its hash: frames from two requests never mix, and
+ * the reassembled text is checked against that hash before it is used.
+ */
+export const FRAME_SIZE = 260;
+export function toFrames(payload: string, size = FRAME_SIZE): string[] {
   if (payload.length <= size) return [payload];
-  const parts = payload.match(new RegExp(`.{1,${size}}`, "g"))!;
-  return parts.map((p, i) => `VBF1:${i + 1}/${parts.length}:${p}`);
+  const id = payloadId(payload);
+  const parts = payload.match(new RegExp(`.{1,${size}}`, "gs"))!;
+  return parts.map((p, i) => `VBF2:${id}:${i + 1}/${parts.length}:${p}`);
 }
+
+const payloadId = (payload: string) => keccak256(toBytes(payload)).slice(2, 10);
 
 export class FrameCollector {
   parts = new Map<number, string>();
   total = 0;
-  /** Returns the whole payload once every frame has been seen. */
+  id = "";
+  /** Frames seen so far of the current payload, for a progress bar. */
+  get seen() {
+    return this.parts.size;
+  }
+  /** Returns the whole payload once every frame has been seen, and null until then. A plain, unframed code is returned as is. */
   add(text: string): string | null {
-    const m = text.match(/^VBF1:(\d+)\/(\d+):(.*)$/s);
+    const m = text.match(/^VBF2:([0-9a-f]{8}):(\d+)\/(\d+):(.*)$/s) ?? text.match(/^VBF1:()(\d+)\/(\d+):(.*)$/s);
     if (!m) return text;
-    this.total = Number(m[2]);
-    this.parts.set(Number(m[1]), m[3]);
+    const [, id, i, n, part] = m;
+    const total = Number(n);
+    const at = Number(i);
+    if (!total || at < 1 || at > total) return null;
+    // A different request on the screen: start over rather than mix the two.
+    if (id !== this.id || total !== this.total) {
+      this.parts.clear();
+      this.id = id;
+      this.total = total;
+    }
+    this.parts.set(at, part);
     if (this.parts.size < this.total) return null;
-    return Array.from({ length: this.total }, (_, i) => this.parts.get(i + 1)).join("");
+    const whole = Array.from({ length: this.total }, (_, k) => this.parts.get(k + 1)).join("");
+    if (id && payloadId(whole) !== id) {
+      this.parts.clear();
+      return null;
+    }
+    return whole;
   }
 }
+
+/**
+ * A short code from the request's EIP-712 digest. The laptop shows it next to its QR and the device shows it after reviewing,
+ * so a person can see both screens hold the same request. It proves nothing about the sentence's truth: the chain checks that.
+ */
+export const matchCode = (digest: Hex) => `${digest.slice(2, 6)}-${digest.slice(6, 10)}`.toUpperCase();
 
 /** The longest a device will sign for, in seconds. A signature that outlives this is durable authority. */
 export const DEVICE_MAX_TTL = 600;

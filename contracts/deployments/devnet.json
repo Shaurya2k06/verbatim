@@ -7,74 +7,74 @@
   "explorer": "https://explorer.altmempool.wtf/",
   "stakingRegistry": "0xd51c04d7a0b01124e84de152f4e56d9eecb22d2f",
   "expiryVerifier": "0x0000000000000000000000000000000000008141",
-  "frameReader": "0xce7fa549a164446fc7845590e2de2ce3a8fda362",
-  "statelessRenderer": "0x72d126b14365a9a0d43cc76d3b4c39ee3ad11640",
-  "revocations": "0x079dd5d556ebd5a4b965fe0d9a3fe7750fdb2be0",
-  "trustAdmin": "0x30d3630630a8287a500a1dc6aee65be64a349cb8",
-  "account": "0xb357bb4ce9a5c8c03bf106e5652d3a7014fde225",
-  "emptyDepositAccount": "0x354127ba9d914f859248129b3dbc0918dde48575",
-  "paymaster": "0x004ecc066292c1fe27109f96c3fd1413053e5d73",
-  "accountCodehash": "0x1a105471389e63e8451956d46a5d04357c2435d88d9fc9924725a3fcafde2ec7",
+  "frameReader": "0x8907a2fa21ab2441780a83d8ac461aaf0dc3c330",
+  "statelessRenderer": "0xc571fb9de20dee9a3a3772a646ca0c9dfd19c8aa",
+  "revocations": "0x87b0b74372237f2a8cbc247c80c9934b200cf7fd",
+  "trustAdmin": "0x1b6a7ade7001e2d4ffa845316cc10b618fa64645",
+  "account": "0x9dba20677c171d6f2771633bcd234684d0201637",
+  "emptyDepositAccount": "0x6f603e4c850d72d72c6c64bf43fbc8c66bcd589d",
+  "paymaster": "0x2b4ee3f3ee22f47a7ca95965a1dd4a55825c9933",
+  "accountCodehash": "0xbb1f13b0c82a82847c1a464a7466ab7167c00ca08d30af6e8f1f37df8bf57312",
   "deployTxs": {
-    "admin": "0xcd6efd78a428b4355e9d159791473eea13e1e2bba94d5ecfeee7356633cc91a1",
-    "account": "0x9c794b116568fcb0a9a96e4c2a29064a5d3a7ca1c32f7df9879e0f3fc467dabc",
-    "paymaster": "0x10ad81393d2ba0cd5c3f0ec4a08c3845a880e9133a8fde7db667626cb6d75be8"
+    "admin": "0x1a69b86a4d9e48827599ba2934b3fb514f23a4fdbb79bc187c27fa55e2977a84",
+    "account": "0x80067fc9aeadd9a85a1464e5d8c58a8def2e7b921f8606c595036dbd63e957b5",
+    "paymaster": "0x93b73a49ba25af1b5e12a8da1ae649f06a339378b4a9c9974278b751d59ccf33"
   },
-  "stakeTx": "0xd998452dcd9c1281c7fd16cfe96cbf56ec21a0506a97c0592b64d3ab971de2f1",
-  "refreshTrustTx": "0xc8b8e46d6d16f4f076fd3f4448a6e679e6276f480d0ba58c42ff75b703e29e0b",
+  "stakeTx": "0xcba665c2ee2cdebdd77cabdf39c55ec9e3cd84611f23649a6167ca736ee924f3",
+  "refreshTrustTx": "0xb0b045050f067ad6b81df2dbc0056736a49d081ae7eb0e98e9bffb56dd4d7d9a",
   "tokens": {
-    "dUSDC": "0xd50c1b8343134459aad922026bbbe7ea947ef81b",
-    "dWETH": "0xcae90face696bfe55456312a5d203e2fa8bf40b0"
+    "dUSDC": "0xc3618ae7ad84de614f0f9c4fbe8db6f2657f322c",
+    "dWETH": "0x0933b8f68abc8e0f723a91ecbb4c1d344d90dc5c"
   },
-  "evilVault": "0xfccca7d9af522c8fbcba85e25a6b4d07ad8f0fbb",
+  "evilVault": "0xa67e026b1619f7cb4a94123e6fa380eec6ca7a8f",
   "skimHook": "0x5922EaBd0E54cAb41215937A531C71562e748044",
-  "gasBurner": "0xf7f3aa5639482153949f697315843490d89a4ec6",
-  "returnBomb": "0xc0fed75e4c748b94ebd28ddc87b2aa810d1d6da4",
-  "reenterer": "0x89047731d95cb82f3753fc9bf5e087e8dac476e6",
+  "gasBurner": "0x5980e98f264ff2ef3f4c753885e918a930a4a1b3",
+  "returnBomb": "0xeabcd3a670d343cef2cff9368157471c895dc2b4",
+  "reenterer": "0x94e43d0161fd3c3386a3d7bfd5a6bc86644b5fa9",
   "pools": {
     "honest": {
       "key": {
         "currency0": "0x0000000000000000000000000000000000000000",
-        "currency1": "0xd50c1b8343134459aad922026bbbe7ea947ef81b",
+        "currency1": "0xc3618ae7ad84de614f0f9c4fbe8db6f2657f322c",
         "fee": 3000,
         "tickSpacing": 60,
         "hooks": "0x0000000000000000000000000000000000000000"
       },
-      "init": "0x936f82c89375573915cdb7b935ae10636328f6ff4dfa791c60e5801fe581c8b9",
-      "liquidity": "0x64042ab6218ea4de0b683eb30bc16982da75402d94fd3600b0b5b22d76ec0c15"
+      "init": "0xe676666d9e7bf9e498c487b762d69f43c9e25bcb125aad3992cdbb19bc794a02",
+      "liquidity": "0x93b5cd1efd7c8f98240435d5c6fefc253a3d832a9d3107870544a0627a8cc941"
     },
     "evil": {
       "key": {
         "currency0": "0x0000000000000000000000000000000000000000",
-        "currency1": "0xd50c1b8343134459aad922026bbbe7ea947ef81b",
+        "currency1": "0xc3618ae7ad84de614f0f9c4fbe8db6f2657f322c",
         "fee": 3000,
         "tickSpacing": 60,
         "hooks": "0x5922EaBd0E54cAb41215937A531C71562e748044"
       },
-      "init": "0xb4964061d997c275241dd4bc73eef179b84ffb9dc982ec68bb12bfe0d5591baa",
-      "liquidity": "0x7e8f49d21ed3f28a9134c84b5d3b0ffe0c2d96fd066237f7bf369fed99a43477"
+      "init": "0xf90ff43a4e0dae84dcf0d19506fd7bb356077e784504a7e6ee0ca0b191aee4c6",
+      "liquidity": "0xbb973b85bb000a336496e66bf4d17d6a3f3672029e0fbcc648b773a27925763c"
     },
     "erc20Honest": {
       "key": {
-        "currency0": "0xcae90face696bfe55456312a5d203e2fa8bf40b0",
-        "currency1": "0xd50c1b8343134459aad922026bbbe7ea947ef81b",
+        "currency0": "0x0933b8f68abc8e0f723a91ecbb4c1d344d90dc5c",
+        "currency1": "0xc3618ae7ad84de614f0f9c4fbe8db6f2657f322c",
         "fee": 3000,
         "tickSpacing": 60,
         "hooks": "0x0000000000000000000000000000000000000000"
       },
-      "init": "0x884b813fd324b760e2796d6decc262a836ff1bcdef4fb769766292e56b02993c",
-      "liquidity": "0x0788d6ccad777afbfda516b26a1dbfde5ac801e342509c63679979f60741535a"
+      "init": "0xdaaa27230f2c2408b96e722064599c6555e02d9f8f714255eae797690f716059",
+      "liquidity": "0x5f078cc91e41918ef90b7adafd6ee6f42dcee0e4e7d37edebf4a24b28c3ae398"
     },
     "erc20Evil": {
       "key": {
-        "currency0": "0xcae90face696bfe55456312a5d203e2fa8bf40b0",
-        "currency1": "0xd50c1b8343134459aad922026bbbe7ea947ef81b",
+        "currency0": "0x0933b8f68abc8e0f723a91ecbb4c1d344d90dc5c",
+        "currency1": "0xc3618ae7ad84de614f0f9c4fbe8db6f2657f322c",
         "fee": 3000,
         "tickSpacing": 60,
         "hooks": "0x5922EaBd0E54cAb41215937A531C71562e748044"
       },
-      "init": "0x297333b3c3b0a34742e7c0731c85f859c0d4c92398142fcf2962154bbacee3fa",
-      "liquidity": "0xe90e34976bcf96e0036675fe6c0efcb3546267b6b3e5e1bd23fc0fbed1413878"
+      "init": "0xc500ecb2c26aaaaded0ac569bcd823d1382ad440d2bc59d7b2cecb95a6da8bdf",
+      "liquidity": "0x5106dbadbc67d588e20f64291e81bcc2d21614ac9fd04147ab042a24dd11e032"
     }
   },
   "uniswap": {

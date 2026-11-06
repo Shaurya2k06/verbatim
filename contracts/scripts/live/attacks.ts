@@ -325,6 +325,12 @@ const steps: Step[] = [
         await attest(st.feeFailPaymaster, u);
         writeState({ feeFailAttested: true });
       }
+      {
+        // This side deployment's snapshot lasts six hours like any other: renew it, root unchanged, when it is about to lapse.
+        const STORE = parseAbi(["function trustEpoch() view returns (uint64)", "function snapshot() view returns (bytes32 root, uint64 issuedAt, uint64 expiry)"]);
+        const [epoch, [root, , exp]] = await Promise.all([pub.readContract({ address: st.feeFailPaymaster, abi: STORE, functionName: "trustEpoch" }), pub.readContract({ address: st.feeFailPaymaster, abi: STORE, functionName: "snapshot" })]);
+        if (Number(exp) - Number((await pub.getBlock()).timestamp) < 3600) await attest(st.feeFailPaymaster, emptyUpdate(epoch + 1n, root));
+      }
       const before = await bal(st.tokenA, st.feeFailAccount);
       const call: Call = { target: st.tokenA, value: 0n, data: encodeFunctionData({ abi: ERC20, functionName: "transfer", args: [victim, 1n] }) };
       const p = await prepareTx([call], { trust: new ChainTrust(pub as never, st.feeFailPaymaster), account: st.feeFailAccount, paymaster: st.feeFailPaymaster });

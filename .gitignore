@@ -11,5 +11,7 @@ contracts/.state/
 .DS_Store
 coverage/
 contracts/scripts/e2e/.video/
+contracts/scripts/e2e/.video-site/
 contracts/docs/demo/*.mp4
 contracts/docs/demo/*.webm
+packages/signer/android/build/

@@ -1,0 +1,357 @@
+/* The site's landing theme (client/src/landing/landing.css), cut down for a phone: Geist Mono and Geist Pixel, the dark palette,
+   framed panels with a title bar, and bracketed buttons. Fonts are bundled into the single HTML file, so it stays offline. */
+
+/* Geist, by Vercel and basement.studio. SIL Open Font License: fonts/GEIST-LICENSE.txt */
+@font-face {
+  font-family: "Geist Mono";
+  src: url("./fonts/GeistMono-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: block;
+}
+@font-face {
+  font-family: "Geist Pixel";
+  src: url("./fonts/GeistPixel-Square.woff2") format("woff2");
+  font-weight: 400;
+  font-display: block;
+}
+
+:root {
+  color-scheme: dark;
+  --bg: #08090d;
+  --panel: #10121a;
+  --ink: #e9ecf3;
+  --mute: #8d94a5;
+  --line: #1f2330;
+  --soft: #151822;
+  --risk: #ff6b5a;
+  --riskbg: rgba(255, 107, 90, 0.12);
+  --ok: #8dffb0;
+  --okbg: rgba(141, 255, 176, 0.1);
+  --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --head: "Geist Pixel", "Geist Mono", ui-monospace, monospace;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 15px / 22px var(--mono);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+::selection {
+  background: var(--ink);
+  color: var(--bg);
+}
+main {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 100vh;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 32px 24px 40px;
+}
+
+/* Header */
+.brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.mark {
+  flex: none;
+  fill: var(--ok);
+}
+h1 {
+  margin: 0;
+  font: 400 28px / 28px var(--head);
+  letter-spacing: -0.01em;
+}
+.eyebrow {
+  margin: 14px 0 6px;
+  text-align: center;
+  color: var(--ok);
+  font-size: 12px;
+  line-height: 16px;
+}
+.sub {
+  margin: 0 auto 28px;
+  max-width: 32em;
+  text-align: center;
+  color: var(--mute);
+  font-size: 13px;
+  line-height: 20px;
+  text-wrap: pretty;
+}
+
+/* Panels: the landing page's device frame */
+.panel {
+  margin-bottom: 16px;
+  border-radius: 12px;
+  background: var(--panel);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 30px 80px -30px rgba(0, 0, 0, 0.9);
+  overflow: hidden;
+  animation: rise 400ms var(--ease);
+}
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--line);
+  color: var(--mute);
+  font-size: 12px;
+  line-height: 16px;
+}
+.bar .dots {
+  display: inline-flex;
+  gap: 6px;
+}
+.bar .dots i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--line);
+}
+.body {
+  padding: 14px;
+}
+
+/* The sentence */
+.line {
+  padding: 2px 0;
+  color: var(--mute);
+  font-size: 13px;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+  animation: rise 400ms var(--ease) both;
+}
+.guarantee {
+  padding: 2px 0;
+  color: var(--ink);
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+  animation: rise 400ms var(--ease) both;
+}
+.guarantee::before {
+  content: "✓ ";
+  color: var(--ok);
+}
+.risk {
+  margin: 4px 0;
+  padding: 6px 10px;
+  border-radius: 4px;
+  background: var(--riskbg);
+  color: var(--risk);
+  font-weight: 600;
+  font-size: 13px;
+  line-height: 20px;
+  animation: rise 400ms var(--ease) both;
+}
+.mono {
+  color: var(--mute);
+  font-size: 11px;
+  line-height: 18px;
+  overflow-wrap: anywhere;
+}
+.mono b {
+  color: var(--ink);
+  font-weight: 500;
+}
+.ok {
+  color: var(--ok);
+}
+.err {
+  margin-top: 12px;
+  padding: 8px 10px;
+  border-radius: 4px;
+  background: var(--riskbg);
+  color: var(--risk);
+  font-weight: 600;
+  font-size: 13px;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}
+
+/* Inputs */
+textarea,
+input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 4px;
+  background: var(--soft);
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--ink);
+  font: 400 12px / 18px var(--mono);
+  outline: none;
+  transition: box-shadow 300ms var(--ease);
+}
+textarea:focus,
+input:focus {
+  box-shadow: inset 0 0 0 1px var(--ok);
+}
+textarea::placeholder,
+input::placeholder {
+  color: var(--mute);
+  opacity: 0.7;
+}
+textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+/* Buttons: [ like the site ] */
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+button {
+  display: inline-flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px rgba(233, 236, 243, 0.32);
+  color: var(--ink);
+  font: 600 14px / 20px var(--mono);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color 300ms var(--ease),
+    box-shadow 300ms var(--ease);
+}
+button::before {
+  content: "[";
+  margin-right: 8px;
+  opacity: 0.5;
+}
+button::after {
+  content: "]";
+  margin-left: 8px;
+  opacity: 0.5;
+}
+button:active {
+  transform: translateY(1px);
+  background: rgba(233, 236, 243, 0.08);
+}
+button.primary {
+  background: var(--ink);
+  box-shadow: none;
+  color: var(--bg);
+}
+button.primary:active {
+  background: #fff;
+  box-shadow: 0 0 32px -4px rgba(255, 255, 255, 0.45);
+}
+button.danger {
+  color: var(--risk);
+  box-shadow: inset 0 0 0 1px rgba(255, 107, 90, 0.45);
+}
+
+video,
+canvas {
+  display: block;
+  max-width: 100%;
+  margin-top: 12px;
+  border-radius: 8px;
+}
+canvas.qr {
+  margin: 0 auto 12px;
+  padding: 10px;
+  background: #fff;
+}
+[hidden] {
+  display: none !important;
+}
+.foot {
+  margin-top: 24px;
+  color: var(--mute);
+  font-size: 11px;
+  line-height: 16px;
+  text-align: center;
+}
+.caret::after {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 13px;
+  margin-left: 6px;
+  background: var(--ok);
+  vertical-align: -2px;
+  animation: blink 900ms steps(2) infinite;
+}
+@keyframes blink {
+  to {
+    visibility: hidden;
+  }
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Scanning the rotating QR, and the code both screens show */
+.progress {
+  margin-top: 12px;
+}
+.cells {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+.cells i {
+  flex: 1 0 14px;
+  max-width: 28px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--line);
+  transition: background-color 200ms var(--ease);
+}
+.cells i.on {
+  background: var(--ok);
+}
+.match {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 12px 0 6px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--okbg);
+  color: var(--mute);
+  font-size: 12px;
+}
+.match b {
+  color: var(--ok);
+  font: 400 24px / 28px var(--head);
+  letter-spacing: 0.06em;
+}

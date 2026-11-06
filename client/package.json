@@ -24,6 +24,7 @@
     "@walletconnect/core": "^2.26.0",
     "@walletconnect/utils": "^2.26.0",
     "aos": "2.3.4",
+    "jsqr": "^1.4.0",
     "marked": "^15.0.12",
     "qrcode": "^1.5.4",
     "react": "^19.3.1",

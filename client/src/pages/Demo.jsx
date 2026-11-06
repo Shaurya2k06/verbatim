@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { formatUnits, parseAbi, parseEther } from "viem";
 import { Pill } from "../components/Badge";
+import { Lifecycle } from "../components/Lifecycle";
+import { TxLog } from "../components/TxLog";
 import { OpRunner } from "../components/OpRunner";
 import { ProofRef } from "../components/ProofRef";
 import { Loading } from "../components/States";
@@ -37,7 +39,7 @@ function useSetup(dep, amount) {
 }
 
 /** The left column: the same swap from an ordinary wallet, sent by the server's throwaway EOA. */
-function Ordinary({ dep, setup, tamper, route }) {
+function Ordinary({ dep, setup, tamper, route, onTx }) {
   const [r, setR] = useState(null);
   const run = async () => {
     setR({ running: true });
@@ -47,7 +49,10 @@ function Ordinary({ dep, setup, tamper, route }) {
       const { hash, from } = await apiPost("/demo/eoa-swap", { data: call.data, value: call.value });
       setR({ running: true, hash });
       const rc = await sepoliaPublic().waitForTransactionReceipt({ hash, timeout: 180_000 });
-      setR({ hash, status: rc.status, got: received(rc.logs, dep.tokens.dUSDC, from), took: received(rc.logs, dep.tokens.dUSDC, setup.attacker) });
+      const got = received(rc.logs, dep.tokens.dUSDC, from);
+      const took = received(rc.logs, dep.tokens.dUSDC, setup.attacker);
+      setR({ hash, status: rc.status, got, took });
+      onTx?.({ label: "Ordinary wallet, tampered frontend", kind: took > got ? "skimmed" : rc.status === "success" ? "landed" : "reverted", txHash: hash, block: rc.blockNumber.toString(), gas: rc.gasUsed.toString() });
     } catch (e) {
       setR({ error: e.message });
     }
@@ -94,7 +99,7 @@ const VARIANTS = {
   honest: { label: "Honest swap", expect: "Admitted and landed, with the minimum output enforced at execution." },
 };
 
-function Verbatim({ dep, setup, tamper, route, live }) {
+function Verbatim({ dep, setup, tamper, route, live, onTx }) {
   const [variant, setVariant] = useState(null);
   useEffect(() => {
     setVariant(null);
@@ -122,7 +127,7 @@ function Verbatim({ dep, setup, tamper, route, live }) {
       {variant ? (
         <>
           <div className="callout small">Expected: {VARIANTS[variant].expect}</div>
-          <OpRunner key={variant} spec={spec} account={setup.account} claimedTitle={variant === "tampered" ? "The device shows (the frontend's sentence)" : "The device shows"} actualTitle="What the calldata really does" />
+          <OpRunner key={variant} spec={spec} account={setup.account} onEvent={(e) => e.stage === "done" && onTx?.({ label: `Verbatim: ${VARIANTS[variant].label}`, kind: e.outcome === "rejected-at-validation" ? "rejected" : e.outcome, txHash: e.txHash, userOpHash: e.userOpHash, block: e.receipt?.receipt?.blockNumber ? String(BigInt(e.receipt.receipt.blockNumber)) : undefined, gas: e.receipt?.actualGasUsed ? String(BigInt(e.receipt.actualGasUsed)) : undefined, error: e.outcome === "rejected-at-validation" ? e.error?.slice(0, 40) : undefined })} claimedTitle={variant === "tampered" ? "The device shows (the frontend's sentence)" : "The device shows"} actualTitle="What the calldata really does" />
           {variant === "honest" ? (
             <p className="small">
               Why this path costs what it does: <Link to="/mempool">the measured comparison →</Link>
@@ -148,6 +153,8 @@ export default function Demo() {
   const amountOk = /^\d*\.?\d+$/.test(amount) && parseEther(amount) > 0n && parseEther(amount) <= parseEther("0.001");
   const setup = useSetup(amountOk ? dep : null, amount);
   const live = stateOf("sepolia") === "live";
+  const [txs, setTxs] = useState([]);
+  const addTx = (t) => setTxs((x) => [...x, { id: `${Date.now()}-${x.length}`, at: Date.now(), ...t }]);
   const manifest = useData("manifest.json");
   void manifest;
 
@@ -184,6 +191,7 @@ export default function Demo() {
           </span>
         </label>
       </div>
+      <TxLog entries={txs} onClear={() => setTxs([])} />
       {leg === "devnet" ? (
         <div className="panel">
           <div className="callout">The frames devnet leg runs the same swap through the alternative mempool. It is not producing blocks right now, so here are its recorded runs.</div>
@@ -212,8 +220,8 @@ export default function Demo() {
             The honest pool quotes {fmt(setup.expected)} dUSDC for {amount} ETH right now (Uniswap v4 Quoter). The frontend claims at least {fmt(setup.minOut)}, after 1% slippage.
           </p>
           <div className="sidebyside">
-            <Ordinary dep={dep} setup={setup} tamper={tamper} route={route} />
-            <Verbatim dep={dep} setup={setup} tamper={tamper} route={route} live={live} />
+            <Ordinary dep={dep} setup={setup} tamper={tamper} route={route} onTx={addTx} />
+            <Verbatim dep={dep} setup={setup} tamper={tamper} route={route} live={live} onTx={addTx} />
           </div>
         </>
       )}
@@ -225,6 +233,15 @@ export default function Demo() {
         <p>
           The same attack as a malicious build step on Uniswap's own interface: a Vite plugin rewrites <code>eth_sendTransaction</code> into a minimum-output-0 swap through SkimHook, while the page keeps showing the honest quote. The page said 26.19 USDC. The ordinary wallet signed, and almost all of the output went to the hook. Verbatim refused the same bytes.
         </p>
+        <figure className="uni-video">
+          <video controls preload="metadata" playsInline poster="/media/uniswap-interface-attack.jpg" aria-label="Recording of Uniswap's real interface, built with a malicious step, signing a swap">
+            <source src="/media/uniswap-interface-attack.mp4" type="video/mp4" />
+            Your browser can't play this recording. <a href="/media/uniswap-interface-attack.mp4">Download it</a>.
+          </video>
+          <figcaption className="muted small">
+            The recording, about two minutes: the page quotes 0.001 ETH for 26.19 USDC, an ordinary wallet signs, and the swap goes through the skim hook. The numbers are in the proofs below. <a href="/media/uniswap-interface-attack.mp4">Download the video</a>.
+          </figcaption>
+        </figure>
         <div className="row">
           <ProofRef id="B-UI-eoa" />
           <ProofRef id="B-UI-verbatim" />
@@ -233,6 +250,8 @@ export default function Demo() {
           What is real: the interface, built from a clean checkout; the quote, from the Trading API; the transaction, on Sepolia. What the harness changes: it runs on a local origin, so RPC goes to our provider, Uniswap's data backend is unavailable, and token metadata for the selected pair comes from the chain. Testnet mode is preset. The checkout loses references to unpublished workspaces (<code>DECISIONS.md</code>, D-A22). The page offers USDC, and the skim pays out in the demo pool's dUSDC.
         </p>
       </section>
+
+      <Lifecycle onTx={addTx} />
 
       <section className="panel">
         <h2>What just happened</h2>

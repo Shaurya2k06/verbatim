@@ -1,7 +1,7 @@
 import { hashTypedData, keccak256, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { describe, expect, it } from "vitest";
-import { FrameCollector, decodeRequest, decodeResponse, encodeRequest, encodeResponse, review, toFrames, typedData } from "./core";
+import { FrameCollector, decodeRequest, decodeResponse, encodeRequest, encodeResponse, matchCode, review, toFrames, typedData } from "./core";
 
 const ACCOUNT = "00".repeat(19) + "01";
 const TAIL = "500001" + "09" + "500001" + "0a" + "500002" + "0b00" + "500001" + "0c";
@@ -35,15 +35,40 @@ describe("signer core", () => {
     expect(() => decodeRequest("hello")).toThrow();
     expect(() => decodeRequest("VBT1:AAAA")).toThrow();
   });
-  it("reassembles animated frames in any order", () => {
-    const payload = "x".repeat(1800);
-    const frames = toFrames(payload);
+  it("reassembles rotating frames in any order, with repeats", () => {
+    const payload = "x".repeat(700);
+    const frames = toFrames(payload, 300);
     expect(frames.length).toBe(3);
     const c = new FrameCollector();
     expect(c.add(frames[2])).toBeNull();
+    expect(c.add(frames[2])).toBeNull();
     expect(c.add(frames[0])).toBeNull();
+    expect(c.seen).toBe(2);
     expect(c.add(frames[1])).toBe(payload);
   });
+  it("never mixes frames from two requests", () => {
+    const a = toFrames("a".repeat(600), 300);
+    const b = toFrames("b".repeat(600), 300);
+    const c = new FrameCollector();
+    expect(c.add(a[0])).toBeNull();
+    expect(c.add(b[1])).toBeNull();
+    expect(c.seen).toBe(1);
+    expect(c.add(b[0])).toBe("b".repeat(600));
+  });
+  it("refuses a reassembly that does not match the frames' hash", () => {
+    const f = toFrames("a".repeat(600), 300);
+    const forged = f[1].replace(/a+$/, (x) => "z".repeat(x.length));
+    const c = new FrameCollector();
+    c.add(f[0]);
+    expect(c.add(forged)).toBeNull();
+  });
+  it("still reads the older VBF1 frames", () => {
+    const c = new FrameCollector();
+    expect(c.add("VBF1:2/2:cd")).toBeNull();
+    expect(c.add("VBF1:1/2:ab")).toBe("abcd");
+  });
+  it("passes a single unframed code straight through", () => expect(new FrameCollector().add("VBT1:abc")).toBe("VBT1:abc"));
+  it("gives both screens the same match code", () => expect(matchCode(review(req, NOW).digest)).toMatch(/^[0-9A-F]{4}-[0-9A-F]{4}$/));
   it("produces signatures that recover to the owner", async () => {
     const a = privateKeyToAccount(`0x${"11".repeat(32)}`);
     const r = review(req, NOW);
