@@ -9,24 +9,21 @@ Explorer: https://explorer.altmempool.wtf/
 | Contract | Address |
 |---|---|
 | stakingRegistry | `0xd51c04d7a0b01124e84de152f4e56d9eecb22d2f` |
-| frameReader | `0x24a734f896461126f29fed42e83621bdaa398564` |
-| trustAdmin | `0xa67ec92f789320c7d5ddc22c9b0c68603ab9c06e` |
-| account | `0x268f98c9e33b1ad20911bfaea286fe6ee8415845` |
-| emptyDepositAccount | `0x5b03f388c2b7877ecc54c813995341de1e0d7b3f` |
-| paymaster | `0x97da098b58c6c1659957dbd493e6cb0a84dbd3a0` |
-| tokens.dUSDC | `0x96955e9822dc917b8b548e4ac3bdd377ca0e55e9` |
-| tokens.dWETH | `0x22b9ec43cf81fe4da34db0c0788ce0b0a86cecbe` |
-| evilVault | `0x93bfe10ca585dfa8d9d33b3e3b6fa1afecc44005` |
+| expiryVerifier | `0x0000000000000000000000000000000000008141` |
+| frameReader | `0x5288f533e4528032c7e587ba43843efb7370ec27` |
+| statelessRenderer | `0x5a7f756d0edf935e9f84a6041b3b0f16c7ecb521` |
+| revocations | `0xa5dcd1a63279f04324d4cd69a998c1778a6d6612` |
+| trustAdmin | `0xe938359fce38a57be988af4756ed028337305bdf` |
+| account | `0x5e065985a4b1a95c0bd9173faa49801ad7097053` |
+| emptyDepositAccount | `0x154a46e9998c825e431d2acf4405454b6e67ea4f` |
+| paymaster | `0xdf2672849e3317f27157049589237922151fec76` |
+| tokens.dUSDC | `0xdf6c29f075e871e5650ca942da43f8f92ea8d933` |
+| tokens.dWETH | `0x6eb68ee533db6fd920312c5144053390946f359d` |
+| evilVault | `0x86d469b10ddb7166937ac019a027f6eea37c58e8` |
 | skimHook | `0x5922EaBd0E54cAb41215937A531C71562e748044` |
-| gasBurner | `0x7ff8ae7e81e5fd3034828c478ed014a17c242861` |
-| returnBomb | `0xa26ea2eac6477a8d57e186354706ab01df705fed` |
-| reenterer | `0x20649b27d5d710e3060985ea6d7792fb08ecb7f4` |
-| pools.honest.key.currency0 | `0x22b9ec43cf81fe4da34db0c0788ce0b0a86cecbe` |
-| pools.honest.key.currency1 | `0x96955e9822dc917b8b548e4ac3bdd377ca0e55e9` |
-| pools.honest.key.hooks | `0x0000000000000000000000000000000000000000` |
-| pools.evil.key.currency0 | `0x22b9ec43cf81fe4da34db0c0788ce0b0a86cecbe` |
-| pools.evil.key.currency1 | `0x96955e9822dc917b8b548e4ac3bdd377ca0e55e9` |
-| pools.evil.key.hooks | `0x5922EaBd0E54cAb41215937A531C71562e748044` |
+| gasBurner | `0x0ecfb2f2bd241d6368b95f2b8d54e9b932e86982` |
+| returnBomb | `0x10ce2afa7582485a725d5443b27f9a9a14d089c5` |
+| reenterer | `0x0ef95c38a837d2deca74aa81194fa1c6f75ee937` |
 | uniswap.router | `0x5e2250a42608a5cc9f62e23ab24824ee25b5e2be` |
 | uniswap.permit2 | `0x000000000022D473030F116dDEE9F6B43aC78BA3` |
 | uniswap.poolManager | `0x6bF9Aa9c04fd001385742d61f6818C3236429848` |
@@ -40,39 +37,43 @@ Hashes (the account and paymaster values are of the APPROVE-patched runtime):
 
 | Name | Hash |
 |---|---|
-| accountCodehash | `0x9a181fe3ec8de5d0e3d0ade66ceb2dd0ad221f640b6d1747e3f4eb5438d47a80` |
-| deployTxs.admin | `0x6412da41dd3dfd6035db5fe3e280c7f1e051e0f38bcd63890bcd72b4c0038d65` |
-| deployTxs.account | `0xaa7e84cb77217a8b7dcff847d15eb67df9c994dc9c3362e8c65c16cb5c1883d1` |
-| deployTxs.paymaster | `0x8d4a136cc6e6415cd6f42db9ea32c5c77edc06dbffb1488ea562f3b033f087ca` |
-| stakeTx | `0x7bb7f7cefb5a9f8fccdfb393b8317025f98c3073ebb029bb388f24107a6eb949` |
-| refreshTrustTx | `0x8d221ee52f46215e89e49d9720f5af41c336a4c0e796513a9e9faa081693533c` |
-| pools.honest.init | `0x359c9b33e23d4887f5d0838f59d302b658b331416101df3ffabd7aaf91fc1ec6` |
-| pools.honest.liquidity | `0x33fba60e7cbca4f936f82c91d5ec0c0add5d9026c508bf64200bdc467d383293` |
-| pools.evil.init | `0xf3fe1cfbdfd8797037cc264524cf67ac939a79d943bab0f09524d0ec2e639bc6` |
-| pools.evil.liquidity | `0x603bd3353383eb48af6d6e252402d0dfcb5af3aaee535fcd45dc4e15d943a7c7` |
+| accountCodehash | `0x4cde7abda07f65f782980782dca7ff443558296f1098b65f567dbadcb0c2d1a5` |
+| deployTxs.admin | `0x8b3088acd44fa23c0f9ea70c49c004cca29367dac6d6571f6a40d84b1acd2da2` |
+| deployTxs.account | `0x3ecd7d01d44561b8fdf9efd148a65487c5d052f051eb157180ea0adf86530261` |
+| deployTxs.paymaster | `0x3a3092c13d63e3b6ef616293b9ed49ef60cbb08ebc791ac25701191075dd0dc8` |
+| stakeTx | `0xb11667238ec24c8c929808847eafa90175ddfc674ab383083a27df5302333398` |
+| refreshTrustTx | `0x5a7cd853f03e2290368ecaee0f1da20706e05666f6d36a8245339df769d93b82` |
 
 ## Leg B: Sepolia
 
 | Contract | Address |
 |---|---|
 | entryPoint | `0x0000000071727De22E5E9d8BAf0edAc6f37da032` |
-| account | `0x74cba4a5916a8e665167d25da40e29d4ae5e0b67` |
-| paymaster | `0x6c7a705a6a744b316c7f2a070419630dcf978b45` |
-| ensTrustChecker | `0x6378d334c24bca2f6c17ba4199a59a55252d5561` |
-| trustAdmin | `0x12955e8c98b05155bd16f9cf0383ec53d4670158` |
+| account | `0xa1e877b2f6b167b52d0ad33ea7c73e3301829da7` |
+| statelessRenderer | `0x9a7de70e58d62727a7d3647fa510cbaeaa30bf2b` |
+| revocations | `0x66f026612e444af785f48bdeacf1faac31897e93` |
+| ensTrustChecker | `0x6921ceaff12259930aa31f3645d14a2b886827ff` |
+| ensTrustAnchor | `0x2d0f90612c3e5d1f1b6056b8abb6701e755eae6e` |
+| skimHook | `0xf75F93Dbff8a0408e042F467a87CC56C84310044` |
 | tokens.dUSDC | `0x7e068face3fc4a6826d182b1ec0e80d7d8979e0f` |
 | tokens.dWETH | `0x42808f35830dfe250ad998b3b239c0776f01be97` |
-| pool.key.currency0 | `0x42808f35830dfe250ad998b3b239c0776f01be97` |
-| pool.key.currency1 | `0x7e068face3fc4a6826d182b1ec0e80d7d8979e0f` |
-| pool.key.hooks | `0x0000000000000000000000000000000000000000` |
+| pools.eth.key.currency0 | `0x0000000000000000000000000000000000000000` |
+| pools.eth.key.currency1 | `0x7e068face3fc4a6826d182b1ec0e80d7d8979e0f` |
+| pools.eth.key.hooks | `0x0000000000000000000000000000000000000000` |
+| pools.erc20.key.currency0 | `0x42808f35830dfe250ad998b3b239c0776f01be97` |
+| pools.erc20.key.currency1 | `0x7e068face3fc4a6826d182b1ec0e80d7d8979e0f` |
+| pools.erc20.key.hooks | `0x0000000000000000000000000000000000000000` |
+| pools.ethEvil.key.currency0 | `0x0000000000000000000000000000000000000000` |
+| pools.ethEvil.key.currency1 | `0x7e068face3fc4a6826d182b1ec0e80d7d8979e0f` |
+| pools.ethEvil.key.hooks | `0xf75F93Dbff8a0408e042F467a87CC56C84310044` |
 | uniswap.router | `0x3A9D48AB9751398BbFa63ad67599Bb04e4BdF98b` |
 | uniswap.poolManager | `0xE03A1074c86CFeDd5C142C4F04F1a1536e203543` |
 | uniswap.positionManager | `0x429ba70129df741B2Ca2a85BC3A2a3328e5c09b4` |
 | uniswap.permit2 | `0x000000000022D473030F116dDEE9F6B43aC78BA3` |
-| ens.resolver | `0xc449d31B38414D39ad733f8A676027956B7a1E88` |
-| ens.lookalikeResolver | `0xbfE84a49fE4834a9eedDbFCb3Ffc2E3851124Dcd` |
-| ens.rootRegistry | `0xb458d6a3a77919449d03e7a6903c26827c1ec43f` |
-| ens.ethRegistry | `0xd4ebcbbdf463c9c45784603db0ddd499bc44a8b4` |
-| ens.universalResolver | `0x24e1d8e068620b647ca097f961a61055f4f42d72` |
+| uniswap.weth9 | `0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14` |
+| uniswap.quoter | `0x61B3f2011A92d183C7dbaDBdA940a7555Ccf9227` |
+| ens.publisherResolver | `0xc449d31B38414D39ad733f8A676027956B7a1E88` |
+| ens.recipient | `0x3aC4CAf4b6727FdB58A7784630E4689A4331c616` |
+| ens.anchorResolver | `0xDC598782f5f7721F9409AF631716e67345Cb89e5` |
 
 ENS: `verbatim-demo.eth`.

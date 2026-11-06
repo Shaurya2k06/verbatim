@@ -365,7 +365,7 @@
     "expected": "not in the snapshot, so hex is shown; the exclusivity proof refuses it",
     "pass": true,
     "outcome": "rejected-at-mempool",
-    "message": "Execution reverted with reason: +\u0102\r\u0010\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0010\u0000\u0000\u0011\u0010\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0010\u0000\u0000\u0011.\n\nRaw Call Arguments:\n  to:    0x1f01041520e365f55be272af88e9053894cfc573\n  data:  0x257d67a | To: 0x000000000000000000000000000000000000bad1",
+    "message": "Execution reverted with reason: +Ă\r\u0010\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0010\u0000\u0000\u0011\u0010\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0010\u0000\u0000\u0011.\n\nRaw Call Arguments:\n  to:    0x1f01041520e365f55be272af88e9053894cfc573\n  data:  0x257d67a | To: 0x000000000000000000000000000000000000bad1",
     "at": "2026-11-06T00:20:15.658Z"
   },
   "INVALIDATION": {
@@ -683,12 +683,12 @@
     "expected": "the skim works: this is what Verbatim prevents",
     "pass": true,
     "outcome": "mined",
-    "txHash": "0x6c8e256473585839e32a6f9deef46501cf935759e665fdec4ee1b7e0b89fb10b",
+    "txHash": "0xa479af0e2970cb6d8ab10345ce69f080df92c61ede8f937d49a38417638ed791",
     "extra": {
-      "victimGot": "28723",
-      "hookTook": "2843568"
+      "victimGot": "27246",
+      "hookTook": "2697292"
     },
-    "at": "2026-11-06T00:18:15.558Z"
+    "at": "2026-11-06T05:17:37.742Z"
   },
   "B-A2b": {
     "id": "B-A2b",
@@ -696,21 +696,57 @@
     "expected": "the device shows the risks; PolicyRefused",
     "pass": true,
     "outcome": "rejected-at-mempool",
-    "message": "! NO MINIMUM OUTPUT | ! HOOK CAN TAKE YOUR OUTPUT | ! UNVERIFIED HOOK || PolicyRefused(56), read from the account by contracts/scripts/live/why-evil.ts; the bundler reports only: Internal error from bundler",
-    "at": "2026-11-06T00:18:17.935Z"
+    "message": "! NO MINIMUM OUTPUT | ! HOOK CAN TAKE YOUR OUTPUT | ! UNVERIFIED HOOK || PolicyRefused; bundler: Internal error from bundler (trace id: cb49997c7878977884f2026f67a35b36)",
+    "at": "2026-11-06T05:17:40.614Z"
   },
   "WC": {
     "id": "WC",
     "title": "A dapp pairs over WalletConnect's relay; honest swap lands; the evil route shows its risks and is refused",
-    "expected": "lands; refused",
+    "expected": "lands; refused by PolicyRefused, with the account unmoved",
     "pass": true,
     "outcome": "mined",
-    "txHash": "0x67810e38daf222d4b84500847a495a6595d77c28d1cfe2934e4aa09cb3b8498c",
+    "txHash": "0x8ad5bcfa9b5fc681b8f6e17b0615f238a4ef8110646ada19c966a35dd9bce75c",
     "extra": {
       "chain": "sepolia",
       "rerun": "cd contracts/scripts/e2e && pnpm walletconnect",
-      "evilRoute": "bundler reported a generic internal error; the cause is PolicyRefused(56), read from the account by contracts/scripts/live/why-evil.ts"
+      "evilRoute": "PolicyRefused(56), asked of the exact operation the wallet signed"
     },
-    "at": "2026-11-06T00:39:00.089336Z"
+    "at": "2026-11-06T05:23:36.861Z"
+  },
+  "B-multihop": {
+    "id": "B-multihop",
+    "title": "A two-hop v4 swap through the account",
+    "expected": "the sentence names the route, the swap lands, the output meets the signed minimum",
+    "pass": true,
+    "outcome": "mined",
+    "txHash": "0x50b3d64920b75ab479cd79f5dd66f6cffa1e6ae40c00363ce9f8c284e18e840d",
+    "message": "received 888635262729794, minimum 844203499593304, 2 hops",
+    "extra": {
+      "actualGasUsed": "1436542",
+      "txGasUsed": "929953",
+      "sentence": [
+        "You lose exactly 0.001 ETH",
+        "You receive at least 0.000844203499593304 dWETH",
+        "The code at 0x3a9d48ab9751398bbfa63ad67599bb04e4bdf98b is what was attested",
+        "No other tracked holding decreases",
+        "No other Permit2 allowance grows",
+        "Owners and policy stay the same",
+        "No approval outlives this transaction",
+        "Fee cap: 0.0027830000069 ETH",
+        "Uniswap swap (by Uniswap) at 0x3a9d48ab9751398bbfa63ad67599bb04e4bdf98b",
+        "Sends 0.001 ETH",
+        "Deadline: timestamp 1793945890",
+        "Uniswap v4 swap",
+        "You pay: 0.001 ETH",
+        "Minimum received: 0.000844203499593304 dWETH",
+        "Through: 0 dUSDC",
+        "Pool fee: 3000",
+        "Pool fee: 3000",
+        "Valid until 2026-11-06 05:22:00 UTC",
+        "Policy version 1, path ERC-4337",
+        "Snapshot 0x01d06dd453d388b3be12eae66001c30119daa0564b8bf38a43d4d35b5f014342"
+      ]
+    },
+    "at": "2026-11-06T05:18:26.025Z"
   }
 }

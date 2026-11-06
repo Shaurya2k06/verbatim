@@ -194,8 +194,22 @@ abstract contract SnapshotFixture is Base {
     }
 }
 
+contract MockNameResolver {
+    address public target;
+
+    function setTarget(address t) external {
+        target = t;
+    }
+
+    function resolve(bytes calldata, bytes calldata) external view returns (bytes memory) {
+        return abi.encode(target);
+    }
+}
+
 /// B1-B11, I10-I13 on the stateless path.
 contract StatelessTest is SnapshotFixture {
+    address constant NAMED = address(0xF00D);
+
     // --------------------------------------------------------------------------------- the path ---
 
     function _in(VerbatimCore.Call[] memory calls, uint64 expiry) internal view returns (DisplayVM.In memory i) {
@@ -489,6 +503,43 @@ contract StatelessTest is SnapshotFixture {
         (bool b, bytes memory err) = _execute();
         assertFalse(b);
         assertEq(errorName(err), VerbatimCore.ImplChanged.selector);
+    }
+
+    /// A shown name's resolver moves after signing. NAME_EQ is read live, and the name is the sentence's whole claim.
+    function _namedTransfer(MockNameResolver r) private returns (bytes memory) {
+        bytes32[] memory v = new bytes32[](2);
+        (v[0], v[1]) = (bytes32(bytes.concat(bytes9("alice.eth"), new bytes(22), hex"09")), bytes32(uint256(uint160(address(r)))));
+        leaves.push(Leaf(4, _two(block.chainid, uint160(NAMED)), v, ""));
+        _build();
+        return _withDepth(bytes.concat(_proofDesc(address(usdc), 0xa9059cbb), _proofToken(address(usdc)), _item(_indexOf(4, bytes32(block.chainid), bytes32(uint256(uint160(NAMED)))))));
+    }
+
+    function test_shown_name_unmoved_lands() public {
+        MockNameResolver r = new MockNameResolver();
+        r.setTarget(NAMED);
+        bytes memory p = _namedTransfer(r);
+        S memory s = _plan(transferCall(NAMED, 1e6), T0 + 100, p);
+        _load(s, p, keccak256(s.tree), keccak256(s.spec));
+        (bool ok, ) = _verify();
+        assertTrue(ok);
+        (bool b, ) = _execute();
+        assertTrue(b);
+        assertEq(usdc.balanceOf(NAMED), 1e6);
+    }
+
+    function test_shown_name_moves_after_signing_reverts() public {
+        MockNameResolver r = new MockNameResolver();
+        r.setTarget(NAMED);
+        bytes memory p = _namedTransfer(r);
+        S memory s = _plan(transferCall(NAMED, 1e6), T0 + 100, p);
+        _load(s, p, keccak256(s.tree), keccak256(s.spec));
+        (bool ok, ) = _verify();
+        assertTrue(ok);
+        r.setTarget(address(0xBAD));
+        (bool b, bytes memory err) = _execute();
+        assertFalse(b);
+        assertEq(errorName(err), VerbatimCore.NameChanged.selector);
+        assertEq(usdc.balanceOf(NAMED), 0);
     }
 
     /// B9: a snapshot that claims to live far longer than the policy allows.
