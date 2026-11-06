@@ -28,8 +28,11 @@ Hackathon code, unaudited. Do not trust it with funds you would miss.
 | I6 | Stale or lying transactions do not take effect | `Invariant.t` |
 | I7 | Owners and threshold change only by a rendered `TRUST_CHANGE` | `Invariant.t` |
 | I8 | The two renderers are byte-identical | `tools/difffuzz`, 10k cases per CI run |
-| I9 | An unrelated `refreshTrust` leaves pending trees valid | `Invariants.t`, A15 |
-| I10 | The trust epoch only rises | `Invariant.t` |
+| I9 | Validation reads only what §5 allows on each path | `Invariants.t`, `Stateless.t`, `Account4337.t` |
+| I10 | A snapshot from another chain, past its TTL or expired is never accepted | `Stateless.t` |
+| I11 | A revoked leaf never executes | `Stateless.t`, `Account4337.t` |
+| I12 | No approval survives a batch, except Permit2 base allowances | `Attacks.t`, `Stateless.t` |
+| I13 | The same `D_owner` can never execute twice | `Attacks.t`, `Stateless.t`, `Account4337.t` |
 
 `Invariant.t.sol` runs 64 random sequences of 40 calls: honest transfers, lying recipients, stale signatures, EvilVault, refreshes, attempts to lower the epoch and to seize the account.
 
@@ -48,7 +51,8 @@ Hackathon code, unaudited. Do not trust it with funds you would miss.
 - Revocation is only as fresh as the last `refreshTrust`. An EAS revocation on mainnet has no effect until attestors relay it.
 - The paymaster is a shared service. Stake prices identity and is not slashed.
 - Frame 1 trusts frame 0's layout lock by pinning the sender's code hash.
-- Expiry cannot be checked in validation (OP-011). An expired transaction lands, reverts and pays its fee.
+- The expiry frame refuses an expired transaction at the mempool. Execution checks the time again. A starved expiry frame is refused by a gas floor on it.
+- A snapshot lasts at most 6 hours by default. A paymaster-path transaction signs the root, so rotating the root drops pending ones on that path.
 - The APPROVE opcode is a patched LOG1 byte. Deployment fails unless the runtime holds exactly one, and CI checks the same (`tools/scripts/check-bytecode.ts`).
 
 ## Static analysis
@@ -76,7 +80,7 @@ Aderyn was not run.
 
 ## Independent review
 
-**Not done.** Nobody outside the authors has spent time on the attack kit. This must happen before any real funds are at stake.
+**Not done.** Nobody outside the authors has spent time on the attack kit. Per `docs/BOUNTY.md`, no funds go live until this is done and attestor keys are held outside the team.
 
 ## Reporting a bug
 

@@ -1,0 +1,1 @@
+{ "name": "@verbatim/bounty-oracle", "private": true, "type": "module", "license": "MIT", "scripts": { "start": "tsx src/server.ts", "test": "vitest run" }, "dependencies": { "viem": "^2.21.0", "@verbatim/displayvm-ts": "workspace:*" }, "devDependencies": { "tsx": "^4.19.0", "vitest": "^2.1.0" } }
