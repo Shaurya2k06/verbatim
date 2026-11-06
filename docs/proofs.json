@@ -657,15 +657,6 @@
     ],
     "at": "2026-11-05T22:44:35.797Z"
   },
-  "B_ALCHEMY": {
-    "id": "B_ALCHEMY",
-    "title": "B_ALCHEMY",
-    "expected": "",
-    "pass": false,
-    "outcome": "not-run",
-    "message": "Verification gas limit efficiency too low. Required: 0.4, Actual: 0.18277",
-    "at": "2026-11-05T23:30:35.373Z"
-  },
   "B13": {
     "id": "B13",
     "title": "An attestor missing from the ENS anchor",
@@ -675,15 +666,6 @@
     "txHash": "0x4e0614b79956b1a43976a58c5b9950fdfadb0857948a7c9d88348bebb6af6758",
     "message": "AttestorNotListed(0x062D072F2Cd4E28659cdD434aD985dc5696d522C)",
     "at": "2026-11-06T00:18:40.597Z"
-  },
-  "B_ENS_REVOKED": {
-    "id": "B_ENS_REVOKED",
-    "title": "B_ENS_REVOKED",
-    "expected": "",
-    "pass": false,
-    "outcome": "not-run",
-    "message": "Internal error from bundler (trace id: 3db57cbc6bb9f7f305e68ca7f6c9f931)",
-    "at": "2026-11-05T23:25:52.129Z"
   },
   "B-ens-revoked": {
     "id": "B-ens-revoked",
