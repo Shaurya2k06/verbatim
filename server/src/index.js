@@ -4,6 +4,10 @@ import { fileURLToPath } from "node:url";
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
+import { register } from "tsx/esm/api";
+
+// The suites use the workspace packages, which are TypeScript source. Registering here means plain `node` runs the server.
+register();
 
 dotenv.config({ path: fileURLToPath(new URL("../.env", import.meta.url)), quiet: true });
 dotenv.config({ path: fileURLToPath(new URL("../../.env", import.meta.url)), quiet: true });

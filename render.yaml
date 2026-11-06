@@ -7,7 +7,7 @@ services:
     plan: free
     rootDir: .
     buildCommand: corepack enable && pnpm install --frozen-lockfile --filter @verbatim/server...
-    startCommand: cd server && node --import tsx src/index.js
+    startCommand: node server/src/index.js
     healthCheckPath: /api/health
     autoDeploy: true
     buildFilter:
