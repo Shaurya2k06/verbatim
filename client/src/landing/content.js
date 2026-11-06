@@ -157,21 +157,6 @@ export const FRAME_PATHS = [
   },
 ];
 
-export const COVERS = [
-  "A person reading a sentence on a device, while the host or frontend tampers with the transaction. The Bybit class.",
-  "A contract that describes itself truthfully but has hidden effects on tracked assets.",
-  "Swap frontends that lie about the minimum output, route, recipient or hook risk.",
-  "Stale presigned transactions, killed by a mandatory absolute expiry.",
-];
-
-export const EXCLUDES = [
-  "Compromised machine signers and stolen keys. A stolen key signs whatever it likes.",
-  "A sentence that is accurate but misunderstood. It is still a signed sentence.",
-  "Unattested contracts. They are refused, and there is no effects only mode.",
-  "A captured attestor quorum can mislabel spenders, tokens or names. Signed amounts, the rule against standing approvals and revocation at execution still hold.",
-  "Protocol internal ledgers. Assertions cover balances, allowances, operators and owners of tracked assets.",
-];
-
 export const TRY = [
   { to: "/demo", title: "Run the live demo", body: "No wallet or keys needed. Follow one swap from the click to the block, or run the whole demo in order." },
   { to: "/uniswap", title: "Tamper with a swap", body: "The same swap twice on Uniswap's contracts: an ordinary wallet and Verbatim. Follow one swap from the click to the block." },

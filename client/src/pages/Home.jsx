@@ -6,7 +6,7 @@ import { DevnetBanner, StatusBar } from "../components/StatusBar";
 import { Failed } from "../components/States";
 import { Architecture } from "../landing/Architecture";
 import { Boot } from "../landing/Boot";
-import { BENEFITS, COMMANDS, COVERS, EXCLUDES, EXPLORE, FAQ, FRAME_CAP, FRAME_PATHS, REFUSALS, STEPS, TRY, VERSUS } from "../landing/content";
+import { BENEFITS, COMMANDS, EXPLORE, FAQ, FRAME_CAP, FRAME_PATHS, REFUSALS, STEPS, TRY, VERSUS } from "../landing/content";
 import { Finale } from "../landing/Finale";
 import { Footer } from "../landing/Footer";
 import { GateArt } from "../landing/GateArt";
@@ -425,38 +425,6 @@ function Proof({ s, manifest, error }) {
   );
 }
 
-function Limits() {
-  return (
-    <section className="lp-section" id="limits" aria-labelledby="limits-title">
-      <p className="lp-eyebrow" {...reveal()}>Limits</p>
-      <h2 id="limits-title" {...reveal(1)}>What it will not save you from</h2>
-      <div className="lp-scope">
-        <div {...reveal()}>
-          <IsoIcon name="check" size={72} />
-          <h3>Covered</h3>
-          <ul className="lp-bullets lp-bullets-ok">
-            {COVERS.map((x) => (
-              <li key={x}>{x}</li>
-            ))}
-          </ul>
-        </div>
-        <div {...reveal(1)}>
-          <IsoIcon name="cross" size={72} />
-          <h3>Not covered</h3>
-          <ul className="lp-bullets lp-bullets-bad">
-            {EXCLUDES.map((x) => (
-              <li key={x}>{x}</li>
-            ))}
-          </ul>
-        </div>
-      </div>
-      <p className="lp-honest">
-        <b>Status:</b> hackathon code, unaudited, with no mainnet deployment and no independent review. <a href={`${DOCS}/STATUS.md`}>Read the full status →</a>
-      </p>
-    </section>
-  );
-}
-
 function Try() {
   const [copied, setCopied] = useState(false);
   const copy = async () => {
@@ -575,7 +543,6 @@ export default function Home() {
         <Paths />
         <Rule />
         <Proof s={s} manifest={manifest} error={d.error} />
-        <Limits />
         <Rule />
         <Try />
         <Faq />

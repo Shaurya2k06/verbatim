@@ -7,7 +7,6 @@ const SECTIONS = [
   ["#how", "How it works"],
   ["#architecture", "Architecture"],
   ["#proof", "Proof"],
-  ["#limits", "Limits"],
   ["#faq", "FAQ"],
 ];
 

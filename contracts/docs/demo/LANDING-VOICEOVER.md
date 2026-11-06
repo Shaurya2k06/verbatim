@@ -1,6 +1,6 @@
 # Voiceover: the landing page
 
-Read this over your own recording of the landing page, then cut to `verbatim-tour.mp4`. That film opens on the proof ledger with "Here is the proof ledger…", so it follows straight on from section 10.
+Read this over your own recording of the landing page, then cut to `verbatim-tour.mp4`. That film opens on the proof ledger with "Here is the proof ledger…", so it follows straight on from section 9.
 
 Read at a natural pace, the narration runs about 5:20 in total.
 
@@ -97,12 +97,6 @@ Read at a natural pace, the narration runs about 5:20 in total.
 
 > And don't take the page's word for it. These counts are read from the proof ledger, and every row links to its transaction, or to the named revert that stopped it.
 
-## 9. Limits (about 9 s)
-
-**On screen:** the "Covered" and "Not covered" lists.
-
-> The limits are stated too. Stolen keys are out of scope, and so is an accurate sentence that's misunderstood.
-
-## 10. Try it, FAQ, finale (about 3 s, no voiceover)
+## 9. Try it, FAQ, finale (about 3 s, no voiceover)
 
 **On screen:** scroll quickly to the end of the page.

@@ -1525,45 +1525,6 @@ html:has(.lp) {
   text-align: left;
 }
 
-/* Limits */
-.lp-scope {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 64px;
-  margin-top: 64px;
-}
-.lp-bullets {
-  display: grid;
-  gap: 16px;
-  margin: 16px 0 0;
-  padding: 0;
-  color: var(--mute);
-  font-size: 14px;
-  line-height: 24px;
-  list-style: none;
-}
-.lp-bullets li {
-  position: relative;
-  padding-left: 4ch;
-  text-wrap: pretty;
-}
-.lp-bullets li::before {
-  position: absolute;
-  left: 0;
-  font-weight: 600;
-}
-.lp-bullets-ok li::before {
-  content: "[+]";
-  color: var(--ok);
-}
-.lp-bullets-bad li::before {
-  content: "[!]";
-  color: var(--risk);
-}
-#limits .lp-honest {
-  margin-top: 48px !important;
-}
-
 /* Try it */
 .lp-try {
   display: grid;
@@ -1824,7 +1785,6 @@ html:has(.lp) {
   .lp-split,
   .lp-stage-body,
   .lp-try,
-  .lp-scope,
   .lp-paths,
   .lp-duel {
     grid-template-columns: minmax(0, 1fr);
@@ -1842,7 +1802,6 @@ html:has(.lp) {
   }
   .lp-head,
   .lp-split,
-  .lp-scope,
   .lp-try {
     gap: 32px;
   }
@@ -1940,7 +1899,6 @@ html:has(.lp) {
   .lp-stats li + li {
     border-top: 1px solid var(--line);
   }
-  .lp-scope,
   .lp-try,
   .lp-explore {
     margin-top: 32px;
@@ -2089,8 +2047,7 @@ a:hover > .lp-ico,
 }
 
 .lp-card > .lp-ico,
-.lp-paths .lp-ico,
-.lp-scope .lp-ico {
+.lp-paths .lp-ico {
   margin-bottom: 16px;
 }
 .lp-can-body {
