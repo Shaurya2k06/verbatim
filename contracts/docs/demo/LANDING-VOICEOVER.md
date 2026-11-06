@@ -67,11 +67,15 @@ Read at a natural pace, the narration runs about 5:20 in total.
 
 > Every transaction carries two formats, and the owners sign the hash of each. The VTREE checks the words. It's the sentence as canonical bytes, and during validation a VERIFY frame renders it again from the real calldata. If it differs, the mempool never admits it. The VSPEC checks the effects. It's the list of what must be true after the batch, taken byte for byte from the sentence's guarantees, and the account asserts it after the calls. If one fails, the whole batch reverts.
 
-## 6. "Stop trusting the screen" (about 15 s)
+## 6. Features: "Everything in the box" (about 50 s)
 
-**On screen:** scroll slowly through the six benefit cards.
+**On screen:** the twelve feature cards. Scroll slowly, one row at a time, and point at each card as you name it.
 
-> So risk arrives in plain words, read from the hook's address on chain. Every transaction carries a mandatory expiry. A name has to earn its place with a live exclusivity proof. And it all fits the rails you already have.
+> Here's everything in the box. An offline signer: one HTML file, or an Android app with no internet permission, that decodes the sentence itself. VTREE, the sentence as canonical bytes, and the chain rendering it again during validation, with no ecrecover. VSPEC, the promises checked after the calls: exact balance changes, minimum receipts, and no approval left standing.
+
+> A mandatory expiry frame on every transaction, and a digest that executes only once. An attested trust snapshot that pins every descriptor to a code hash. ENS as the trust root, checked again at execution. Uniswap v4 rendered on chain, with hook risk read from the hook's address.
+
+> Two frame paths, with ERC-4337 as the fallback. An account with no back door: no DELEGATECALL, no upgrade path, no 7702. Eighteen ninety-eight ERC-7730 registry functions compiled. And a TypeScript twin of every on-chain piece, fuzzed byte for byte.
 
 ## 7. "Two ways to fit under 100,000 gas" (about 55 s)
 

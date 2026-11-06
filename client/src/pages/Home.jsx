@@ -4,7 +4,7 @@ import { REPO } from "../components/Layout";
 import { Failed } from "../components/States";
 import { Architecture } from "../landing/Architecture";
 import { Boot } from "../landing/Boot";
-import { BENEFITS, COMMANDS, EXPLORE, FAQ, FRAME_CAP, FRAME_PATHS, REFUSALS, STEPS, TRY, VERSUS } from "../landing/content";
+import { COMMANDS, EXPLORE, FAQ, FEATURES, FRAME_CAP, FRAME_PATHS, REFUSALS, STEPS, TRY, VERSUS } from "../landing/content";
 import { Finale } from "../landing/Finale";
 import { Footer } from "../landing/Footer";
 import { GateArt } from "../landing/GateArt";
@@ -54,7 +54,6 @@ function Hero({ data, error, list, s }) {
           <br />
           Then it checks that it came true.
         </p>
-        <p className="lp-lede">Bybit lost $1.5B because its signers approved what a tampered screen showed them. Verbatim makes Ethereum’s new frame transactions rebuild every transaction into the sentence you signed, inside the validation frame. Different words, and the alt mempool never admits it. Broken promise, and the whole batch reverts.</p>
         <div className="lp-ctas">
           <Link className="lp-btn lp-btn-primary" to="/demo">
             See the demo
@@ -233,27 +232,32 @@ function Formats() {
   );
 }
 
-function Benefits() {
+function Features() {
   return (
-    <section className="lp-section" id="benefits" aria-labelledby="benefits-title">
-      <p className="lp-eyebrow" {...reveal()}>What changes</p>
-      <h2 id="benefits-title" {...reveal(1)}>Stop trusting the screen</h2>
-      <ul className="lp-can">
-        {BENEFITS.map((b) => (
-          <li key={b.title} {...reveal()}>
-            <q>{b.say}</q>
-            <div className="lp-can-body">
-              <IsoIcon name={b.icon} size={72} />
-              <div>
-              <h3>{b.title}</h3>
-              <p>{b.body}</p>
-              {b.to ? (
-                <Link className="lp-more" to={b.to}>
-                  {b.more} →
-                </Link>
-              ) : null}
-              </div>
-            </div>
+    <section className="lp-section" id="features" aria-labelledby="features-title">
+      <div className="lp-head" {...reveal()}>
+        <div>
+          <p className="lp-eyebrow">Features</p>
+          <h2 id="features-title">Everything in the box</h2>
+        </div>
+        <p className="lp-copy">A signer, two byte formats, an account, a paymaster, a trust snapshot and the tools around them. Every piece is open source, and every claim below is tested.</p>
+      </div>
+      <ul className="lp-features">
+        {FEATURES.map((f, i) => (
+          <li key={f.title} {...reveal(i % 3)}>
+            <IsoIcon name={f.icon} size={56} />
+            <h3>{f.title}</h3>
+            <p>{f.body}</p>
+            <ul className="lp-feature-tags">
+              {f.tags.map((t) => (
+                <li key={t}>{t}</li>
+              ))}
+            </ul>
+            {f.to ? (
+              <Link className="lp-more" to={f.to}>
+                {f.more} →
+              </Link>
+            ) : null}
           </li>
         ))}
       </ul>
@@ -460,7 +464,7 @@ export default function Home() {
         <ArchitectureSection />
         <Formats />
         <Rule />
-        <Benefits />
+        <Features />
         <Paths />
         <Rule />
         <Rule />

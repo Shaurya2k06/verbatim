@@ -202,7 +202,7 @@ const N = {
     reverted: "If an assertion fails, everything the calls did is undone. The fee stays paid, and the signed digest can't be replayed.",
   } as Record<string, string>,
   compare: "Every transaction carries two formats, and the owners sign the hash of each. The VTREE checks the words. It's the sentence as canonical bytes, and during validation a VERIFY frame renders it again from the real calldata. If it differs, the mempool never admits it. The VSPEC checks the effects. It's the list of what must be true after the batch, taken byte for byte from the sentence's guarantees, and the account asserts it after the calls. If one fails, the whole batch reverts.",
-  benefits: "So risk arrives in plain words, read from the hook's address on chain. Every transaction carries a mandatory expiry. A name has to earn its place with a live exclusivity proof. And it all fits the rails you already have.",
+  benefits: "Here's everything in the box: an offline signer, the sentence rendered again on chain, promises checked after the calls, a mandatory expiry, an attested trust snapshot, ENS as the trust root, Uniswap v4 rendered on chain, two frame paths with an ERC-4337 fallback, an account with no back door, ERC-7730 descriptors, and a TypeScript twin of it all.",
   paths: "Two ways to fit under the hundred-thousand gas cap. On the stateless path, the account's VERIFY frame checks proofs carried in the transaction and renders, in ninety thousand gas with four signatures, no stake needed. On the paymaster path, a staked paymaster renders from its own cache in its own frame, and a transfer costs eighty-five thousand. Rotating the snapshot invalidated none of fifty pending stateless transactions, and all fifty on the paymaster path.",
   proofsIntro: "Here is the proof ledger. Each row is what a live network returned. We'll start on the EF frames devnet: EIP-8141 frame transactions, sent through the ERC-8421 alternative mempool.",
   honest: "An honest transfer on the paymaster path: four frames. Frame zero checks the expiry. Frame one is the account's VERIFY frame. Frame two is the paymaster's VERIFY frame, which renders the sentence from its cache in about sixty thousand gas. Frame three is the SENDER frame, which executes.",
@@ -628,8 +628,8 @@ for (const id of ["frontend", "ts", "signer", "ppay", "pstate", "p4337", "trust"
 }
 
 await speak(site, "landing · VTREE and VSPEC", N.compare, () => glideTo("#compare", 1500));
-await speak(site, "landing · what changes", N.benefits, async () => {
-  await glideTo("#benefits", 1200);
+await speak(site, "landing · features", N.benefits, async () => {
+  await glideTo("#features", 1200);
   await glide(await topOf("#paths", H - 120), 7000);
 });
 await speak(site, "landing · three paths", N.paths, () => glideTo("#paths", 1400));

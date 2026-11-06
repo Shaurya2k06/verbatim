@@ -65,45 +65,85 @@ export const STEPS = [
   },
 ];
 
-/** Each benefit opens with the failure it answers. */
-export const BENEFITS = [
+/** Everything Verbatim ships, one card each. Sourced from the README, contracts/docs (VTREE, VSPEC, ALTMEMPOOL, GAS) and STATUS.md. */
+export const FEATURES = [
   {
-    say: "the frontend was swapped overnight",
-    icon: "screen",
-    title: "Your screen stops being trusted",
-    body: "Frontend, host, RPC, relayer and target contracts are all untrusted. The signer is one HTML file you can load once and use in airplane mode.",
+    icon: "device",
+    title: "Offline signer",
+    body: "One HTML file, or an Android app with no internet permission. It reads the request from a rotating QR, decodes the sentence itself and shows the guarantees first.",
+    tags: ["airplane mode", "QR in, QR out", "refuses long expiries", "refuses unknown nodes"],
+    to: "/demo#lifecycle",
+    more: "Watch it sign",
   },
   {
-    say: "this hook can take your output",
-    icon: "warning",
-    title: "Risk arrives in plain words",
-    body: "What a Uniswap v4 hook may do is written in the low bits of its address. Verbatim reads those bits on chain and puts the warning in the sentence you sign.",
+    icon: "doc",
+    title: "VTREE: the sentence",
+    body: "The canonical bytes of what you read: a header, then each call with its fields, risks and guarantees. Owners sign its hash, never raw calldata.",
+    tags: ["amounts never rounded", "17 risk codes", "BLIND for anything unexplained"],
   },
   {
-    say: "the contract said one thing and did another",
+    icon: "gate",
+    title: "Rendered again on chain",
+    body: "During validation, a VERIFY frame renders the sentence from the real calldata and rebuilds the owners’ digest. Different words, and the mempool never admits it.",
+    tags: ["TreeMismatch", "SpecHashMismatch", "no ecrecover"],
+  },
+  {
     icon: "check",
-    title: "Promises are checked after the calls",
-    body: "A truthful description is not enough. No tracked holding may drop beyond what you signed, and no approval survives the batch.",
+    title: "VSPEC: promises checked after",
+    body: "Guarantees derived from the sentence and asserted after the calls, inside the account. One fails, and the whole batch reverts.",
+    tags: ["exact balance changes", "minimum receipts", "allowance ceilings", "NFT owners", "code hashes", "no standing approvals"],
   },
   {
-    say: "that signature is weeks old",
     icon: "clock",
-    title: "Signatures go stale on purpose",
-    body: "Every transaction carries a mandatory absolute expiry. The device refuses a long one, and the chain reverts it if it gets signed anyway.",
+    title: "Expiry and replay",
+    body: "Every transaction opens with a mandatory expiry frame, with a gas floor so it cannot be starved. Each signed digest executes at most once.",
+    tags: ["device TTL cap", "TtlTooLong at execution", "consumed digest"],
   },
   {
-    say: "the name looks right to me",
+    icon: "layers",
+    title: "Attested trust snapshot",
+    body: "One Merkle tree, signed by a k-of-n attestor set, pins every descriptor to a code hash. A missing name is proven absent, so the address shows as hex.",
+    tags: ["non-membership proofs", "token risk flags", "6-hour TTL", "revocation at execution"],
+  },
+  {
     icon: "tag",
-    title: "A name has to earn its place",
-    body: "On Sepolia, an ENS name appears only with an attested snapshot and a live exclusivity proof read at execution. A lookalike shows as hex.",
+    title: "ENS as the trust root",
+    body: "ENSv2 answers who you are paying, who published each descriptor, who may attest and what is revoked, and each answer is checked again at execution.",
+    tags: ["exclusivity proof", "forward and reverse resolution", "lookalikes as hex"],
     to: "/ens",
     more: "Check any name",
   },
   {
-    say: "this chain has no frame transactions yet",
+    icon: "warning",
+    title: "Uniswap v4, rendered on chain",
+    body: "URRender decodes Universal Router commands and v4 actions inside validation, and reads what a hook may do from the low bits of its address.",
+    tags: ["hook can take your output", "allow-revert flag", "unknown commands refused", "standalone package"],
+    to: "/uniswap",
+    more: "Tamper with a swap",
+  },
+  {
     icon: "rails",
-    title: "Built for frames, runs today",
-    body: "Verbatim is built on EIP-8141 frame transactions and the ERC-8421 alternative mempool. Where a chain has no frames yet, the same logic runs behind any ERC-4337 bundler.",
+    title: "Two frame paths, one fallback",
+    body: "Stateless frames need no stake and run in any frame mempool. A staked paymaster serves the ERC-8421 alt mempool. Without frames, the same logic runs behind ERC-4337.",
+    tags: ["EIP-8141", "ERC-8421", "under the 100k cap", "ERC-4337 on Sepolia"],
+  },
+  {
+    icon: "vault",
+    title: "An account with no back door",
+    body: "No DELEGATECALL, checked on the bytecode, no upgrade path and no 7702. Owners change only through a rendered trust-change sentence.",
+    tags: ["fee charged first", "reentrancy lock", "bounded gas and return data"],
+  },
+  {
+    icon: "scan",
+    title: "ERC-7730 descriptors",
+    body: "The compiler ingests the public clear-signing registry: 1,898 of its 3,035 functions compile across 65 protocols, and every failure is listed with its reason.",
+    tags: ["code-pinned", "attested", "per-call hash, no global epoch"],
+  },
+  {
+    icon: "bundle",
+    title: "A TypeScript toolkit",
+    body: "The off-chain twin of every on-chain piece, fuzzed against the Solidity renderer byte for byte, 10,000 cases per CI run.",
+    tags: ["displayvm-ts", "urrender", "vdesc-compiler", "snapshot-cli", "signer", "frames-sdk", "WalletConnect"],
   },
 ];
 
