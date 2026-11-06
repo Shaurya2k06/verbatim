@@ -220,13 +220,17 @@ export default function Demo() {
 
       <section className="panel">
         <h2>
-          The real Uniswap app <Pill tone="warn">NOT RUN · blocked at token selection</Pill>
+          The real Uniswap app <Pill tone="ok">RECORDED · Sepolia</Pill>
         </h2>
         <p>
-          The same attack as a malicious build step on Uniswap's own interface: a Vite plugin rewrites <code>eth_sendTransaction</code> into a minimum-output-0 swap through SkimHook, while the page keeps showing the honest quote.
+          The same attack as a malicious build step on Uniswap's own interface: a Vite plugin rewrites <code>eth_sendTransaction</code> into a minimum-output-0 swap through SkimHook, while the page keeps showing the honest quote. The page said 26.19 USDC. The ordinary wallet signed, and almost all of the output went to the hook. Verbatim refused the same bytes.
         </p>
+        <div className="row">
+          <ProofRef id="B-UI-eoa" />
+          <ProofRef id="B-UI-verbatim" />
+        </div>
         <p className="small muted">
-          What is real: the interface builds and runs from a clean checkout, the injected provider wrapper loads, and Trading API calls succeed. What is not: Uniswap's data backend refuses a local origin, so a token cannot be selected, and the attack has never run end to end through this interface. The route itself is proven on the official contracts above (<code>B-A2-eoa</code>, <code>B-A2b</code>).
+          What is real: the interface, built from a clean checkout; the quote, from the Trading API; the transaction, on Sepolia. What the harness changes: it runs on a local origin, so RPC goes to our provider, Uniswap's data backend is unavailable, and token metadata for the selected pair comes from the chain. Testnet mode is preset. The checkout loses references to unpublished workspaces (<code>DECISIONS.md</code>, D-A22). The page offers USDC, and the skim pays out in the demo pool's dUSDC.
         </p>
       </section>
 

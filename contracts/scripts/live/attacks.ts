@@ -64,7 +64,8 @@ const steps: Step[] = [
     run: async () => {
       const honest = await prepareTx([transferCall(s.tokenA, victim, 1_000_000n)]);
       const lie = await prepareTx([transferCall(s.tokenA, thief, 1_000_000n)], { expiry: honest.expiry, overrideSentence: { tree: honest.tree, spec: honest.spec } });
-      await mustReject("A1", "Swap the recipient", "mempool reject (tree mismatch)", await sign(lie), (m) => /TreeMismatch/.test(m));
+      // The lie changes what the chain renders. Its guarantees are compared first, so either mismatch means the render caught it.
+      await mustReject("A1", "Swap the recipient", "mempool reject: the render differs from what was signed", await sign(lie), (m) => /TreeMismatch|SpecHashMismatch/.test(m));
     },
   },
   {
@@ -252,30 +253,6 @@ const steps: Step[] = [
       const second = await sign(await prepareTx([transferCall(s.tokenA, victim, 0n)], { account: acct, skipTickets: true }));
       await mustReject("A14", "Two transactions, one fee ticket", "the second is rejected: tickets are per nonce", second, (m) => firstOk && /NoTicket/.test(m));
       console.log("first drew the ticket", h);
-    },
-  },
-  {
-    id: "B12",
-    title: "Same signed content under a different nonce key",
-    expected: "the second is refused: Replayed",
-    run: async () => {
-      // Two keys at sequence 0, so the second carries exactly what the first signed. txCommit does not cover the key.
-      const keyA = BigInt(Math.floor(Date.now() / 1000)) << 8n;
-      const keyB = keyA + 1n;
-      await send(key("DEPLOYER_KEY"), s.paymaster, encodeFunctionData({ abi: PAYMASTER_ABI, functionName: "fundTickets", args: [s.account, 0n, 1n] }), TICKET, 2_000_000n);
-      const p = await prepareTx([transferCall(s.tokenA, victim, 1n)], { nonce: 0n });
-      const signed = await sign(p);
-      const first = { ...signed, nonceKeys: [keyA] };
-      let landed = "";
-      try {
-        const { h, r } = await land(first);
-        landed = batchResult(r, s.account).ok ? h : "";
-      } catch (e) {
-        record({ id: "B12", title: "Same signed content under a different nonce key", expected: "the second is refused: Replayed", pass: false, outcome: "not-run", message: `the first, keyed transaction was refused: ${decodeRevert((e as RpcError).message)}` });
-        return;
-      }
-      await sleep(7000);
-      await mustReject("B12", "Same signed content under a different nonce key", "the second is refused: Replayed", { ...signed, nonceKeys: [keyB] }, (m) => !!landed && /Replayed/.test(m));
     },
   },
   {

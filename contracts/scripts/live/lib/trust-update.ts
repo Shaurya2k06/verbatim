@@ -26,7 +26,7 @@ export const attestations = (hash: Hex) => attest8176(hash, sortSigs(signers()).
 
 /** A descriptor file with `$NAME` placeholders resolved, attested in ERC-8176 form by the first two attestors. */
 export async function descriptorsFor(file: string, codehash: Hex, vars: Record<string, string> = {}, publisher?: string): Promise<TrustUpdate["descriptors"]> {
-  let text = readFileSync(resolve(ROOT, "descriptors", file), "utf8");
+  let text = readFileSync(resolve(ROOT, "contracts/descriptors", file), "utf8");
   for (const [k, v] of Object.entries(vars)) text = text.replaceAll(`$${k}`, v);
   const json = JSON.parse(text);
   return descriptorsFromJson(json, codehash, publisher, await attestations(descriptorHash(json)));

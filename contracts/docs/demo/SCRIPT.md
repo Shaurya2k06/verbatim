@@ -15,7 +15,7 @@ Say the bounty counter only if it is live. Say the stateless line only with its 
 ```sh
 cd contracts/scripts/live
 npx tsx health.ts            # is the devnet producing blocks?
-npx tsx legb-deploy.ts       # reissues the Sepolia snapshot, which lasts 6 hours
+npx tsx refresh-snapshot.ts  # re-signs the Sepolia snapshot, which lasts 6 hours
 ```
 
 If the devnet is down, go to [OFFLINE.md](OFFLINE.md) straight away. Do not wait on stage.

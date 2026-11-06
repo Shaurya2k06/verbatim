@@ -10,12 +10,27 @@ signatures. The mempool's cap applies to the declared limits plus signatures. Ro
 
 | Proof | What | Validation frames | Prefix | Execute exec | Execute state | Tx |
 |---|---|---:|---:|---:|---:|---|
-| HONEST | Honest 4-frame transfer | 3,051 + 16,112 + 60,482 | 85,245 | 160,115 | 391,680 | `0x9455794616...` |
-| SWAP | Honest v4 swap through the real Universal Router | 18,860 + 62,725 | 87,185 | 358,960 | 97,920 | `0x6aaba4c1fd...` |
-| WRAP | WRAP_ETH through the real Universal Router | 18,420 + 47,779 | 71,799 | 264,408 | 97,920 | `0x9f48386b43...` |
-| A11 | Reentrancy into executeVerified | 3,051 + 16,248 + 51,922 | 76,821 | 102,171 | 97,920 | `0x55077d80b6...` |
-| A12 | Gas griefing: a call burns all its gas | 3,051 + 16,051 + 45,113 | 69,815 | 975,903 | 97,920 | `0x34a28447d3...` |
-| F7 | Fee failure runs nothing | 3,051 + 16,112 + 60,470 | 85,233 | 20,932 | 0 | `0xfac98fb726...` |
+| HONEST | Honest 4-frame transfer | 3,051 + 16,285 + 60,493 | 85,429 | 160,872 | 97,920 | `0x5dcc5a88e7...` |
+| SWAP | Honest v4 swap through the real Universal Router | 3,051 + 16,719 + 65,218 | 90,588 | 240,545 | 97,920 | `0xcad426d4e5...` |
+| WRAP | WRAP_ETH through the real Universal Router | 3,051 + 16,409 + 53,824 | 78,884 | 181,124 | 97,920 | `0x25c7c73f13...` |
+| A6 | EvilVault keeps the ETH and credits no shares | 3,051 + 16,298 + 54,220 | 79,169 | 136,429 | 97,920 | `0x4221e7bcda...` |
+| A11 | Reentrancy into executeVerified | 3,051 + 16,421 + 51,934 | 77,006 | 102,977 | 97,920 | `0xd7ee13c361...` |
+| A12 | Gas griefing: a call burns all its gas | 3,051 + 16,224 + 45,124 | 69,999 | 975,917 | 97,920 | `0x3869207265...` |
+| F7 | Fee failure runs nothing | 3,051 + 16,285 + 60,481 | 85,417 | 21,252 | 0 | `0x4c4af86d71...` |
+
+### Stateless path
+
+Simulated with room to spare, so these are what each transaction needs. The declared limits stay under the 100,000 cap: expiry 3,500, account 85,300, four signatures 11,200.
+
+| Transaction | Expiry | Account | Signatures | Prefix | Proof bytes |
+|---|---:|---:|---:|---:|---:|
+| transfer | 3,051 | 76,234 | 11,200 | 90,485 | 732 |
+| approve (Permit2) | 3,051 | 83,926 | 11,200 | 98,177 | 1,005 |
+| v4 swap (ETH in) | 3,051 | 82,291 | 11,200 | 96,542 | 591 |
+| WRAP_ETH | 3,051 | 70,245 | 11,200 | 84,496 | 264 |
+
+The G2 target was a prefix of at most 90k. A transfer misses it by 485 gas, and a swap needs 96,542. All of them fit the cap.
+
 
 **Why the prefix is tight:** the deployed sidecar caps it at 100,000 (`FINDINGS.md`, b), so render was written to fit. See `DECISIONS.md`, D-A20.
 
@@ -31,12 +46,12 @@ Measured by `contracts/scripts/live/measure.ts` with generous limits, so each fi
 
 | Transaction | Expiry | Account | Paymaster | Signatures | Prefix | Headroom |
 |---|---:|---:|---:|---:|---:|---:|
-| transfer | 3,051 | 16,112 | 60,482 | 5,600 | 85,245 | 14,755 |
-| approve | 3,051 | 16,121 | 64,032 | 5,600 | 88,804 | 11,196 |
-| permit2.approve | 3,051 | 16,146 | 69,058 | 5,600 | 93,855 | 6,145 |
-| v4 swap (ETH in) | 3,051 | 16,546 | 65,439 | 5,600 | 90,636 | 9,364 |
+| transfer | 3,051 | 16,285 | 60,493 | 5,600 | 85,429 | 14,571 |
+| approve | 3,051 | 16,294 | 64,043 | 5,600 | 88,988 | 11,012 |
+| permit2.approve | 3,051 | 16,319 | 69,069 | 5,600 | 94,039 | 5,961 |
+| v4 swap (ETH in) | 3,051 | 16,719 | 65,218 | 5,600 | 90,588 | 9,412 |
 
-v4 `SWAP_EXACT_IN` renders in both renderers and is tested, but has not been measured on a live chain. `V3_SWAP_EXACT_IN` renders, but the devnet's router has no v3 factory, so it cannot run there. An unknown command or action renders as `BLIND` and is refused.
+v4 `SWAP_EXACT_IN` is measured on Sepolia: two hops landed through the account in 929,953 transaction gas (`B-multihop`). `V3_SWAP_EXACT_IN` renders, but the devnet's router has no v3 factory, so it cannot run there. An unknown command or action renders as `BLIND` and is refused.
 
 ## Patched bytecode
 

@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { createPublicClient, createWalletClient, encodeAbiParameters, encodeDeployData, http, type Abi, type Address, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { DEVNET, rpc } from "@verbatim/frames-sdk";
+import { DEVNET, GATEWAY, rpc } from "@verbatim/frames-sdk";
 import { ROOT } from "./env";
 import { patchApprove } from "./patch";
 
@@ -26,7 +26,8 @@ export function artifact(file: string, name: string) {
 }
 
 export async function faucet(address: Address) {
-  return rpc(DEVNET.mempool, "skandha_explorer_faucet", [address]);
+  // Only the gateway runs the faucet; the miner's sidecar answers that it is disabled.
+  return rpc(GATEWAY, "skandha_explorer_faucet", [address]);
 }
 
 export async function waitBalance(address: Address, min: bigint, timeoutMs = 90_000) {

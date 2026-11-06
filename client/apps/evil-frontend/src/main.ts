@@ -28,7 +28,7 @@ const attacks: Attack[] = [
   {
     name: "Swap the recipient",
     claim: `Send 1 dUSDC to ${bob}`,
-    expected: "Mempool rejects: tree mismatch",
+    expected: "Mempool rejects: what the chain renders differs from what was signed",
     async build() {
       const shown = await prepareCalls([transfer(bob)]);
       const lie = await prepareCalls([transfer(thief)], { expiry: shown.expiry, overrideSentence: { tree: shown.tree, spec: shown.spec } });
@@ -38,7 +38,7 @@ const attacks: Attack[] = [
   {
     name: "minOut = 0 through SkimHook",
     claim: "Swap 0.001 ETH for at least 2 dUSDC",
-    expected: "Mempool rejects: tree mismatch",
+    expected: "Mempool rejects: what the chain renders differs from what was signed",
     async build() {
       const shown = await prepareCalls([swap(d.pools.honest.key, 2_000_000n)]);
       const lie = await prepareCalls([swap(d.pools.evil.key, 0n)], { expiry: shown.expiry, overrideSentence: { tree: shown.tree, spec: shown.spec } });
@@ -125,8 +125,8 @@ const attacks: Attack[] = [
     claim: "Swap 0.001 ETH for at least 2 dUSDC",
     expected: "The device shows COMMAND MAY PARTIALLY FAIL; policy refuses",
     async build() {
-      const input = v4ExactInSingleInput({ key: d.pools.honest.key, zeroForOne, amountIn: parseEther("1"), amountOutMinimum: 2_000_000_000n });
-      return sends(await prepareCalls([{ target: d.uniswap.router, value: 0n, data: executeData([CMD.V4_SWAP | CMD.FLAG_ALLOW_REVERT], [input], BigInt(Math.floor(Date.now() / 1000) + 600)) }]));
+      const input = v4ExactInSingleInput({ key: d.pools.honest.key, zeroForOne: true, amountIn: parseEther("0.001"), amountOutMinimum: 2_000_000n });
+      return sends(await prepareCalls([{ target: d.uniswap.router, value: parseEther("0.001"), data: executeData([CMD.V4_SWAP | CMD.FLAG_ALLOW_REVERT], [input], BigInt(Math.floor(Date.now() / 1000) + 600)) }]));
     },
   },
   {

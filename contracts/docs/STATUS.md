@@ -7,25 +7,24 @@ Where the build stands against `context.md`, gate by gate. A gate counts as pass
 | Gate | State | Evidence or what is left |
 |---|---|---|
 | G0 probes | **Done** | `G0a`-`G0f` in `PROOFS.md` |
-| G1 paymaster upgrade | **Code done, live proofs pending** | 176 Foundry tests, 10k fuzz. **The public devnet stopped at block 408262.** `contracts/scripts/live/wait-devnet.sh` reruns everything when it moves. Until then the devnet rows in `proofs.json` are from older builds, and some show failures from a masked-revert bug since fixed |
-| G2 stateless path | **Code done, live proofs pending** | Tests for B1-B11 pass. `stateless.ts` has the live cases. Same blocker. Coverage so far: the descriptors in `contracts/descriptors/`, proved for transfer, approve, swap and wrap |
-| G3 Uniswap | **Partial** | Side-by-side live on official Sepolia contracts (`B-A2-eoa`, `B-A2b`). A two-hop v4 swap (ETH to dUSDC to dWETH) landed through the account with the output above its signed minimum (`B-multihop`): 929,953 transaction gas, with a bundler-reported `actualGasUsed` of 1,436,542. Hook X-ray built. WalletConnect wallet works over the real relay (`WC`). Real interface: see below. Upstream PR drafted in `contracts/docs/UPSTREAM.md`, not opened: the repo is private, so it would link to nothing |
+| G1 paymaster upgrade | **Done** | A1-A18, B14 and F7 met on the final build on the public devnet, after its 6 November reset. 191 Foundry tests, 10k fuzz with 0 mismatches. B12 is refused by the chain before the account's guard, which Foundry proves (`DECISIONS.md`, D-A23) |
+| G2 stateless path | **Done, one target missed by 485 gas** | Honest transfer, swap and wrap landed with no paymaster or stake. B1-B11 refused. A transfer needs a 90,485 prefix against the 90k target, and a swap 96,542; all fit the 100k cap. The skim hook is refused by gas inside the cap (D-A24). Coverage: the descriptors in `contracts/descriptors/`, proved for transfer, approve, swap and wrap |
+| G3 Uniswap | **Done, except the form** | The real-interface attack: see below. Side by side on official Sepolia contracts (`B-A2-eoa`, `B-A2b`). A two-hop v4 swap landed through the account above its signed minimum (`B-multihop`): 929,953 transaction gas, with a bundler-reported `actualGasUsed` of 1,436,542. Hook X-ray built. WalletConnect wallet works over the real relay (`WC`). **The feedback form is yours to submit.** Upstream PR drafted in `contracts/docs/UPSTREAM.md`, not opened |
 | G4 production | **Sepolia done; mainnet needs funds** | `VerbatimAccount4337` live through Pimlico and Alchemy. `deploy-l2.ts` ran end to end on throwaway local forks of Base and Optimism, and refuses to run without the right `CONFIRM_MAINNET`. A fork proves the deployment only: no snapshot exists for those chains and no operation ran there. The oracle and terms are written. Not deployed to an L2, and no funds at risk |
-| G5 ENS anchor | **Done on Sepolia, hosted link not confirmed** | `B13`, `B-ens-revoked`, `A8`. `client/` has the `/ens` page and deploy config for Vercel and Render, but no public URL is recorded and the deploys were not checked after the repo layout changed |
-| G6 measurement and standards | **Partial** | Four findings and both ERC drafts written, not posted. `SNAPSHOT.md` done. The N=50 invalidation bench needs the devnet. FrameReader and the patch tool are packaged, not published |
-| G7 freeze | **Partial** | Script, Q&A, offline fallback written. Rehearsals are yours. Final videos wait on the live run |
+| G5 ENS anchor | **Done on Sepolia; hosted at verbatim-wallet.vercel.app/ens, on an older build until `main` is updated** | `B13`, `B-ens-revoked`, `A8`. `client/` has the `/ens` page and deploy config for Vercel and Render, and the page answers from a logged-out client |
+| G6 measurement and standards | **Measured; posting is yours** | §16.3 is measured, in `ALTMEMPOOL.md`, including the N=50 bench. The findings and both ERC drafts are written, not posted. `SNAPSHOT.md` done. FrameReader and the patch tool are packaged, not published |
+| G7 freeze | **Yours to finish** | Script, Q&A, offline fallback and video script done. Rehearsals and the final upload are yours |
 | Hardware signer | **Not built** | Needs hardware in hand. The offline app remains the fallback |
 
-## The real-interface attack: how far it got
+## The real-interface attack
 
-Working, with your Trading API key and Reown ID:
+Done on Sepolia, through `Uniswap/interface` built from a clean checkout plus the malicious build step (`contracts/scripts/uniswap-evil`).
 
-- `Uniswap/interface` builds and serves locally from a clean checkout, once references to its unpublished workspaces are removed (`contracts/scripts/uniswap-evil`, `DECISIONS.md` D-A22).
-- The malicious build step loads in the page, and wraps the provider.
-- The UI detects and connects a wallet, on testnet mode.
-- Trading API calls succeed through the harness.
+- The page quoted 26.19 USDC for 0.001 ETH, from the real Trading API ([screenshot](demo/evidence/uniswap-review.png)).
+- The build step rewrote the transaction. An ordinary wallet signed it, the victim got 0.026 dUSDC and the hook took 2.55 (`B-UI-eoa`).
+- The exact bytes the page produced, given to Verbatim: three risk lines on the device, then `PolicyRefused(56)` (`B-UI-verbatim`).
 
-**Blocked:** selecting a token. The token selector and URL token lookup read Uniswap's data backend, which refuses a localhost origin and which the API key does not cover. So the UI has not yet shown a quote, and the attack has not run end to end through it. **Options:** a Uniswap data API key or allowed origin, or stubbing the data backend's responses in the harness, with that disclosed. The same route is proven without the UI, on the official contracts.
+What the harness changes is in `DECISIONS.md`, D-A22. The one stub is token metadata for the selected pair, read from the chain.
 
 ## G0 results
 
@@ -48,15 +47,15 @@ All five probes passed on the live devnet, and the stateless design is feasible 
 
 - The honest swap and A2 use **native-ETH pools**: one call, no approval. On the official Sepolia contracts the victim got 0.0272 dUSDC and the hook 2.70, of a 0.001 ETH swap (`B-A2-eoa`, rerun 2026-11-06).
 - `permit2.approve` alone now fails `APPROVALS_CLEARED`, which is exactly B14.
-- An ERC-20 swap on the final build has not been measured.
+- An ERC-20 swap on the final build has not been measured, because it does not fit.
 
 **A6.** For the same reason EvilVault can no longer hold a standing allowance, so a "hidden pull" cannot happen on a real account. The live A6 is now a vault that keeps the ETH and credits no shares. The hidden-pull case stays as a Foundry test with an out-of-band allowance and a watched token.
 
 ## Gas changes that made G1 fit
 
-The first G1 build measured 99-109k. The last measurement, before the devnet stopped: 85.2k transfer, 88.8k approve, 90.6k swap (ETH in). See `DECISIONS.md`, D-A20. The stateless path has not been measured live.
+The first G1 build measured 99-109k. On the final build: 85.4k transfer, 89.0k approve, 90.6k swap (ETH in), 94.0k `permit2.approve`. See `DECISIONS.md`, D-A20. 
 
 ## Known rough edges
 
 - **A multi-hop sentence reads oddly.** The route line is `Through: 0 dUSDC`, and pool fees show without saying which hop they belong to (`B-multihop`). It is accurate, and both renderers agree, but the wording needs a renderer change, which means a redeploy, so it waits for a reason to redeploy.
-- **Some named guards have no test that asserts them by name:** `SignatureMalleable`, `SpecMismatch`, `Reentrant`, `NotLocked`, `NoGasReserve`, `ChargeForcedToFail`, `SnapshotMismatch`, `SnapshotMissing`, `WrongAttestors`, `AttestorsNotSorted`, `DescriptorHashMismatch`, `BadSignatureLength`, `BadFrame`, `BadPath`, `BadOwner`, `BadThreshold`, `BadSpec`, `NotOwner`, `ReadFailed`, `WatchFull`. Each effect check now has one (`contracts/test/Effects.t.sol`, and `test_shown_name_*` in `Stateless.t.sol`). Disabling any one of the ten post-call checks in a scratch copy fails at least one test; the live checks are asserted by their error names.
+- **Six named guards have no test that asserts them by name:** `BadPath`, `BadSpec`, `SpecMismatch`, `SnapshotMissing`, `DescriptorHashMismatch` and `ChargeForcedToFail`, the last of which `F7` exercises live. Each effect check has a test (`contracts/test/Effects.t.sol`, and `test_shown_name_*` in `Stateless.t.sol`), and disabling any one of the ten post-call checks in a scratch copy fails at least one test.

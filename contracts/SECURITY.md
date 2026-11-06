@@ -55,6 +55,24 @@ Hackathon code, unaudited. Do not trust it with funds you would miss.
 - A snapshot lasts at most 6 hours by default. A paymaster-path transaction signs the root, so rotating the root drops pending ones on that path.
 - The APPROVE opcode is a patched LOG1 byte. Deployment fails unless the runtime holds exactly one, and CI checks the same (`contracts/scripts/live/check-bytecode.ts`).
 
+## Invariants and their tests
+
+| # | Invariant, short form | Where it is tested |
+|---|---|---|
+| I1 | A successful batch rendered to the signed tree | `test_I1_success_means_executed_calls_render_to_signed_tree`, `invariant_I1_I2_I5_only_signed_effects_persist` |
+| I2 | A successful batch satisfies every VSPEC item | `test_I2_success_means_spec_held_and_hash_matches`, the same invariant, `contracts/test/Effects.t.sol` |
+| I3 | Only the canonical layouts get an APPROVE | `test_I3_only_the_canonical_layout_gets_approval`, `invariant_I3_I6_no_lie_executes` |
+| I4 | A failed fee means no protected call | `test_I4_fee_failure_means_no_protected_call`, `invariant_I4_fees_match_landed`, live in `F7` |
+| I5 | A failed assertion leaves no protected effect | `test_I5_assert_failure_undoes_everything_and_fee_is_paid`, `invariant_I5_tracked_asset_never_decreases` |
+| I6 | Past expiry is never included; the device caps expiry | `test_I6_expiry_boundary`, `invariant_I3_I6_no_lie_executes`, `packages/signer` tests, live in `A7`, `A13` |
+| I7 | No takeover | `test_I7_account_bytecode_has_no_delegatecall_or_selfdestruct`, `test_I7_owner_changes_only_through_rendered_batch`, `invariant_I7_owners_fixed` |
+| I8 | Renderers produce identical bytes | `contracts/scripts/difffuzz`, 10,000 cases per CI run, and the shared vectors in `packages/displayvm-ts` |
+| I9 | Validation reads only what is allowed | `test_I9_validation_reads_only_own_storage`, `test_validation_reads_only_this_accounts_storage` |
+| I10 | A wrong-chain, over-TTL or expired snapshot is refused | `test_I10_expiry_past_snapshot_refused`, `test_B9_far_future_snapshot_expiry_refused`, live in `B3`, `B9` |
+| I11 | A revoked leaf never executes | `test_B4_B10_I11_revoked_leaf_never_executes`, live in `B10` |
+| I12 | No approval survives a batch, except Permit2 base allowances | `test_B14_I12_standing_approval_reverts`, `test_I12_base_allowance_to_permit2_is_the_one_exception_and_enters_the_ledger`, live in `B14` |
+| I13 | One digest executes at most once | `test_I13_digest_runs_once`, `test_B12_I13_same_digest_cannot_execute_twice`, live in `I13` |
+
 ## Static analysis
 
 Slither 0.11 over `contracts/src` on the final contracts, excluding informational findings, tests and libraries: 78 results, none of them a new defect. Rerun with `make -C contracts slither`; it exits non-zero whenever there are results.

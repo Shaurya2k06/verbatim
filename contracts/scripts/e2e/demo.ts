@@ -42,11 +42,11 @@ async function waitFor(url: string) {
   throw new Error(`${url} did not come up`);
 }
 
-serve("@verbatim/signer", 5173);
-serve("@verbatim/wallet", 5174);
-serve("@verbatim/swap-demo", 5175);
-serve("@verbatim/evil-frontend", 5176);
-await Promise.all([5173, 5174, 5175, 5176].map((p) => waitFor(`http://localhost:${p}`)));
+serve("@verbatim/signer", 5183);
+serve("@verbatim/wallet", 5184);
+serve("@verbatim/swap-demo", 5185);
+serve("@verbatim/evil-frontend", 5186);
+await Promise.all([5183, 5184, 5185, 5186].map((p) => waitFor(`http://localhost:${p}`)));
 
 const browser = await chromium.launch();
 const VIDEO = resolve(ROOT, "contracts/scripts/e2e/.video");
@@ -81,7 +81,7 @@ async function caption(page: Page, text: string) {
     if (!c) {
       c = document.createElement("div");
       c.id = "__caption";
-      c.setAttribute("style", "position:fixed;left:0;right:0;bottom:0;z-index:99999;background:#111;color:#fff;font:600 19px/1.35 system-ui;padding:12px 20px");
+      c.setAttribute("style", "pointer-events:none;position:fixed;left:0;right:0;bottom:0;z-index:99999;background:#111;color:#fff;font:600 19px/1.35 system-ui;padding:12px 20px");
       document.body.append(c);
     }
     c.textContent = t;
@@ -102,7 +102,7 @@ async function say(page: Page, text: string, ms = 4500) {
 
 // The device: loaded once, then cut off from every network.
 const device = await ctx.newPage();
-await device.goto("http://localhost:5173");
+await device.goto("http://localhost:5183");
 await device.route("**/*", (r) => r.abort());
 await device.getByPlaceholder("0x private key").fill(env.OWNER1_KEY);
 await device.getByRole("button", { name: "Import" }).click();
@@ -150,14 +150,14 @@ const pause = () => new Promise((r) => setTimeout(r, 9000)); // one block, so ea
 
 // Beat 1: the swap lie.
 const swap = await ctx.newPage();
-await swap.goto("http://localhost:5175");
+await swap.goto("http://localhost:5185");
 await say(swap, "Bybit, Feb 2025, $1.5B. Signers approved what a screen told them. Binance was a hacked machine: a different problem, out of scope here.", 7000);
 await say(swap, "Verbatim fixes the human case: the chain checks you signed what you read, then checks it actually happened.", 5000);
 await swap.locator("select").selectOption("lie");
 await say(swap, "Beat 1. An evil frontend says \"swap 0.001 ETH for at least 2 dUSDC\". Its calldata sets minOut = 0 and routes through a hook that skims 99%.", 6000);
 await swap.getByRole("button", { name: "Swap", exact: true }).click();
 await signFlow(swap);
-await outcome(swap, /Rejected.*TreeMismatch/s, "beat 1: lying swap frontend");
+await outcome(swap, /Rejected.*(TreeMismatch|SpecHashMismatch)/s, "beat 1: lying swap frontend");
 
 await swap.locator("select").selectOption("truth");
 await say(swap, "Rejected: that calldata does not render to the sentence signed. So show the truth instead, and sign it anyway.", 5000);
@@ -176,11 +176,11 @@ await pause();
 
 // Beat 2 and beat 3 share the attack kit page.
 const evil = await ctx.newPage();
-await evil.goto("http://localhost:5176");
+await evil.goto("http://localhost:5186");
 await say(evil, "Beat 2. The contract tells the truth, then does more. \"Deposit ETH for at least these shares\" is accurate, and the vault keeps the ETH and credits nothing. The chain checks what happened.", 6000);
 const kit: [string, RegExp][] = [
   ["The contract tells the truth", /Mined.*AssertionFailed/s],
-  ["Swap the recipient", /Rejected.*TreeMismatch/s],
+  ["Swap the recipient", /Rejected.*(TreeMismatch|SpecHashMismatch)/s],
   ["Drop the renderer frame", /Rejected.*BadLayout/s],
   ["Swap the spec for a weaker one", /Rejected.*SpecHashMismatch/s],
   ["Poison a descriptor", /Rejected.*PolicyRefused/s],
@@ -211,7 +211,7 @@ await device.waitForTimeout(PACE);
 
 // The wallet, honestly.
 const wallet = await ctx.newPage();
-await wallet.goto("http://localhost:5174");
+await wallet.goto("http://localhost:5184");
 await wallet.getByRole("button", { name: "Render the sentence" }).click();
 await signFlow(wallet);
 await outcome(wallet, /Landed in block/, "wallet: honest send lands");

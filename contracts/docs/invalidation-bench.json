@@ -1,0 +1,54 @@
+{
+ "n": 50,
+ "senders": 50,
+ "method": "ethrex_simulateFrameTransaction, the sidecar's own revalidation call; one pending transaction per sender",
+ "before": {
+  "paymaster": {
+   "valid": 50,
+   "stopped": 0,
+   "reasons": [],
+   "ms": 1448
+  },
+  "stateless": {
+   "valid": 50,
+   "stopped": 0,
+   "reasons": [],
+   "ms": 593
+  }
+ },
+ "afterRefresh": {
+  "paymaster": {
+   "valid": 50,
+   "stopped": 0,
+   "reasons": [],
+   "ms": 1404
+  },
+  "stateless": {
+   "valid": 50,
+   "stopped": 0,
+   "reasons": [],
+   "ms": 1209
+  }
+ },
+ "afterRotation": {
+  "paymaster": {
+   "valid": 0,
+   "stopped": 50,
+   "reasons": [
+    "SnapshotMismatch"
+   ],
+   "ms": 2376
+  },
+  "stateless": {
+   "valid": 50,
+   "stopped": 0,
+   "reasons": [],
+   "ms": 1134
+  }
+ },
+ "txs": {
+  "refresh": "0xff633a7b7ce66afae589dd81898fab5f25df84d6a0436016b61990e2244e742b",
+  "rotate": "0xb109b44ea8534136bf48859896dd97bd7e0e15d141af043ffb81626244bf1e55"
+ },
+ "at": "2026-11-06T07:56:25.142Z"
+}

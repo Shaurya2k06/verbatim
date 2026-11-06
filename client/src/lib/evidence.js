@@ -1,9 +1,8 @@
 // The audit's honesty rule (P0-4): every claim says what kind of evidence stands behind it.
 //
-// proofs.json does not yet record a leg or a build per row, so both are derived here, from what docs/STATUS.md and the README
-// state: Sepolia rows ran on the final code; the frames devnet stopped during the final build, so its rows are from older builds.
-// A row that carries its own `leg` or `evidence` field wins over this table. Have the proof scripts write those fields, then
-// delete the table.
+// proofs.json does not record a leg or a build per row, so both are derived here. The public frames devnet was reset on
+// 6 November 2026, and everything on it was rerun on the final build after that. A row older than the reset is from an earlier
+// chain and an earlier build. A row that carries its own `leg` or `evidence` field wins.
 
 export const EVIDENCE = {
   final: { label: "LIVE · final build", tone: "ok", note: "Ran on a live network, on the code this site describes." },
@@ -13,18 +12,16 @@ export const EVIDENCE = {
 };
 
 const SEPOLIA_ROWS = new Set(["A8", "B13", "WC"]);
-const DEVNET_B_ROWS = new Set(["B12", "B14"]); // stateless-path cases on the frames devnet, despite the B prefix
+const DEVNET_RESET = "2026-11-06T06:30:00.000Z";
 
 export function legOf(row) {
   if (row.leg) return row.leg;
-  if (SEPOLIA_ROWS.has(row.id)) return "sepolia";
-  if (row.id.startsWith("B") && !DEVNET_B_ROWS.has(row.id)) return "sepolia";
-  return "devnet";
+  return SEPOLIA_ROWS.has(row.id) || row.id.startsWith("B-") ? "sepolia" : "devnet";
 }
 
 export function evidenceOf(row) {
   if (row.evidence && EVIDENCE[row.evidence]) return row.evidence;
-  return legOf(row) === "sepolia" ? "final" : "older";
+  return legOf(row) === "devnet" && (row.at ?? "") < DEVNET_RESET ? "older" : "final";
 }
 
 export const OUTCOME = {
@@ -48,18 +45,18 @@ export const GROUPS = {
 };
 
 const GROUP_OF = {
-  sentence: ["A1", "A2", "A2b", "A3", "A3b", "A4", "A4b", "A16", "A17", "A17b", "B-A1", "B-A2b"],
-  trust: ["A5", "A8", "A10", "A15", "INVALIDATION", "B13", "B-ens-revoked", "B3", "B5", "B7", "B9"],
-  freshness: ["A7", "A7b", "A13", "B12"],
+  sentence: ["A1", "A2", "A2b", "A3", "A3b", "A4", "A4b", "A16", "A17", "A17b", "B-A1", "B-A2b", "B-UI-verbatim", "S-A1", "S-A2", "S-A2b", "B1", "B6", "B11-A3"],
+  trust: ["A5", "A8", "A10", "A15", "B13", "B-ens-revoked", "B3", "B5", "B7", "B9", "B10"],
+  freshness: ["A7", "A7b", "A13", "B12", "S-B12", "B11-A7", "B11-A7b"],
   effects: ["A6", "A11", "A12", "A18", "B14"],
   fees: ["A9", "A14", "F7"],
-  baseline: ["HONEST", "SWAP", "WRAP", "A2-eoa", "B-A2-eoa", "B-honest-pimlico", "B-honest-alchemy", "B-swap", "B-multihop", "WC"],
+  baseline: ["HONEST", "SWAP", "WRAP", "A2-eoa", "B-A2-eoa", "B-UI-eoa", "B-honest-pimlico", "B-honest-alchemy", "B-swap", "B-multihop", "WC", "S-HONEST", "S-SWAP", "S-WRAP", "I13"],
 };
 const GROUP_INDEX = Object.fromEntries(Object.entries(GROUP_OF).flatMap(([g, ids]) => ids.map((id) => [id, g])));
 
 export function groupOf(id) {
   if (GROUP_INDEX[id]) return GROUP_INDEX[id];
-  if (id.startsWith("G0") || id.startsWith("CANONICAL")) return "probes";
+  if (id.startsWith("G0") || id.startsWith("CANONICAL") || id.startsWith("BENCH")) return "probes";
   return "trust";
 }
 

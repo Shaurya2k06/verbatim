@@ -329,6 +329,9 @@ importers:
 
   contracts/scripts/uniswap-evil:
     dependencies:
+      '@verbatim/displayvm-ts':
+        specifier: workspace:*
+        version: link:../../../packages/displayvm-ts
       playwright:
         specifier: ^1.48.0
         version: 1.64.1

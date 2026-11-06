@@ -168,9 +168,11 @@ export default function Proofs() {
           <div>rows miss their expected result, plus rows not run</div>
         </div>
       </div>
-      <div className="callout">
-        <strong>The audit gap, stated plainly.</strong> The frames devnet stopped producing blocks during the final build, so every devnet row is from an older build ({EVIDENCE.older.label}). Some of those miss their expected result because of a masked-revert bug since fixed: they show <code>FrameReadFailed</code> where the final build names the real reason. They stay here, marked, until the rerun replaces them. Sepolia rows ran on the final code.
-      </div>
+      {olderMet ? (
+        <div className="callout">
+          <strong>Older rows, stated plainly.</strong> The public frames devnet was reset to genesis on 6 November 2026, and Leg A was rerun on the final build after that. A row marked {EVIDENCE.older.label} predates the reset, so its transaction is no longer on the chain.
+        </div>
+      ) : null}
 
       <div className="filters">
         <Select label="Leg" value={f.leg} onChange={set("leg")} options={LEGS} />
