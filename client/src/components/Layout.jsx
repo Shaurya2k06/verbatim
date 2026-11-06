@@ -17,7 +17,7 @@ export const ROUTES = [
 ];
 
 /** One page failing must not blank the site: show the error, keep the navigation. */
-class PageBoundary extends Component {
+export class PageBoundary extends Component {
   state = { error: null };
   static getDerivedStateFromError(error) {
     return { error };
