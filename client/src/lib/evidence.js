@@ -9,7 +9,6 @@ export const EVIDENCE = {
   final: { label: "LIVE · final build", tone: "ok", note: "Ran on a live network, on the code this site describes." },
   older: { label: "LIVE · older build", tone: "warn", note: "Ran on a live network, on an earlier build. Pending a rerun." },
   foundry: { label: "FOUNDRY", tone: "info", note: "Proven in the Foundry test suite, not on a live network." },
-  stubbed: { label: "STUBBED", tone: "warn", note: "Part of the path is stubbed. The badge says which part." },
   local: { label: "LOCAL DEVNET", tone: "info", note: "Ran on a local devnet, not a public one." },
 };
 
@@ -54,7 +53,7 @@ const GROUP_OF = {
   freshness: ["A7", "A7b", "A13", "B12"],
   effects: ["A6", "A11", "A12", "A18", "B14"],
   fees: ["A9", "A14", "F7"],
-  baseline: ["HONEST", "SWAP", "WRAP", "A2-eoa", "B-A2-eoa", "B-honest-pimlico", "B-honest-alchemy", "B-swap", "WC"],
+  baseline: ["HONEST", "SWAP", "WRAP", "A2-eoa", "B-A2-eoa", "B-honest-pimlico", "B-honest-alchemy", "B-swap", "B-multihop", "WC"],
 };
 const GROUP_INDEX = Object.fromEntries(Object.entries(GROUP_OF).flatMap(([g, ids]) => ids.map((id) => [id, g])));
 
