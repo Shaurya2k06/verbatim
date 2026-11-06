@@ -129,7 +129,7 @@ abstract contract FrameIntrospection {
 /// APPROVE must execute in the frame target's own code (`ADDRESS == resolved_target`), and Solidity cannot emit it.
 /// The usual helper is a DELEGATECALL, which the account forbids (D10). `log1(0, 0, scope)` has the same stack shape
 /// as APPROVE (offset, length, scope), so the deploy tool flips that single byte from LOG1 (0xa1) to APPROVE (0xaa),
-/// after checking that the runtime holds exactly one LOG1 (see tools/scripts/lib/patch.ts). No contract using this
+/// after checking that the runtime holds exactly one LOG1 (see contracts/scripts/live/lib/patch.ts). No contract using this
 /// mixin may emit a one-topic log.
 abstract contract DevnetFrames is FrameIntrospection {
     address internal immutable FRAME_READER;

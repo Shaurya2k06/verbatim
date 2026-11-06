@@ -13,7 +13,7 @@ import {SkimHook} from "../src/demo/SkimHook.sol";
 import {TestToken} from "../src/demo/TestTokens.sol";
 import {MockPermit2} from "./Base.t.sol";
 
-/// The attack kit (§15), under the mock protocol. docs/PROOFS.md has the same attacks on the live devnet.
+/// The attack kit (§15), under the mock protocol. contracts/docs/PROOFS.md has the same attacks on the live devnet.
 contract AttacksTest is Base {
     function test_honest_transfer_lands() public {
         (bool ok, ) = run(plan(transferCall(BOB, 1e6), T0 + 100));

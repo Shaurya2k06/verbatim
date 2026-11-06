@@ -10,7 +10,7 @@ import {TestToken} from "../src/demo/TestTokens.sol";
 
 /// Random sequences of honest, hostile and administrative transactions against the whole system, run as whole
 /// transactions under the mock protocol. The handler keeps ghost state; the suite checks I1-I7, I9 and I10 after every
-/// call. (I8 is tools/difffuzz.) Validation failures are expected and swallowed: a refused transaction changes nothing.
+/// call. (I8 is contracts/scripts/difffuzz.) Validation failures are expected and swallowed: a refused transaction changes nothing.
 contract Handler is Base {
     address[3] internal users = [address(0xA), address(0xB), address(0xC)];
     uint256 public ghostLanded;

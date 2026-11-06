@@ -12,7 +12,7 @@ via_ir = true
 cbor_metadata = false
 bytecode_hash = "none"
 ffi = true
-fs_permissions = [{ access = "read", path = "./" }, { access = "read", path = "../test/vectors" }, { access = "read-write", path = "../.state" }]
+fs_permissions = [{ access = "read", path = "./" }, { access = "read", path = "./vectors" }, { access = "read-write", path = "./.state" }]
 
 [fuzz]
 runs = 256

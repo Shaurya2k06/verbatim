@@ -1,9 +1,10 @@
 packages:
   - "packages/*"
-  - "apps/*"
-  - "tools/*"
   - "client"
+  - "client/apps/*"
   - "server"
+  - "server/bounty-oracle"
+  - "contracts/scripts/*"
 allowBuilds:
   esbuild: false
 minimumReleaseAgeExclude:

@@ -1,4 +1,4 @@
-// What a v4 hook can do, read from its address alone. Ported from apps/hook-xray. Bits as in Uniswap/v4-core@bea7f6d, Hooks.sol.
+// What a v4 hook can do, read from its address alone. Ported from client/apps/hook-xray. Bits as in Uniswap/v4-core@bea7f6d, Hooks.sol.
 import { encodeAbiParameters, keccak256 } from "viem";
 
 export const FLAGS = [

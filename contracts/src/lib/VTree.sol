@@ -152,7 +152,7 @@ library Buf {
     }
 }
 
-/// VTREE v2 node writers (docs/VTREE.md).
+/// VTREE v2 node writers (contracts/docs/VTREE.md).
 library VTree {
     using Buf for Buf.B;
 
@@ -287,7 +287,7 @@ library VTree {
     }
 }
 
-/// Risk codes (docs/VTREE.md) and their bit positions in the render's seen-risk set.
+/// Risk codes (contracts/docs/VTREE.md) and their bit positions in the render's seen-risk set.
 library Risk {
     uint16 internal constant UNLIMITED_APPROVAL = 0x0001;
     uint16 internal constant OPERATOR_APPROVAL = 0x0002;
@@ -330,7 +330,7 @@ library PolicyRules {
     }
 }
 
-/// VSPEC v2 (docs/VSPEC.md): collects effects during a render and serialises them deterministically.
+/// VSPEC v2 (contracts/docs/VSPEC.md): collects effects during a render and serialises them deterministically.
 library VSpec {
     using Buf for Buf.B;
     using Buf for bytes;

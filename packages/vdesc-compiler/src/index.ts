@@ -1,4 +1,4 @@
-// ERC-7730 JSON plus the Verbatim "effects" extension, to VDesc bytes (docs/VDESC.md). Deterministic.
+// ERC-7730 JSON plus the Verbatim "effects" extension, to VDesc bytes (contracts/docs/VDESC.md). Deterministic.
 import { bytesToHex, keccak256, toFunctionSelector, toHex, type Hex } from "viem";
 
 export type Src = { kind: "target" } | { kind: "const"; address: Hex } | { kind: "field"; path: string };
@@ -156,7 +156,7 @@ export function compile(f: FunctionSpec): { vdesc: Hex; descHash: Hex; selector:
 
 /**
  * Reads a descriptor file: standard ERC-7730 `metadata` and `display.formats` keys, each format carrying the
- * Verbatim `x-verbatim` extension with the compiled-field details. Our own subset, documented in docs/VDESC.md.
+ * Verbatim `x-verbatim` extension with the compiled-field details. Our own subset, documented in contracts/docs/VDESC.md.
  */
 export function compileFile(json: { metadata?: { owner?: string }; display: { formats: Record<string, { intent: string; "x-verbatim": Omit<FunctionSpec, "signature" | "intent"> }> } }) {
   return Object.entries(json.display.formats)

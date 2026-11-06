@@ -1,4 +1,4 @@
-// Verbatim as a WalletConnect wallet on the production leg. Ported from apps/wallet: pairing and sessions live here; each
+// Verbatim as a WalletConnect wallet on the production leg. Ported from client/apps/wallet: pairing and sessions live here; each
 // eth_sendTransaction is handed to the page, which renders it, collects owner signatures and submits it like any other operation.
 // What the dapp says is never what gets signed: the account renders what the calldata does.
 import { Core } from "@walletconnect/core";

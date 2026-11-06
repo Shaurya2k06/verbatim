@@ -1,5 +1,5 @@
 // EIP-8141 frame transactions, as implemented by the public devnet (ethrex `eip8141-tracer`, chain 1337).
-// Envelope, sig hash and wire format were checked against forshtat/ethrex@9aa3645d (see docs/DECISIONS.md, Q1).
+// Envelope, sig hash and wire format were checked against forshtat/ethrex@9aa3645d (see contracts/docs/DECISIONS.md, Q1).
 import { concat, fromRlp, keccak256, numberToHex, toRlp, type Address, type Hex } from "viem";
 
 export const FRAME_TX_TYPE = 0x06;

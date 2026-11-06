@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { useText } from "../lib/data";
 import { Failed, Loading } from "./States";
 
-const REPO = "https://github.com/shaurya2k06/verbatim/blob/main/docs/";
+const REPO = "https://github.com/shaurya2k06/verbatim/blob/main/contracts/docs/";
 
 export function Markdown({ path, strip = false }) {
   const s = useText(path);

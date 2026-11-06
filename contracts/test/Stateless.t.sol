@@ -644,9 +644,9 @@ contract StatelessTest is SnapshotFixture {
         }
     }
 
-    /// Two ways to the same answer: this file's tree and the CLI's, on one fixed input (test/vectors/snapshot.json).
+    /// Two ways to the same answer: this file's tree and the CLI's, on one fixed input (contracts/vectors/snapshot.json).
     function test_vector_matches_the_cli() public view {
-        string memory json = vm.readFile("../test/vectors/snapshot.json");
+        string memory json = vm.readFile("vectors/snapshot.json");
         bytes32 want = vm.parseJsonBytes32(json, ".root");
         bytes32 leaf = vm.parseJsonBytes32(json, ".leafHash");
         bytes32 t = keccak256(abi.encodePacked(bytes1(0), uint8(7), bytes32(uint256(1337)), bytes32(uint256(uint160(0x00000000000000000000000000000000000000A1))), bytes32(uint256(1))));

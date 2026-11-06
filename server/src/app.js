@@ -19,7 +19,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
 
 // Reads the repository's published deployments directly. DEPLOYMENTS_DIR overrides it when deployed away from the checkout.
-const DATA = process.env.DEPLOYMENTS_DIR ? resolve(process.env.DEPLOYMENTS_DIR) : resolve(dirname(fileURLToPath(import.meta.url)), "../../deployments");
+const DATA = process.env.DEPLOYMENTS_DIR ? resolve(process.env.DEPLOYMENTS_DIR) : resolve(dirname(fileURLToPath(import.meta.url)), "../../contracts/deployments");
 const readData = (p) => JSON.parse(readFileSync(resolve(DATA, p), "utf8"));
 let depCache;
 const dep = () => (depCache ??= readData("sepolia.json"));

@@ -91,7 +91,7 @@ contract MockUniversalResolver {
     }
 }
 
-/// Every step of the exclusivity proof (§12.2) fails closed on its own. A8 lives here and on Sepolia (docs/PROOFS.md).
+/// Every step of the exclusivity proof (§12.2) fails closed on its own. A8 lives here and on Sepolia (contracts/docs/PROOFS.md).
 contract EnsCheckerTest is Test {
     uint256 constant KEY = uint256(keccak256("clear-signing"));
     uint256 constant SET_TEXT = 1 << 4;

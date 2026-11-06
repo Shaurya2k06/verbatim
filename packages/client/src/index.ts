@@ -186,7 +186,7 @@ export interface GasPlan {
 /** Fits the deployed sidecar's flat 100k prefix cap, with 2 x 2,800 of signature cost. */
 export const PUBLIC_GATEWAY_GAS: GasPlan = { expiry: 3_500n, account: 18_500n, paymaster: 72_400n, execute: 1_200_000n, executeState: 1_500_000n };
 
-/** The deployed verifier. EIP-8141 names another address, where the devnet has no code (docs/DECISIONS.md, D-A19). */
+/** The deployed verifier. EIP-8141 names another address, where the devnet has no code (contracts/docs/DECISIONS.md, D-A19). */
 export const EXPIRY_VERIFIER: Address = "0x0000000000000000000000000000000000008141";
 
 export interface Sentence {

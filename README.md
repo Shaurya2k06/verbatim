@@ -18,6 +18,19 @@ Owners sign a **sentence**, not calldata:
 
 A staked paymaster re-renders that sentence from the transaction's real calldata during validation. If it differs from what the owners signed, the paymaster refuses to pay, so the transaction never enters the mempool. In execution, the account asserts what the sentence promised, and any violation reverts the batch.
 
+## Repository layout
+
+```
+client/      the hosted site, plus the earlier demo apps in client/apps/
+server/      the backend, the only place secrets live, plus server/bounty-oracle
+contracts/   src, test, lib, and everything that proves them:
+             scripts/ (live deploys and attacks, difffuzz, gas-report, e2e, registry-import, uniswap-evil)
+             descriptors/, deployments/, vectors/, docs/, SECURITY.md, Makefile
+packages/    shared libraries: renderers, SDK, signer, CLIs. client/ and contracts/scripts/ both use them
+```
+
+Secrets go in the root `.env` (see `.env.example`). `server/.env.example` lists what the server reads. Run `pnpm install` once at the root: pnpm keeps the workspace's dependencies in the root `node_modules`, which is generated and never committed.
+
 ## Scope
 
 **In scope:**
@@ -33,11 +46,11 @@ A staked paymaster re-renders that sentence from the transaction's real calldata
 - **A captured attestor quorum.** It *can* mislabel spenders, tokens or names. The amounts in the signed guarantees, the no-standing-approvals rule, and execution-time revocation still hold.
 - **Drift** (Apr 2026) is a footnote only. A truthful sentence would have described those admin calls accurately; expiry is the only mitigation that applies.
 
-**Where this stands:** [docs/STATUS.md](docs/STATUS.md) is the honest list. The public devnet stopped producing blocks during the final build, so the frames rows below are pending a rerun on it. Sepolia rows are live on the final code.
+**Where this stands:** [contracts/docs/STATUS.md](contracts/docs/STATUS.md) is the honest list. The public devnet stopped producing blocks during the final build, so the frames rows below are pending a rerun on it. Sepolia rows are live on the final code.
 
 ## It runs today
 
-All on live networks; every row links to a transaction or a named revert in **[docs/PROOFS.md](docs/PROOFS.md)**. Gas is measured from receipts in **[docs/GAS.md](docs/GAS.md)**.
+All on live networks; every row links to a transaction or a named revert in **[contracts/docs/PROOFS.md](contracts/docs/PROOFS.md)**. Gas is measured from receipts in **[contracts/docs/GAS.md](contracts/docs/GAS.md)**.
 
 | Attack | What happened |
 |---|---|
@@ -64,7 +77,7 @@ All on live networks; every row links to a transaction or a named revert in **[d
 | B13 attestor no longer listed in ENS | Refused at execution: `AttestorNotListed` |
 | B14, I12 an approval left standing | `AssertionFailed`: `APPROVALS_CLEARED` |
 
-Tests: 160 Foundry tests, including a stateful invariant suite and the attacks above, plus the TypeScript packages. I8 (the renderers are byte-identical) is a differential fuzzer: 10,000 random cases per CI run, zero mismatches. Coverage: **1,898 of 3,035 functions in the ERC-7730 registry compile, across 65 protocols** ([docs/REGISTRY.md](docs/REGISTRY.md), failures listed with reasons). Effects are written and tested for ERC-20, WETH, Permit2, the Universal Router, an ERC-4626 vault and an Aave-style pool. Static analysis and threat model: [SECURITY.md](SECURITY.md).
+Tests: 160 Foundry tests, including a stateful invariant suite and the attacks above, plus the TypeScript packages. I8 (the renderers are byte-identical) is a differential fuzzer: 10,000 random cases per CI run, zero mismatches. Coverage: **1,898 of 3,035 functions in the ERC-7730 registry compile, across 65 protocols** ([contracts/docs/REGISTRY.md](contracts/docs/REGISTRY.md), failures listed with reasons). Effects are written and tested for ERC-20, WETH, Permit2, the Universal Router, an ERC-4626 vault and an Aave-style pool. Static analysis and threat model: [SECURITY.md](contracts/SECURITY.md).
 
 ## Architecture
 
@@ -99,10 +112,10 @@ Trusted: the device's decoder and screen, the owners' keys, the attestor quorum 
 | `contracts/src/stateless/` | The proof-reading renderer and the revocation registry |
 | `contracts/src/leg-b/` | The same logic behind ERC-4337: any bundler, no paymaster |
 | `packages/signer` | Offline signer: one HTML file |
-| `apps/` | Wallet, swap demo, attack kit, ENS publisher check |
+| `client/apps/` | Wallet, swap demo, attack kit, ENS publisher check |
 | `tools/` | `difffuzz`, `gas-report`, `e2e` (demo and video), `scripts` (deploy and proofs) |
 
-Formats: [VTREE](docs/VTREE.md), [VSPEC](docs/VSPEC.md), [VDESC](docs/VDESC.md). Design and trade-offs for the mempool: **[docs/ALTMEMPOOL.md](docs/ALTMEMPOOL.md)**. Snapshots: [SNAPSHOT](docs/SNAPSHOT.md). Everything that changed from the design, and why: [docs/DECISIONS.md](docs/DECISIONS.md). Rule findings: [docs/FINDINGS.md](docs/FINDINGS.md). ERC drafts: [sentence-bound frame transactions](docs/erc/sentence-bound-frame-transactions.md), [signed attestation snapshots](docs/erc/signed-attestation-snapshots.md).
+Formats: [VTREE](contracts/docs/VTREE.md), [VSPEC](contracts/docs/VSPEC.md), [VDESC](contracts/docs/VDESC.md). Design and trade-offs for the mempool: **[contracts/docs/ALTMEMPOOL.md](contracts/docs/ALTMEMPOOL.md)**. Snapshots: [SNAPSHOT](contracts/docs/SNAPSHOT.md). Everything that changed from the design, and why: [contracts/docs/DECISIONS.md](contracts/docs/DECISIONS.md). Rule findings: [contracts/docs/FINDINGS.md](contracts/docs/FINDINGS.md). ERC drafts: [sentence-bound frame transactions](contracts/docs/erc/sentence-bound-frame-transactions.md), [signed attestation snapshots](contracts/docs/erc/signed-attestation-snapshots.md).
 
 ## Run it
 
@@ -112,7 +125,7 @@ Needs Node 20+, pnpm, and [Foundry](https://book.getfoundry.sh).
 pnpm install
 pnpm test:contracts                 # Foundry: invariants and attacks
 pnpm -r --if-present test           # TypeScript packages, golden vectors
-cd tools/difffuzz && pnpm fuzz      # 10,000 cases against a local anvil
+cd contracts/scripts/difffuzz && pnpm fuzz      # 10,000 cases against a local anvil
 ```
 
 **The demo, against what is already deployed.** Start the pages:
@@ -133,16 +146,16 @@ If the honest swap fails with `V4TooLittleReceived`, the slippage check is worki
 **Everything in a browser, unattended,** or a captioned fallback video (needs `ffmpeg`, and `pnpm exec playwright install chromium` once):
 
 ```sh
-cd tools/e2e && pnpm demo     # needs OWNER1_KEY and OWNER2_KEY in .env
-cd tools/e2e && pnpm record   # writes docs/demo/verbatim-demo.mp4
+cd contracts/scripts/e2e && pnpm demo     # needs OWNER1_KEY and OWNER2_KEY in .env
+cd contracts/scripts/e2e && pnpm record   # writes contracts/docs/demo/verbatim-demo.mp4
 ```
 
-**Your own deployment.** Generated devnet keys go to the git-ignored `.env`; see `.env.example`. The devnet's faucet is off, so fund the deployer with `tools/scripts/fund-from-shared.ts` and the shared key from the sidecar's published genesis values (never store that key here). `tools/scripts/wait-devnet.sh` waits for a stalled devnet, then runs everything.
+**Your own deployment.** Generated devnet keys go to the git-ignored `.env`; see `.env.example`. The devnet's faucet is off, so fund the deployer with `contracts/scripts/live/fund-from-shared.ts` and the shared key from the sidecar's published genesis values (never store that key here). `contracts/scripts/live/wait-devnet.sh` waits for a stalled devnet, then runs everything.
 
 ```sh
-make proofs                         # everything below, Leg A, from a clean deployment
+make -C contracts proofs                         # everything below, Leg A, from a clean deployment
 
-cd tools/scripts
+cd contracts/scripts/live
 ./fresh-deploy.sh                   # Leg A: contracts, stake, attestation, pools
 npx tsx attacks.ts                  # the attack kit, against the live mempool
 npx tsx swap.ts                     # honest swap, WRAP_ETH, A2
@@ -153,12 +166,12 @@ npx tsx legb-ens.ts my-anchor --anchor   # Leg B: the anchor name's attestor and
 npx tsx legb-deploy.ts && npx tsx legb-run.ts   # the production leg; reissues the 6-hour snapshot
 npx tsx why-evil.ts                 # why the account refuses the evil route, with no transaction
 npx tsx health.ts                   # is the devnet producing blocks?
-cd ../gas-report && pnpm report     # regenerate docs/GAS.md and docs/PROOFS.md
+cd ../gas-report && pnpm report     # regenerate contracts/docs/GAS.md and contracts/docs/PROOFS.md
 ```
 
 ## Deployed addresses
 
-**[docs/ADDRESSES.md](docs/ADDRESSES.md)**, generated from [deployments/devnet.json](deployments/devnet.json) and [deployments/sepolia.json](deployments/sepolia.json). The devnet can reset, so these are the only copies to trust. Explorer for Leg A: https://explorer.altmempool.wtf/
+**[contracts/docs/ADDRESSES.md](contracts/docs/ADDRESSES.md)**, generated from [contracts/deployments/devnet.json](contracts/deployments/devnet.json) and [contracts/deployments/sepolia.json](contracts/deployments/sepolia.json). The devnet can reset, so these are the only copies to trust. Explorer for Leg A: https://explorer.altmempool.wtf/
 
 ## Uniswap integration: contracts and lines
 
@@ -175,7 +188,7 @@ cd ../gas-report && pnpm report     # regenerate docs/GAS.md and docs/PROOFS.md
 | Where the renderer dispatches to it | [`DisplayVM.sol:188`](contracts/src/lib/DisplayVM.sol#L188) |
 | Permit2 allowance reads in assertions | [`AssertionKit.sol:32`](contracts/src/lib/AssertionKit.sol#L32) |
 | The evil hook | [`SkimHook.sol:38`](contracts/src/demo/SkimHook.sol#L38) |
-| Pool creation and liquidity through PositionManager | [`seed-uniswap.ts:66`](tools/scripts/seed-uniswap.ts#L66) |
+| Pool creation and liquidity through PositionManager | [`seed-uniswap.ts:66`](contracts/scripts/live/seed-uniswap.ts#L66) |
 
 **Upstream, as checked**
 
@@ -200,7 +213,7 @@ cd ../gas-report && pnpm report     # regenerate docs/GAS.md and docs/PROOFS.md
 - nobody can change the name's resolver or subregistry, and parents hold no direct right to;
 - registered at least a year past now.
 
-A shown name must resolve forward and reverse at execution, where a mismatch reverts. `apps/ens-demo` runs the same checks live for any name you type. See `docs/DECISIONS.md` (D-A11) for limits: only second-level `.eth` names work, and the demo's council is an EOA.
+A shown name must resolve forward and reverse at execution, where a mismatch reverts. `client/apps/ens-demo` runs the same checks live for any name you type. See `contracts/docs/DECISIONS.md` (D-A11) for limits: only second-level `.eth` names work, and the demo's council is an EOA.
 
 ## Trust assumptions and residual risks
 
@@ -215,7 +228,7 @@ A shown name must resolve forward and reverse at execution, where a mismatch rev
 
 ## Status and limits
 
-Hackathon code, unaudited. Known limits: one call per transaction on the deployed sidecar, so ERC-20 swaps do not fit yet; no mainnet deployment; no independent review. The rest are in [docs/STATUS.md](docs/STATUS.md) and [docs/DECISIONS.md](docs/DECISIONS.md). The devnet is a throwaway network that may reset, in which case its addresses change and `fresh-deploy.sh` rebuilds everything.
+Hackathon code, unaudited. Known limits: one call per transaction on the deployed sidecar, so ERC-20 swaps do not fit yet; no mainnet deployment; no independent review. The rest are in [contracts/docs/STATUS.md](contracts/docs/STATUS.md) and [contracts/docs/DECISIONS.md](contracts/docs/DECISIONS.md). The devnet is a throwaway network that may reset, in which case its addresses change and `fresh-deploy.sh` rebuilds everything.
 
 **Built with AI.** Most of this repo was written with Claude Code, directed and reviewed by the team.
 

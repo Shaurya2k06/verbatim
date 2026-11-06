@@ -17,7 +17,7 @@ jobs:
       - name: TypeScript packages
         run: pnpm -r --if-present test
       - name: Differential fuzz (I8), at least 10k cases
-        working-directory: tools/difffuzz
+        working-directory: contracts/scripts/difffuzz
         run: pnpm exec tsx src/fuzz.ts 10000 "$GITHUB_RUN_NUMBER"
       - name: URRender package matches the contract sources
         run: |
@@ -27,5 +27,5 @@ jobs:
       - name: frame-tools matches the contract's FrameReader
         run: cmp contracts/src/lib/FrameReader.yul packages/frame-tools/yul/FrameReader.yul
       - name: Exactly one LOG1 in the account and paymaster, no DELEGATECALL in the account
-        working-directory: tools/scripts
+        working-directory: contracts/scripts/live
         run: npx tsx check-bytecode.ts

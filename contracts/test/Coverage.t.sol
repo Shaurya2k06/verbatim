@@ -64,7 +64,7 @@ contract MockPool {
     }
 }
 
-/// Effects for ERC-20, WETH, a vault and a lending pool, with the compiled descriptors from `descriptors/`.
+/// Effects for ERC-20, WETH, a vault and a lending pool, with the compiled descriptors from `contracts/descriptors/`.
 contract CoverageTest is Base {
     address constant ASSET = 0x00000000000000000000000000000000000a55E7;
     string json;
@@ -72,7 +72,7 @@ contract CoverageTest is Base {
 
     function setUp() public override {
         super.setUp();
-        json = vm.readFile("../test/vectors/descriptors.json");
+        json = vm.readFile("vectors/descriptors.json");
         vm.etch(ASSET, address(usdc).code);
         asset = TestToken(ASSET);
         asset.mint(address(account), 1000e6);

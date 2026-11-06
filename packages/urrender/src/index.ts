@@ -1,4 +1,4 @@
-// TypeScript twin of contracts/src/uniswap/URRender.sol. Output must be byte-identical; see tools/difffuzz.
+// TypeScript twin of contracts/src/uniswap/URRender.sol. Output must be byte-identical; see contracts/scripts/difffuzz.
 import { bytesToHex, hexToBigInt, keccak256, type Address, type Hex } from "viem";
 import { BIT, Buf, Effects, RISK, RenderError, SPEC, UNIT, VT, NODE, rdAddr, rdBe, rdU8, rdWord, slice, toAddr, toInt } from "./vtree";
 

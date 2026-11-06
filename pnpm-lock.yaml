@@ -28,135 +28,6 @@ importers:
         specifier: ^2.1.0
         version: 2.1.9(@types/node@22.20.5)(lightningcss@1.33.0)(supports-color@5.5.0)
 
-  apps/bounty-oracle:
-    dependencies:
-      '@verbatim/displayvm-ts':
-        specifier: workspace:*
-        version: link:../../packages/displayvm-ts
-      viem:
-        specifier: ^2.21.0
-        version: 2.57.16(typescript@5.9.3)(zod@4.6.7)
-    devDependencies:
-      tsx:
-        specifier: ^4.19.0
-        version: 4.23.15
-      vitest:
-        specifier: ^2.1.0
-        version: 2.1.9(@types/node@22.20.5)(lightningcss@1.33.0)(supports-color@5.5.0)
-
-  apps/ens-demo:
-    dependencies:
-      '@verbatim/app-kit':
-        specifier: workspace:*
-        version: link:../../packages/app-kit
-      viem:
-        specifier: ^2.21.0
-        version: 2.57.16(typescript@5.9.3)(zod@4.6.7)
-    devDependencies:
-      vite:
-        specifier: ^5.4.0
-        version: 5.4.21(@types/node@22.20.5)(lightningcss@1.33.0)
-
-  apps/evil-frontend:
-    dependencies:
-      '@verbatim/app-kit':
-        specifier: workspace:*
-        version: link:../../packages/app-kit
-      '@verbatim/client':
-        specifier: workspace:*
-        version: link:../../packages/client
-      '@verbatim/displayvm-ts':
-        specifier: workspace:*
-        version: link:../../packages/displayvm-ts
-      '@verbatim/frames-sdk':
-        specifier: workspace:*
-        version: link:../../packages/frames-sdk
-      '@verbatim/urrender':
-        specifier: workspace:*
-        version: link:../../packages/urrender
-      viem:
-        specifier: ^2.21.0
-        version: 2.57.16(typescript@5.9.3)(zod@4.6.7)
-    devDependencies:
-      vite:
-        specifier: ^5.4.0
-        version: 5.4.21(@types/node@22.20.5)(lightningcss@1.33.0)
-
-  apps/hook-xray:
-    dependencies:
-      viem:
-        specifier: ^2.21.0
-        version: 2.57.16(typescript@5.9.3)(zod@4.6.7)
-    devDependencies:
-      vite:
-        specifier: ^5.4.0
-        version: 5.4.21(@types/node@22.20.5)(lightningcss@1.33.0)
-      vitest:
-        specifier: ^2.1.0
-        version: 2.1.9(@types/node@22.20.5)(lightningcss@1.33.0)(supports-color@5.5.0)
-
-  apps/swap-demo:
-    dependencies:
-      '@verbatim/app-kit':
-        specifier: workspace:*
-        version: link:../../packages/app-kit
-      '@verbatim/client':
-        specifier: workspace:*
-        version: link:../../packages/client
-      '@verbatim/displayvm-ts':
-        specifier: workspace:*
-        version: link:../../packages/displayvm-ts
-      '@verbatim/frames-sdk':
-        specifier: workspace:*
-        version: link:../../packages/frames-sdk
-      '@verbatim/urrender':
-        specifier: workspace:*
-        version: link:../../packages/urrender
-      viem:
-        specifier: ^2.21.0
-        version: 2.57.16(typescript@5.9.3)(zod@4.6.7)
-    devDependencies:
-      vite:
-        specifier: ^5.4.0
-        version: 5.4.21(@types/node@22.20.5)(lightningcss@1.33.0)
-
-  apps/wallet:
-    dependencies:
-      '@reown/walletkit':
-        specifier: ^1.2.0
-        version: 1.6.0(typescript@5.9.3)(zod@4.6.7)
-      '@verbatim/app-kit':
-        specifier: workspace:*
-        version: link:../../packages/app-kit
-      '@verbatim/client':
-        specifier: workspace:*
-        version: link:../../packages/client
-      '@verbatim/displayvm-ts':
-        specifier: workspace:*
-        version: link:../../packages/displayvm-ts
-      '@verbatim/frames-sdk':
-        specifier: workspace:*
-        version: link:../../packages/frames-sdk
-      '@verbatim/snapshot-cli':
-        specifier: workspace:*
-        version: link:../../packages/snapshot-cli
-      '@verbatim/urrender':
-        specifier: workspace:*
-        version: link:../../packages/urrender
-      '@walletconnect/core':
-        specifier: ^2.21.0
-        version: 2.26.0(typescript@5.9.3)(zod@4.6.7)
-      '@walletconnect/utils':
-        specifier: ^2.21.0
-        version: 2.26.0(typescript@5.9.3)(zod@4.6.7)
-      viem:
-        specifier: ^2.21.0
-        version: 2.57.16(typescript@5.9.3)(zod@4.6.7)
-    devDependencies:
-      vite:
-        specifier: ^5.4.0
-        version: 5.4.21(@types/node@22.20.5)(lightningcss@1.33.0)
-
   client:
     dependencies:
       '@reown/walletkit':
@@ -235,6 +106,236 @@ importers:
       vite:
         specifier: ^8.3.6
         version: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)
+
+  client/apps/ens-demo:
+    dependencies:
+      '@verbatim/app-kit':
+        specifier: workspace:*
+        version: link:../../../packages/app-kit
+      viem:
+        specifier: ^2.21.0
+        version: 2.57.16(typescript@5.9.3)(zod@4.6.7)
+    devDependencies:
+      vite:
+        specifier: ^5.4.0
+        version: 5.4.21(@types/node@22.20.5)(lightningcss@1.33.0)
+
+  client/apps/evil-frontend:
+    dependencies:
+      '@verbatim/app-kit':
+        specifier: workspace:*
+        version: link:../../../packages/app-kit
+      '@verbatim/client':
+        specifier: workspace:*
+        version: link:../../../packages/client
+      '@verbatim/displayvm-ts':
+        specifier: workspace:*
+        version: link:../../../packages/displayvm-ts
+      '@verbatim/frames-sdk':
+        specifier: workspace:*
+        version: link:../../../packages/frames-sdk
+      '@verbatim/urrender':
+        specifier: workspace:*
+        version: link:../../../packages/urrender
+      viem:
+        specifier: ^2.21.0
+        version: 2.57.16(typescript@5.9.3)(zod@4.6.7)
+    devDependencies:
+      vite:
+        specifier: ^5.4.0
+        version: 5.4.21(@types/node@22.20.5)(lightningcss@1.33.0)
+
+  client/apps/hook-xray:
+    dependencies:
+      viem:
+        specifier: ^2.21.0
+        version: 2.57.16(typescript@5.9.3)(zod@4.6.7)
+    devDependencies:
+      vite:
+        specifier: ^5.4.0
+        version: 5.4.21(@types/node@22.20.5)(lightningcss@1.33.0)
+      vitest:
+        specifier: ^2.1.0
+        version: 2.1.9(@types/node@22.20.5)(lightningcss@1.33.0)(supports-color@5.5.0)
+
+  client/apps/swap-demo:
+    dependencies:
+      '@verbatim/app-kit':
+        specifier: workspace:*
+        version: link:../../../packages/app-kit
+      '@verbatim/client':
+        specifier: workspace:*
+        version: link:../../../packages/client
+      '@verbatim/displayvm-ts':
+        specifier: workspace:*
+        version: link:../../../packages/displayvm-ts
+      '@verbatim/frames-sdk':
+        specifier: workspace:*
+        version: link:../../../packages/frames-sdk
+      '@verbatim/urrender':
+        specifier: workspace:*
+        version: link:../../../packages/urrender
+      viem:
+        specifier: ^2.21.0
+        version: 2.57.16(typescript@5.9.3)(zod@4.6.7)
+    devDependencies:
+      vite:
+        specifier: ^5.4.0
+        version: 5.4.21(@types/node@22.20.5)(lightningcss@1.33.0)
+
+  client/apps/wallet:
+    dependencies:
+      '@reown/walletkit':
+        specifier: ^1.2.0
+        version: 1.6.0(typescript@5.9.3)(zod@4.6.7)
+      '@verbatim/app-kit':
+        specifier: workspace:*
+        version: link:../../../packages/app-kit
+      '@verbatim/client':
+        specifier: workspace:*
+        version: link:../../../packages/client
+      '@verbatim/displayvm-ts':
+        specifier: workspace:*
+        version: link:../../../packages/displayvm-ts
+      '@verbatim/frames-sdk':
+        specifier: workspace:*
+        version: link:../../../packages/frames-sdk
+      '@verbatim/snapshot-cli':
+        specifier: workspace:*
+        version: link:../../../packages/snapshot-cli
+      '@verbatim/urrender':
+        specifier: workspace:*
+        version: link:../../../packages/urrender
+      '@walletconnect/core':
+        specifier: ^2.21.0
+        version: 2.26.0(typescript@5.9.3)(zod@4.6.7)
+      '@walletconnect/utils':
+        specifier: ^2.21.0
+        version: 2.26.0(typescript@5.9.3)(zod@4.6.7)
+      viem:
+        specifier: ^2.21.0
+        version: 2.57.16(typescript@5.9.3)(zod@4.6.7)
+    devDependencies:
+      vite:
+        specifier: ^5.4.0
+        version: 5.4.21(@types/node@22.20.5)(lightningcss@1.33.0)
+
+  contracts/scripts/difffuzz:
+    dependencies:
+      '@verbatim/displayvm-ts':
+        specifier: workspace:*
+        version: link:../../../packages/displayvm-ts
+      '@verbatim/urrender':
+        specifier: workspace:*
+        version: link:../../../packages/urrender
+      '@verbatim/vdesc-compiler':
+        specifier: workspace:*
+        version: link:../../../packages/vdesc-compiler
+      viem:
+        specifier: ^2.21.0
+        version: 2.57.16(typescript@5.9.3)(zod@4.6.7)
+    devDependencies:
+      tsx:
+        specifier: ^4.19.0
+        version: 4.23.15
+      vitest:
+        specifier: ^2.1.0
+        version: 2.1.9(@types/node@22.20.5)(lightningcss@1.33.0)(supports-color@5.5.0)
+
+  contracts/scripts/e2e:
+    dependencies:
+      '@verbatim/urrender':
+        specifier: workspace:*
+        version: link:../../../packages/urrender
+      '@walletconnect/sign-client':
+        specifier: ^2.21.0
+        version: 2.25.0(typescript@5.9.3)(zod@4.6.7)
+      playwright:
+        specifier: ^1.48.0
+        version: 1.64.1
+      viem:
+        specifier: ^2.21.0
+        version: 2.57.16(typescript@5.9.3)(zod@4.6.7)
+    devDependencies:
+      tsx:
+        specifier: ^4.19.0
+        version: 4.23.15
+
+  contracts/scripts/gas-report:
+    dependencies:
+      '@verbatim/frames-sdk':
+        specifier: workspace:*
+        version: link:../../../packages/frames-sdk
+      viem:
+        specifier: ^2.21.0
+        version: 2.57.16(typescript@5.9.3)(zod@4.6.7)
+    devDependencies:
+      tsx:
+        specifier: ^4.19.0
+        version: 4.23.15
+
+  contracts/scripts/live:
+    dependencies:
+      '@verbatim/attestor-cli':
+        specifier: workspace:*
+        version: link:../../../packages/attestor-cli
+      '@verbatim/client':
+        specifier: workspace:*
+        version: link:../../../packages/client
+      '@verbatim/displayvm-ts':
+        specifier: workspace:*
+        version: link:../../../packages/displayvm-ts
+      '@verbatim/frame-tools':
+        specifier: workspace:*
+        version: link:../../../packages/frame-tools
+      '@verbatim/frames-sdk':
+        specifier: workspace:*
+        version: link:../../../packages/frames-sdk
+      '@verbatim/signer':
+        specifier: workspace:*
+        version: link:../../../packages/signer
+      '@verbatim/snapshot-cli':
+        specifier: workspace:*
+        version: link:../../../packages/snapshot-cli
+      '@verbatim/urrender':
+        specifier: workspace:*
+        version: link:../../../packages/urrender
+      '@verbatim/vdesc-compiler':
+        specifier: workspace:*
+        version: link:../../../packages/vdesc-compiler
+      viem:
+        specifier: ^2.21.0
+        version: 2.57.16(typescript@5.9.3)(zod@4.6.7)
+    devDependencies:
+      tsx:
+        specifier: ^4.19.0
+        version: 4.23.15
+
+  contracts/scripts/registry-import:
+    dependencies:
+      '@verbatim/vdesc-compiler':
+        specifier: workspace:*
+        version: link:../../../packages/vdesc-compiler
+      viem:
+        specifier: ^2.21.0
+        version: 2.57.16(typescript@5.9.3)(zod@4.6.7)
+    devDependencies:
+      tsx:
+        specifier: ^4.19.0
+        version: 4.23.15
+
+  contracts/scripts/uniswap-evil:
+    dependencies:
+      playwright:
+        specifier: ^1.48.0
+        version: 1.64.1
+      viem:
+        specifier: ^2.21.0
+        version: 2.57.16(typescript@5.9.3)(zod@4.6.7)
+    devDependencies:
+      tsx:
+        specifier: ^4.19.0
+        version: 4.23.15
 
   packages/app-kit:
     dependencies:
@@ -426,17 +527,11 @@ importers:
         specifier: ^3.1.14
         version: 3.1.14
 
-  tools/difffuzz:
+  server/bounty-oracle:
     dependencies:
       '@verbatim/displayvm-ts':
         specifier: workspace:*
         version: link:../../packages/displayvm-ts
-      '@verbatim/urrender':
-        specifier: workspace:*
-        version: link:../../packages/urrender
-      '@verbatim/vdesc-compiler':
-        specifier: workspace:*
-        version: link:../../packages/vdesc-compiler
       viem:
         specifier: ^2.21.0
         version: 2.57.16(typescript@5.9.3)(zod@4.6.7)
@@ -447,101 +542,6 @@ importers:
       vitest:
         specifier: ^2.1.0
         version: 2.1.9(@types/node@22.20.5)(lightningcss@1.33.0)(supports-color@5.5.0)
-
-  tools/e2e:
-    dependencies:
-      '@verbatim/urrender':
-        specifier: workspace:*
-        version: link:../../packages/urrender
-      '@walletconnect/sign-client':
-        specifier: ^2.21.0
-        version: 2.25.0(typescript@5.9.3)(zod@4.6.7)
-      playwright:
-        specifier: ^1.48.0
-        version: 1.64.1
-      viem:
-        specifier: ^2.21.0
-        version: 2.57.16(typescript@5.9.3)(zod@4.6.7)
-    devDependencies:
-      tsx:
-        specifier: ^4.19.0
-        version: 4.23.15
-
-  tools/gas-report:
-    dependencies:
-      '@verbatim/frames-sdk':
-        specifier: workspace:*
-        version: link:../../packages/frames-sdk
-      viem:
-        specifier: ^2.21.0
-        version: 2.57.16(typescript@5.9.3)(zod@4.6.7)
-    devDependencies:
-      tsx:
-        specifier: ^4.19.0
-        version: 4.23.15
-
-  tools/registry-import:
-    dependencies:
-      '@verbatim/vdesc-compiler':
-        specifier: workspace:*
-        version: link:../../packages/vdesc-compiler
-      viem:
-        specifier: ^2.21.0
-        version: 2.57.16(typescript@5.9.3)(zod@4.6.7)
-    devDependencies:
-      tsx:
-        specifier: ^4.19.0
-        version: 4.23.15
-
-  tools/scripts:
-    dependencies:
-      '@verbatim/attestor-cli':
-        specifier: workspace:*
-        version: link:../../packages/attestor-cli
-      '@verbatim/client':
-        specifier: workspace:*
-        version: link:../../packages/client
-      '@verbatim/displayvm-ts':
-        specifier: workspace:*
-        version: link:../../packages/displayvm-ts
-      '@verbatim/frame-tools':
-        specifier: workspace:*
-        version: link:../../packages/frame-tools
-      '@verbatim/frames-sdk':
-        specifier: workspace:*
-        version: link:../../packages/frames-sdk
-      '@verbatim/signer':
-        specifier: workspace:*
-        version: link:../../packages/signer
-      '@verbatim/snapshot-cli':
-        specifier: workspace:*
-        version: link:../../packages/snapshot-cli
-      '@verbatim/urrender':
-        specifier: workspace:*
-        version: link:../../packages/urrender
-      '@verbatim/vdesc-compiler':
-        specifier: workspace:*
-        version: link:../../packages/vdesc-compiler
-      viem:
-        specifier: ^2.21.0
-        version: 2.57.16(typescript@5.9.3)(zod@4.6.7)
-    devDependencies:
-      tsx:
-        specifier: ^4.19.0
-        version: 4.23.15
-
-  tools/uniswap-evil:
-    dependencies:
-      playwright:
-        specifier: ^1.48.0
-        version: 1.64.1
-      viem:
-        specifier: ^2.21.0
-        version: 2.57.16(typescript@5.9.3)(zod@4.6.7)
-    devDependencies:
-      tsx:
-        specifier: ^4.19.0
-        version: 4.23.15
 
 packages:
 

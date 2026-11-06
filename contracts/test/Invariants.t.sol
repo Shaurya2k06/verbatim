@@ -8,7 +8,7 @@ import {TrustAdmin, TrustStoreLayout} from "../src/trust/TrustStore.sol";
 import {AssertionKit} from "../src/lib/AssertionKit.sol";
 import {FrameEnv} from "./MockFrames.sol";
 
-/// I1 to I10 (§15). I8's full form is tools/difffuzz; here it is the golden vectors.
+/// I1 to I10 (§15). I8's full form is contracts/scripts/difffuzz; here it is the golden vectors.
 contract InvariantsTest is Base {
     function test_I1_success_means_executed_calls_render_to_signed_tree() public {
         Plan memory p = plan(transferCall(BOB, 5e6), T0 + 100);

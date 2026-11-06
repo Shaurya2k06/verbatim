@@ -11,7 +11,7 @@ services:
     healthCheckPath: /api/health
     autoDeploy: true
     buildFilter:
-      paths: ["server/**", "deployments/**", "pnpm-lock.yaml"]
+      paths: ["server/**", "contracts/deployments/**", "pnpm-lock.yaml"]
     envVars:
       - key: NODE_VERSION
         value: "22"

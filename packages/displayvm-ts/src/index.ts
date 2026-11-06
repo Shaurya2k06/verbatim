@@ -1,5 +1,5 @@
 // TypeScript twin of contracts/src/lib/DisplayVM.sol. Untrusted by design: on-chain render is the authority and any
-// mismatch fails closed, so this only has to be right to be useful. tools/difffuzz holds it to byte equality.
+// mismatch fails closed, so this only has to be right to be useful. contracts/scripts/difffuzz holds it to byte equality.
 import { bytesToHex, hexToBigInt, hexToBytes, keccak256, type Address, type Hex } from "viem";
 import { BIT, Buf, Effects, NODE, RISK, RenderError, VT, rdAddr, rdBe, rdU8, rdWord, renderUR, slice, toAddr, toInt, type URCtx } from "@verbatim/urrender";
 

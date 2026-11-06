@@ -28,7 +28,7 @@ From building `URRender`, an on-chain renderer for Universal Router and v4 calld
 
 ## Gas notes
 
-Measured on an EIP-8141 devnet, from frame receipts (`docs/GAS.md`). Rendering a `V4_SWAP` on chain, with hook risk, in a validation frame costs about 68k in total, including all our other validation. Router calldata is cheap to decode if you avoid copying: most of the cost was in our own buffer writes until we made them unchecked.
+Measured on an EIP-8141 devnet, from frame receipts (`contracts/docs/GAS.md`). Rendering a `V4_SWAP` on chain, with hook risk, in a validation frame costs about 68k in total, including all our other validation. Router calldata is cheap to decode if you avoid copying: most of the cost was in our own buffer writes until we made them unchecked.
 
 ## What we shipped
 

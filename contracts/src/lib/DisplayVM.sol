@@ -7,7 +7,7 @@ import {URRender} from "../uniswap/URRender.sol";
 
 /// Re-renders a transaction's real calldata into the VTREE its owners signed, and derives its VSPEC.
 /// Mixed into anything holding a trust store; every lookup is a virtual function so a test harness can stand in.
-/// The TypeScript twin (`packages/displayvm-ts`) must stay byte-identical; see tools/difffuzz.
+/// The TypeScript twin (`packages/displayvm-ts`) must stay byte-identical; see contracts/scripts/difffuzz.
 abstract contract DisplayVM {
     using Buf for Buf.B;
     using Buf for bytes;

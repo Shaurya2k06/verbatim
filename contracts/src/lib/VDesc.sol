@@ -3,7 +3,7 @@ pragma solidity ^0.8.26;
 
 import {Buf} from "./VTree.sol";
 
-/// VDesc v1 (docs/VDESC.md). `validate` runs at attestation time, so rendering can trust the structure of what it reads.
+/// VDesc v1 (contracts/docs/VDESC.md). `validate` runs at attestation time, so rendering can trust the structure of what it reads.
 library VDesc {
     using Buf for bytes;
 

@@ -6,7 +6,7 @@ import { ChainTrust, PAYMASTER_ABI, PUBLIC_GATEWAY_GAS, prepare, txCommit, typed
 import { RpcError, submit, waitReceipt, type FrameReceipt, type FrameTx } from "@verbatim/frames-sdk";
 import { decodeTree, formatForDevice } from "@verbatim/displayvm-ts";
 import { decodeResponse, encodeRequest, review, toFrames, typedData as deviceTypedData } from "@verbatim/signer";
-import deployment from "../../../deployments/devnet.json";
+import deployment from "../../../contracts/deployments/devnet.json";
 
 export { deployment };
 export const d = deployment as any;

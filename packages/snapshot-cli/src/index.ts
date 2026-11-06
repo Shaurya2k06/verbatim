@@ -1,5 +1,5 @@
 // The snapshot of context.md §6: a sorted Merkle tree of typed leaves, signed by a k-of-n attestor set.
-// contracts/src/lib/SnapshotVerifier.sol is the on-chain half. Same hashing, held together by test/vectors/snapshot.json.
+// contracts/src/lib/SnapshotVerifier.sol is the on-chain half. Same hashing, held together by contracts/vectors/snapshot.json.
 import { concat, encodeAbiParameters, hashTypedData, keccak256, toHex, type Address, type Hex } from "viem";
 
 export const LEAF = { DESC: 1, TOKEN: 2, HOOK: 3, NAME: 4, PROXY: 5, ROUTER: 6, SPENDER: 7 } as const;

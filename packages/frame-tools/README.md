@@ -11,4 +11,4 @@ npx tsx src/cli.ts out/MyAccount.sol/MyAccount.json
 
 It fails closed. The runtime must hold exactly one LOG1, walking opcodes so PUSH data is never mistaken for one, and the runtime must appear once in the creation code. So a patched contract can't emit any other one-topic log. Record the printed hash, and compare it to the deployed code.
 
-The mempool budget matters: these reads add up against a prefix cap. Verbatim's `docs/ALTMEMPOOL.md` has the measurements.
+The mempool budget matters: these reads add up against a prefix cap. Verbatim's `contracts/docs/ALTMEMPOOL.md` has the measurements.

@@ -6,10 +6,10 @@ dist/
 .env
 .env.*
 !.env.example
-.state/
+contracts/.state/
 *.log
 .DS_Store
 coverage/
-tools/e2e/.video/
-docs/demo/*.mp4
-docs/demo/*.webm
+contracts/scripts/e2e/.video/
+contracts/docs/demo/*.mp4
+contracts/docs/demo/*.webm

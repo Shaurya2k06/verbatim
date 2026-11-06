@@ -69,4 +69,4 @@ renderUR(t, hexToBytes(data), ctx);
 
 ## Format
 
-Nodes and effects are specified in `docs/VTREE.md` and `docs/VSPEC.md`. Constants are checked against `Uniswap/universal-router`, `v4-periphery` and `v4-core`; see the top-level README for commits and line references.
+Nodes and effects are specified in `contracts/docs/VTREE.md` and `contracts/docs/VSPEC.md`. Constants are checked against `Uniswap/universal-router`, `v4-periphery` and `v4-core`; see the top-level README for commits and line references.
