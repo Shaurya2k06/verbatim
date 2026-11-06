@@ -6,6 +6,7 @@ import { Pill } from "../components/Badge";
 import { SentenceDiff } from "../components/SentenceDiff";
 import { Footer } from "../landing/Footer";
 import { HexField } from "../landing/HexField";
+import { ROUTES } from "../components/Layout";
 import { LandingNav } from "../landing/LandingNav";
 import "../landing/landing.css";
 import { apiGet, apiPost } from "../lib/api";
@@ -265,7 +266,7 @@ export default function Suites() {
         Skip to content
       </a>
       <HexField />
-      <LandingNav base="/" />
+      <LandingNav base="/" pages={ROUTES} />
       <main id="main">
         <section className="lp-section lp-suites-head">
           <p className="lp-eyebrow">Live demo</p>

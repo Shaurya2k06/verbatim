@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import { REPO } from "../components/Layout";
 import { perFrame } from "./motion";
 
@@ -22,8 +22,12 @@ export function Mark({ size = 20 }) {
   );
 }
 
-/** `base` is where the section links live: "" on the landing page itself, "/" from any other page. */
-export function LandingNav({ base = "" }) {
+/**
+ * The site's one navigation bar. On the landing page it carries the section links; `base` is where those live: "" on the landing
+ * page itself, "/" from any other page. On the app pages `pages` ([path, label] pairs) replaces them with the page links, so there
+ * is a single bar everywhere and no second row.
+ */
+export function LandingNav({ base = "", pages = null }) {
   const [hidden, setHidden] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -64,14 +68,24 @@ export function LandingNav({ base = "" }) {
           <Mark />
           verbatim
         </Link>
-        <nav aria-label="Sections" className="lp-nav-links">
-          <Link to="/suites">Demo</Link>
-          {SECTIONS.map(([href, label]) => (
-            <a key={href} href={base + href}>
-              {label}
-            </a>
-          ))}
-        </nav>
+        {pages ? (
+          <nav aria-label="Pages" className="lp-nav-links is-pages">
+            {pages.map(([to, label]) => (
+              <NavLink key={to} to={to}>
+                {label}
+              </NavLink>
+            ))}
+          </nav>
+        ) : (
+          <nav aria-label="Sections" className="lp-nav-links">
+            <Link to="/suites">Demo</Link>
+            {SECTIONS.map(([href, label]) => (
+              <a key={href} href={base + href}>
+                {label}
+              </a>
+            ))}
+          </nav>
+        )}
         <a className="lp-btn lp-btn-quiet lp-btn-small lp-nav-repo" href={REPO} target="_blank" rel="noreferrer">
           GitHub
         </a>
@@ -82,17 +96,27 @@ export function LandingNav({ base = "" }) {
       </header>
       <div id="lp-menu" className={`lp-menu${open ? " is-open" : ""}`} inert={!open}>
         <nav aria-label="Menu">
-          <Link to="/suites" onClick={close}>
-            Demo
-          </Link>
-          {SECTIONS.map(([href, label], i) => (
-            <a key={href} href={base + href} onClick={close} style={{ transitionDelay: open ? `${(i + 1) * 60}ms` : "0ms" }}>
-              {label}
-            </a>
-          ))}
-          <Link to="/proofs" onClick={close} style={{ transitionDelay: open ? "360ms" : "0ms" }}>
-            Every proof
-          </Link>
+          {pages ? (
+            pages.map(([to, label], i) => (
+              <NavLink key={to} to={to} onClick={close} style={{ transitionDelay: open ? `${Math.min(i, 8) * 40}ms` : "0ms" }}>
+                {label}
+              </NavLink>
+            ))
+          ) : (
+            <>
+              <Link to="/suites" onClick={close}>
+                Demo
+              </Link>
+              {SECTIONS.map(([href, label], i) => (
+                <a key={href} href={base + href} onClick={close} style={{ transitionDelay: open ? `${(i + 1) * 60}ms` : "0ms" }}>
+                  {label}
+                </a>
+              ))}
+              <Link to="/proofs" onClick={close} style={{ transitionDelay: open ? "360ms" : "0ms" }}>
+                Every proof
+              </Link>
+            </>
+          )}
           <a href={REPO} target="_blank" rel="noreferrer" onClick={close} style={{ transitionDelay: open ? "400ms" : "0ms" }}>
             GitHub
           </a>

@@ -1,5 +1,5 @@
 import { Component, useEffect } from "react";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import { DevnetBanner, StatusBar } from "./StatusBar";
 import { Footer } from "../landing/Footer";
 import { HexField } from "../landing/HexField";
@@ -48,8 +48,10 @@ export function Layout() {
   useEffect(() => {
     window.scrollTo(0, 0);
     // On a phone the page index scrolls sideways; keep the current page in view.
-    const on = document.querySelector(".lp-pages a.active");
-    if (on) on.parentElement.scrollLeft = on.offsetLeft - (on.parentElement.clientWidth - on.offsetWidth) / 2;
+    const on = document.querySelector(".lp-nav-links.is-pages a.active");
+    const track = on?.parentElement;
+    // Only when the current page's link is out of sight: a bar that fits stays where it is.
+    if (on && (on.offsetLeft < track.scrollLeft || on.offsetLeft + on.offsetWidth > track.scrollLeft + track.clientWidth)) track.scrollLeft = on.offsetLeft - (track.clientWidth - on.offsetWidth) / 2;
   }, [loc.pathname]);
   return (
     <div className="lp lp-app">
@@ -57,16 +59,7 @@ export function Layout() {
         Skip to content
       </a>
       <HexField />
-      <LandingNav base="/" />
-      <nav className="lp-pages" aria-label="Pages">
-        <div className="lp-pages-track">
-          {ROUTES.map(([to, label]) => (
-            <NavLink key={to} to={to}>
-              {label}
-            </NavLink>
-          ))}
-        </div>
-      </nav>
+      <LandingNav base="/" pages={ROUTES} />
       <div className="lp-app-status">
         <StatusBar />
         <DevnetBanner />
