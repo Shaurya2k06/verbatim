@@ -9,9 +9,12 @@ import { AttackStage } from "../landing/AttackStage";
 import { Boot } from "../landing/Boot";
 import { BENEFITS, COMMANDS, COVERS, EXCLUDES, EXPLORE, FAQ, PATHS, REFUSALS, STEPS, TRY, VERSUS } from "../landing/content";
 import { Finale } from "../landing/Finale";
+import { Footer } from "../landing/Footer";
 import { GateArt } from "../landing/GateArt";
 import { HexField } from "../landing/HexField";
-import { LandingNav, Mark } from "../landing/LandingNav";
+import { IsoIcon } from "../landing/IsoIcon";
+import { LandingNav } from "../landing/LandingNav";
+import { reveal, startReveals } from "../landing/motion";
 import { SentenceDevice } from "../landing/SentenceDevice";
 import { Tagline } from "../landing/Tagline";
 import "../landing/landing.css";
@@ -58,8 +61,8 @@ function Hero({ data, error, list, s }) {
         </p>
         <p className="lp-lede">Bybit lost $1.5B because its signers approved what a tampered screen showed them. Verbatim makes Ethereum rebuild every transaction into the sentence you signed. Different words, and it never reaches the mempool. Broken promise, and the whole batch reverts.</p>
         <div className="lp-ctas">
-          <Link className="lp-btn lp-btn-primary" to="/demo">
-            Watch the attack fail
+          <Link className="lp-btn lp-btn-primary" to="/suites">
+            See the demo
           </Link>
           <Link className="lp-btn lp-btn-outline" to="/attack">
             Attack us
@@ -95,15 +98,15 @@ function Refusals() {
 
 function Problem() {
   return (
-    <section className="lp-section lp-reveal" id="problem" aria-labelledby="problem-title">
+    <section className="lp-section" id="problem" aria-labelledby="problem-title">
       <div className="lp-split">
-        <div>
+        <div {...reveal()}>
           <p className="lp-eyebrow">The problem</p>
           <h2 id="problem-title">$1.5B left because a screen lied</h2>
           <p className="lp-copy">On 21 February 2025, Bybit’s signers approved what a tampered Safe{"{"}Wallet{"}"} frontend showed them, not what the transaction did.</p>
           <p className="lp-copy">Clear signing makes transactions readable, but it lives in the wallet. Each wallet renders on its own, nothing on chain checks the result, and a contract can describe itself truthfully while doing something else.</p>
         </div>
-        <div className="lp-versus" role="table" aria-label="Clear signing today compared with Verbatim">
+        <div className="lp-versus" {...reveal(1)} role="table" aria-label="Clear signing today compared with Verbatim">
           <div className="lp-versus-row lp-versus-head" role="row">
             <span role="columnheader">Who checks what</span>
             <span role="columnheader">Clear signing today</span>
@@ -128,8 +131,8 @@ function Problem() {
 
 function How() {
   return (
-    <section className="lp-section lp-reveal" id="how" aria-labelledby="how-title">
-      <div className="lp-head lp-head-art">
+    <section className="lp-section" id="how" aria-labelledby="how-title">
+      <div className="lp-head lp-head-art" {...reveal()}>
         <div>
           <p className="lp-eyebrow">How it works</p>
           <h2 id="how-title">One transaction, start to finish</h2>
@@ -138,8 +141,9 @@ function How() {
         <GateArt />
       </div>
       <ol className="lp-trace">
-        {STEPS.map((r) => (
-          <li key={r.step}>
+        {STEPS.map((r, i) => (
+          <li key={r.step} {...reveal(i)}>
+            <IsoIcon name={r.icon} size={88} />
             <h3>{r.step}</h3>
             <p>{r.body}</p>
             <code className="lp-trace-log">{r.log}</code>
@@ -155,15 +159,17 @@ function How() {
 
 function Attacks({ list }) {
   return (
-    <section className="lp-section lp-reveal" id="attacks" aria-labelledby="attacks-title">
-      <div className="lp-head">
+    <section className="lp-section" id="attacks" aria-labelledby="attacks-title">
+      <div className="lp-head" {...reveal()}>
         <div>
           <p className="lp-eyebrow">Attacks</p>
           <h2 id="attacks-title">Six ways to lie. Watch where each one stops.</h2>
         </div>
         <p className="lp-copy">Each scene is backed by a recorded run. The line under it comes from the proof ledger, including which build it ran on.</p>
       </div>
-      <AttackStage proofs={list} />
+      <div {...reveal(1)}>
+        <AttackStage proofs={list} />
+      </div>
     </section>
   );
 }
@@ -175,8 +181,8 @@ function SideBySide({ list }) {
   const took = eoa?.extra?.hookTook;
   const share = got && took ? Math.round((Number(took) / (Number(took) + Number(got))) * 100) : null;
   return (
-    <section className="lp-section lp-reveal" id="compare" aria-labelledby="compare-title">
-      <div className="lp-head">
+    <section className="lp-section" id="compare" aria-labelledby="compare-title">
+      <div className="lp-head" {...reveal()}>
         <div>
           <p className="lp-eyebrow">The difference</p>
           <h2 id="compare-title">Same route. Two wallets.</h2>
@@ -184,7 +190,8 @@ function SideBySide({ list }) {
         <p className="lp-copy">A 0.001 ETH swap on Uniswap’s official Sepolia contracts, through a pool whose hook skims the output. Both results are recorded on a live network.</p>
       </div>
       <div className="lp-duel">
-        <article className="lp-card lp-card-bad">
+        <article className="lp-card lp-card-bad" {...reveal()}>
+          <IsoIcon name="leak" size={88} />
           <h3>Ordinary wallet</h3>
           <p className="lp-card-big">{share !== null ? `${share}% gone` : "…"}</p>
           <dl className="lp-kv">
@@ -202,7 +209,8 @@ function SideBySide({ list }) {
             </div>
           </dl>
         </article>
-        <article className="lp-card lp-card-ok">
+        <article className="lp-card lp-card-ok" {...reveal(1)}>
+          <IsoIcon name="check" size={88} />
           <h3>Verbatim</h3>
           <p className="lp-card-big">Nothing moved</p>
           <dl className="lp-kv">
@@ -224,7 +232,7 @@ function SideBySide({ list }) {
         </article>
       </div>
       <div className="lp-ctas lp-ctas-center">
-        <Link className="lp-btn lp-btn-outline" to="/demo">
+        <Link className="lp-btn lp-btn-outline" to="/suites#skim">
           Run both, live
         </Link>
       </div>
@@ -234,14 +242,16 @@ function SideBySide({ list }) {
 
 function Benefits() {
   return (
-    <section className="lp-section lp-reveal" id="benefits" aria-labelledby="benefits-title">
-      <p className="lp-eyebrow">What changes</p>
-      <h2 id="benefits-title">Stop trusting the screen</h2>
+    <section className="lp-section" id="benefits" aria-labelledby="benefits-title">
+      <p className="lp-eyebrow" {...reveal()}>What changes</p>
+      <h2 id="benefits-title" {...reveal(1)}>Stop trusting the screen</h2>
       <ul className="lp-can">
         {BENEFITS.map((b) => (
-          <li key={b.title}>
+          <li key={b.title} {...reveal()}>
             <q>{b.say}</q>
-            <div>
+            <div className="lp-can-body">
+              <IsoIcon name={b.icon} size={72} />
+              <div>
               <h3>{b.title}</h3>
               <p>{b.body}</p>
               {b.to ? (
@@ -249,6 +259,7 @@ function Benefits() {
                   {b.more} →
                 </Link>
               ) : null}
+              </div>
             </div>
           </li>
         ))}
@@ -259,8 +270,8 @@ function Benefits() {
 
 function Paths() {
   return (
-    <section className="lp-section lp-reveal" id="paths" aria-labelledby="paths-title">
-      <div className="lp-head">
+    <section className="lp-section" id="paths" aria-labelledby="paths-title">
+      <div className="lp-head" {...reveal()}>
         <div>
           <p className="lp-eyebrow">Where it runs</p>
           <h2 id="paths-title">Three paths, one guarantee</h2>
@@ -268,8 +279,9 @@ function Paths() {
         <p className="lp-copy">Every path renders the sentence during validation and asserts it during execution. They differ in who does the rendering, and in how far each has been proven live.</p>
       </div>
       <ul className="lp-paths">
-        {PATHS.map((p) => (
-          <li key={p.name}>
+        {PATHS.map((p, i) => (
+          <li key={p.name} {...reveal(i)}>
+            <IsoIcon name={p.icon} size={88} />
             <h3>{p.name}</h3>
             <p className="lp-paths-where">{p.where}</p>
             <p>{p.body}</p>
@@ -284,8 +296,8 @@ function Paths() {
 function Proof({ s, manifest, error }) {
   const reg = manifest?.registry;
   return (
-    <section className="lp-section lp-reveal" id="proof" aria-labelledby="proof-title">
-      <div className="lp-head">
+    <section className="lp-section" id="proof" aria-labelledby="proof-title">
+      <div className="lp-head" {...reveal()}>
         <div>
           <p className="lp-eyebrow">Proof</p>
           <h2 id="proof-title">Don’t take this page’s word for it</h2>
@@ -293,7 +305,7 @@ function Proof({ s, manifest, error }) {
         <p className="lp-copy">The counts below are read from the proof ledger published with this build. Each row links to the transaction or the named revert behind it.</p>
       </div>
       {error ? <Failed what="the proof ledger" error={error} /> : null}
-      <ul className="lp-stats">
+      <ul className="lp-stats" {...reveal()}>
         <li>
           {s ? (
             <>
@@ -359,11 +371,12 @@ function Proof({ s, manifest, error }) {
 
 function Limits() {
   return (
-    <section className="lp-section lp-reveal" id="limits" aria-labelledby="limits-title">
-      <p className="lp-eyebrow">Limits</p>
-      <h2 id="limits-title">What it will not save you from</h2>
+    <section className="lp-section" id="limits" aria-labelledby="limits-title">
+      <p className="lp-eyebrow" {...reveal()}>Limits</p>
+      <h2 id="limits-title" {...reveal(1)}>What it will not save you from</h2>
       <div className="lp-scope">
-        <div>
+        <div {...reveal()}>
+          <IsoIcon name="check" size={72} />
           <h3>Covered</h3>
           <ul className="lp-bullets lp-bullets-ok">
             {COVERS.map((x) => (
@@ -371,7 +384,8 @@ function Limits() {
             ))}
           </ul>
         </div>
-        <div>
+        <div {...reveal(1)}>
+          <IsoIcon name="cross" size={72} />
           <h3>Not covered</h3>
           <ul className="lp-bullets lp-bullets-bad">
             {EXCLUDES.map((x) => (
@@ -399,11 +413,11 @@ function Try() {
     }
   };
   return (
-    <section className="lp-section lp-reveal" id="try" aria-labelledby="try-title">
-      <p className="lp-eyebrow">Try it</p>
-      <h2 id="try-title">Go break it</h2>
+    <section className="lp-section" id="try" aria-labelledby="try-title">
+      <p className="lp-eyebrow" {...reveal()}>Try it</p>
+      <h2 id="try-title" {...reveal(1)}>Go break it</h2>
       <div className="lp-try">
-        <ol className="lp-steps">
+        <ol className="lp-steps" {...reveal()}>
           {TRY.map((t) => (
             <li key={t.to}>
               <h3>
@@ -413,7 +427,7 @@ function Try() {
             </li>
           ))}
         </ol>
-        <div className="lp-term">
+        <div className="lp-term" {...reveal(1)}>
           <div className="lp-winbar">
             <span className="lp-winbar-title">run the proofs yourself</span>
             <button type="button" className="lp-btn lp-btn-quiet lp-btn-small" onClick={copy}>
@@ -424,16 +438,18 @@ function Try() {
         </div>
       </div>
       <ul className="lp-explore">
-        {EXPLORE.map(([to, name, what]) => (
-          <li key={to}>
+        {EXPLORE.map(([to, name, what, icon], i) => (
+          <li key={to} {...reveal(i % 4)}>
             <Link to={to}>
+              <IsoIcon name={icon} size={56} />
               <b>{name}</b>
               <span>{what}</span>
             </Link>
           </li>
         ))}
-        <li>
+        <li {...reveal(3)}>
           <a href={REPO} target="_blank" rel="noreferrer">
+            <IsoIcon name="bundle" size={56} />
             <b>Repository</b>
             <span>Every contract, script and proof ↗</span>
           </a>
@@ -445,42 +461,18 @@ function Try() {
 
 function Faq() {
   return (
-    <section className="lp-section lp-reveal" id="faq" aria-labelledby="faq-title">
-      <p className="lp-eyebrow">FAQ</p>
-      <h2 id="faq-title">Plain answers</h2>
+    <section className="lp-section" id="faq" aria-labelledby="faq-title">
+      <p className="lp-eyebrow" {...reveal()}>FAQ</p>
+      <h2 id="faq-title" {...reveal(1)}>Plain answers</h2>
       <div className="lp-faq">
         {FAQ.map((f) => (
-          <details key={f.q}>
+          <details key={f.q} {...reveal()}>
             <summary>{f.q}</summary>
             <p>{f.a}</p>
           </details>
         ))}
       </div>
     </section>
-  );
-}
-
-function Footer({ manifest }) {
-  return (
-    <footer className="lp-footer">
-      <div className="lp-footer-brand">
-        <Mark size={18} />
-        <span>Verbatim. The chain is your wallet’s screen.</span>
-      </div>
-      <div className="lp-footer-links">
-        <a href={REPO}>Repository</a>
-        <a href={`${REPO}/tree/main/contracts/docs/erc`}>ERC drafts</a>
-        <a href={`${DOCS}/FINDINGS.md`}>Findings</a>
-        <a href={`${REPO}/blob/main/LICENSE`}>MIT license</a>
-        <a href={`${REPO}/graphs/contributors`}>Team</a>
-        {manifest ? (
-          <span>
-            evidence as of {manifest.commit}
-            {manifest.dirty ? "+modified" : ""}
-          </span>
-        ) : null}
-      </div>
-    </footer>
   );
 }
 
@@ -500,21 +492,10 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loaded]);
 
-  // Sections rise into place once, as they first come into view.
+  // Blocks rise into place once, as they first come into view. Loaded data moves everything below it, so measure again.
   useEffect(() => {
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) {
-          if (!e.isIntersecting) continue;
-          e.target.classList.add("is-in");
-          io.unobserve(e.target);
-        }
-      },
-      { rootMargin: "0px 0px -8% 0px" },
-    );
-    document.querySelectorAll(".lp-reveal").forEach((el) => io.observe(el));
-    return () => io.disconnect();
-  }, []);
+    startReveals();
+  }, [loaded]);
 
   return (
     <div className="lp">
@@ -548,8 +529,8 @@ export default function Home() {
             Read it. Sign it. The chain checks both.
           </p>
           <div className="lp-ctas lp-ctas-center">
-            <Link className="lp-btn lp-btn-primary" to="/demo">
-              Watch the attack fail
+            <Link className="lp-btn lp-btn-primary" to="/suites">
+              See the demo
             </Link>
             <Link className="lp-btn lp-btn-outline" to="/attack">
               Attack us
@@ -557,7 +538,7 @@ export default function Home() {
           </div>
         </section>
       </main>
-      <Footer manifest={manifest} />
+      <Footer />
     </div>
   );
 }

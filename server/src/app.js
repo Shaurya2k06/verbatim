@@ -7,10 +7,12 @@
 //   WALLET_CONNECT_PROJECT_ID                   public by design; served so it is configured in one place
 //   UNISWAP_API_KEY                             Trading API quotes, proxied
 //   DEMO_EOA_KEY                                the "ordinary wallet" in /demo: a throwaway testnet EOA that only swaps
+//   OWNER1_KEY, OWNER2_KEY                      two owners of the Sepolia demo account, for /suites only (see below)
 //   ATTESTOR1_KEY..ATTESTOR3_KEY                re-sign the *published* snapshot's root with fresh timestamps (see snapshot())
 //
-// What it never holds: an owner key of the Verbatim account. Owners sign on the offline signer, or in the page's in-memory
-// DEMO KEY field. A server that signed sentences would defeat the point.
+// The owner keys are a deliberate exception for the public demo, because a visitor has none. A server signing sentences would
+// defeat the point in real use, where owners sign on the offline signer. So suites.js signs only operations it builds itself, from
+// a fixed list, on a testnet account, and /suites says so. No route accepts anything to sign.
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -22,15 +24,15 @@ import { sepolia } from "viem/chains";
 const DATA = process.env.DEPLOYMENTS_DIR ? resolve(process.env.DEPLOYMENTS_DIR) : resolve(dirname(fileURLToPath(import.meta.url)), "../../contracts/deployments");
 const readData = (p) => JSON.parse(readFileSync(resolve(DATA, p), "utf8"));
 let depCache;
-const dep = () => (depCache ??= readData("sepolia.json"));
+export const dep = () => (depCache ??= readData("sepolia.json"));
 
-class HttpError extends Error {
+export class HttpError extends Error {
   constructor(status, message) {
     super(message);
     this.status = status;
   }
 }
-const need = (env, k) => {
+export const need = (env, k) => {
   if (!env[k]) throw new HttpError(503, `${k} is not configured on the server`);
   return env[k];
 };
@@ -38,7 +40,7 @@ const need = (env, k) => {
 // ---------------------------------------------------------------------------------------------------------------------------
 // Rate limits: per server instance, which is enough to stop a stuck loop from burning testnet funds or API credits.
 const buckets = new Map();
-function limit(key, perMinute) {
+export function limit(key, perMinute) {
   const now = Date.now();
   const b = buckets.get(key) ?? { n: 0, at: now };
   if (now - b.at > 60_000) Object.assign(b, { n: 0, at: now });
@@ -59,7 +61,7 @@ const BUNDLER_METHODS = new Set([
   "eth_getUserOperationByHash", "pimlico_getUserOperationGasPrice", "rundler_maxPriorityFeePerGas",
 ]);
 
-async function forward(url, body) {
+export async function forward(url, body) {
   const r = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
   const text = await r.text();
   try {
@@ -142,7 +144,7 @@ const SNAPSHOT_TTL = 6n * 3600n;
 const REFRESH_BEFORE = 90n * 60n;
 let fresh = null;
 
-async function snapshot(env) {
+export async function snapshot(env) {
   const base = readData("snapshot-sepolia.json");
   const now = BigInt(Math.floor(Date.now() / 1000));
   if (BigInt(base.expiry) - now > REFRESH_BEFORE) return { ...base, source: "published" };
@@ -274,8 +276,12 @@ function config(env) {
     uniswapApi: !!env.UNISWAP_API_KEY,
     eoaDemo: env.DEMO_EOA_KEY ? privateKeyToAccount(env.DEMO_EOA_KEY).address : null,
     snapshotRefresh: ["ATTESTOR1_KEY", "ATTESTOR2_KEY", "ATTESTOR3_KEY"].filter((k) => env[k]).length >= 2,
+    suites: !!(env.OWNER1_KEY && env.OWNER2_KEY),
   };
 }
+
+// Loaded on first use: it brings the signer and the renderer, which the rest of the API does not need.
+const suites = () => import("./suites.js");
 
 const jsonSafe = (v) => JSON.parse(JSON.stringify(v, (_, x) => (typeof x === "bigint" ? x.toString() : x)));
 
@@ -303,6 +309,16 @@ export async function handle({ method, path, body, env, ip = "local" }) {
         break;
       case "POST demo/eoa-swap":
         out = await eoaSwap(env, body);
+        break;
+      case "GET suites":
+        out = await (await suites()).list(env);
+        break;
+      case "POST suites/run":
+        out = await (await suites()).start(env, body, ip);
+        break;
+      case "GET suites/run":
+        limit(`suites-read:${ip}`, 240);
+        out = (await suites()).get(parts[2]);
         break;
       case "POST uniswap/quote":
         out = await uniswapQuote(env, body, ip);

@@ -22,7 +22,8 @@ export function Mark({ size = 20 }) {
   );
 }
 
-export function LandingNav() {
+/** `base` is where the section links live: "" on the landing page itself, "/" from any other page. */
+export function LandingNav({ base = "" }) {
   const [hidden, setHidden] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -59,13 +60,14 @@ export function LandingNav() {
   return (
     <>
       <header className={`lp-nav${hidden && !open ? " is-hidden" : ""}`} onFocus={() => setHidden(false)}>
-        <a className="lp-logo" href="#main" onClick={close}>
+        <Link className="lp-logo" to="/" onClick={close}>
           <Mark />
           verbatim
-        </a>
+        </Link>
         <nav aria-label="Sections" className="lp-nav-links">
+          <Link to="/suites">Demo</Link>
           {SECTIONS.map(([href, label]) => (
-            <a key={href} href={href}>
+            <a key={href} href={base + href}>
               {label}
             </a>
           ))}
@@ -80,15 +82,18 @@ export function LandingNav() {
       </header>
       <div id="lp-menu" className={`lp-menu${open ? " is-open" : ""}`} inert={!open}>
         <nav aria-label="Menu">
+          <Link to="/suites" onClick={close}>
+            Demo
+          </Link>
           {SECTIONS.map(([href, label], i) => (
-            <a key={href} href={href} onClick={close} style={{ transitionDelay: open ? `${i * 60}ms` : "0ms" }}>
+            <a key={href} href={base + href} onClick={close} style={{ transitionDelay: open ? `${(i + 1) * 60}ms` : "0ms" }}>
               {label}
             </a>
           ))}
-          <Link to="/proofs" style={{ transitionDelay: open ? "300ms" : "0ms" }}>
+          <Link to="/proofs" onClick={close} style={{ transitionDelay: open ? "360ms" : "0ms" }}>
             Every proof
           </Link>
-          <a href={REPO} target="_blank" rel="noreferrer" onClick={close} style={{ transitionDelay: open ? "360ms" : "0ms" }}>
+          <a href={REPO} target="_blank" rel="noreferrer" onClick={close} style={{ transitionDelay: open ? "400ms" : "0ms" }}>
             GitHub
           </a>
         </nav>

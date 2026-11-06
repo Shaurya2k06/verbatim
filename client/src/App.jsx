@@ -5,6 +5,7 @@ import { Loading } from "./components/States";
 import { NetworkProvider } from "./lib/network-context";
 import Home from "./pages/Home";
 import Proofs from "./pages/Proofs";
+import Suites from "./pages/Suites";
 
 // Heavier pages load on demand: they bring the renderer, the signer core and WalletConnect.
 const Demo = lazy(() => import("./pages/Demo"));
@@ -37,12 +38,20 @@ export default function App() {
     <BrowserRouter>
       <NetworkProvider>
         <Routes>
-          {/* The landing page brings its own navigation and footer. */}
+          {/* The landing page and the live demo bring their own navigation and footer. */}
           <Route
             index
             element={
               <PageBoundary path="/">
                 <Home />
+              </PageBoundary>
+            }
+          />
+          <Route
+            path="suites"
+            element={
+              <PageBoundary path="/suites">
+                <Suites />
               </PageBoundary>
             }
           />
