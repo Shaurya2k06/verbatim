@@ -23,12 +23,7 @@ slither:
 	cd /tmp/verbatim-slither/contracts && rm -rf out cache test script && find src -name '*.yul' -delete && pipx run --spec slither-analyzer slither . --filter-paths "lib/forge-std|probe/" --exclude-informational
 
 proofs: install
-	cd tools/scripts && ./fresh-deploy.sh
-	cd tools/scripts && npx tsx rebalance-pool.ts devnet
-	cd tools/scripts && npx tsx attacks.ts
-	cd tools/scripts && npx tsx invalidation.ts
-	cd tools/scripts && npx tsx swap.ts
-	$(MAKE) report
+	cd tools/scripts && ./run-all-devnet.sh
 
 proofs-legb: install
 	cd tools/scripts && npx tsx legb-deploy.ts && npx tsx legb-run.ts

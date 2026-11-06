@@ -314,13 +314,13 @@
     "expected": "bundler accepts; lands; delivered; name in the sentence",
     "pass": true,
     "outcome": "mined",
-    "txHash": "0xf3e40dad61ee2774ad8f0c0128b53cdfc4f63a3d7816b0fe61a19e885ece3739",
+    "txHash": "0x3c3255f8831b7ebf2776280a44778380ca22769d6f4688969d73fa2c8d72335c",
     "extra": {
       "actualGasUsed": "1630134",
       "bundler": "pimlico",
-      "sentence": "You lose exactly 1 dUSDC\nThe code at 0x7e068face3fc4a6826d182b1ec0e80d7d8979e0f is what was attested\n0x3ac4caf4b6727fdb58a7784630e4689a4331c616 is not a contract\nThe name shown for 0x3ac4caf4b6727fdb58a7784630e4689a4331c616 still resolves to it\nNo other tracked holding decreases\nNo other Permit2 allowance grows\nOwners and policy stay the same\nNo approval outlives this transaction\n! OUTPUT GOES TO ANOTHER ADDRESS\nFee cap: 0.0032670000081 ETH\nSend tokens (by verbatim-demo.eth) at 0x7e068face3fc4a6826d182b1ec0e80d7d8979e0f\nTo: verbatim-demo.eth (0x3ac4caf4b6727fdb58a7784630e4689a4331c616)\nAmount: 1 dUSDC\nValid until 2026-11-05 23:34:12 UTC\nPolicy version 1, path ERC-4337\nSnapshot 0x01d06dd453d388b3be12eae66001c30119daa0564b8bf38a43d4d35b5f014342"
+      "sentence": "You lose exactly 1 dUSDC\nThe code at 0x7e068face3fc4a6826d182b1ec0e80d7d8979e0f is what was attested\n0x3ac4caf4b6727fdb58a7784630e4689a4331c616 is not a contract\nThe name shown for 0x3ac4caf4b6727fdb58a7784630e4689a4331c616 still resolves to it\nNo other tracked holding decreases\nNo other Permit2 allowance grows\nOwners and policy stay the same\nNo approval outlives this transaction\n! OUTPUT GOES TO ANOTHER ADDRESS\nFee cap: 0.0027830000046 ETH\nSend tokens (by verbatim-demo.eth) at 0x7e068face3fc4a6826d182b1ec0e80d7d8979e0f\nTo: verbatim-demo.eth (0x3ac4caf4b6727fdb58a7784630e4689a4331c616)\nAmount: 1 dUSDC\nValid until 2026-11-06 00:21:12 UTC\nPolicy version 1, path ERC-4337\nSnapshot 0x01d06dd453d388b3be12eae66001c30119daa0564b8bf38a43d4d35b5f014342"
     },
-    "at": "2026-11-05T23:30:28.523Z"
+    "at": "2026-11-06T00:17:29.170Z"
   },
   "B-honest-alchemy": {
     "id": "B-honest-alchemy",
@@ -328,12 +328,12 @@
     "expected": "bundler accepts; lands; delivered",
     "pass": true,
     "outcome": "mined",
-    "txHash": "0x22a3081ba2dbfc8c9fc968815f0a962b0c575a8f82a8e943aeb6bb470847a9dd",
+    "txHash": "0x540608c614d999cfb63fd496e405454928dcc6b889bcf1f029d6bc929a3694f9",
     "extra": {
       "actualGasUsed": "1521133",
       "bundler": "alchemy"
     },
-    "at": "2026-11-05T23:33:27.520Z"
+    "at": "2026-11-06T00:17:41.665Z"
   },
   "B-swap": {
     "id": "B-swap",
@@ -341,14 +341,14 @@
     "expected": "lands; minimum output respected",
     "pass": true,
     "outcome": "mined",
-    "txHash": "0x56feaa563d4baa2797348b7e26e235eff8b62221047ce7cb1ba39e8fe7a78b72",
+    "txHash": "0x57c7b706e64d9f8a4445b5e42a78bc9682b43f5c47f25f5639600d0ef5c7b47c",
     "message": "",
     "extra": {
-      "actualGasUsed": "1266317",
-      "got": "2930711",
+      "actualGasUsed": "1267022",
+      "got": "2891504",
       "bundler": "pimlico"
     },
-    "at": "2026-11-05T23:33:51.130Z"
+    "at": "2026-11-06T00:17:56.896Z"
   },
   "B-A1": {
     "id": "B-A1",
@@ -356,8 +356,8 @@
     "expected": "bundler rejects; the account's reason is TreeMismatch",
     "pass": true,
     "outcome": "rejected-at-mempool",
-    "message": "Internal error from bundler (trace id: d893853b498b10666d3e75f894c44b60) | Error: TreeMismatch(bytes32 expected, bytes32 actual)",
-    "at": "2026-11-05T23:30:57.605Z"
+    "message": "Internal error from bundler (trace id: 159b94dedeecf1740556199cd4b2c61e) | Error: TreeMismatch(bytes32 expected, bytes32 actual)",
+    "at": "2026-11-06T00:18:04.121Z"
   },
   "A8": {
     "id": "A8",
@@ -365,8 +365,8 @@
     "expected": "not in the snapshot, so hex is shown; the exclusivity proof refuses it",
     "pass": true,
     "outcome": "rejected-at-mempool",
-    "message": "Execution reverted with reason: +Ă\r\u0010\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0010\u0000\u0000\u0011\u0010\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0010\u0000\u0000\u0011.\n\nRaw Call Arguments:\n  to:    0x982d1e4b68c603009ce8b383eeda08653ab04ea7\n  data:  0x257d67a | To: 0x000000000000000000000000000000000000bad1",
-    "at": "2026-11-05T23:32:50.202Z"
+    "message": "Execution reverted with reason: +Ă\r\u0010\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0010\u0000\u0000\u0011\u0010\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0010\u0000\u0000\u0011.\n\nRaw Call Arguments:\n  to:    0x1f01041520e365f55be272af88e9053894cfc573\n  data:  0x257d67a | To: 0x000000000000000000000000000000000000bad1",
+    "at": "2026-11-06T00:20:15.658Z"
   },
   "INVALIDATION": {
     "id": "INVALIDATION",
@@ -672,9 +672,9 @@
     "expected": "admitted; refused at execution: AttestorNotListed",
     "pass": true,
     "outcome": "reverted-in-batch",
-    "txHash": "0x64e6ed6043b7343d5b9f2089aa3420ae61cae86900998efc56f8fdef08596695",
+    "txHash": "0x4e0614b79956b1a43976a58c5b9950fdfadb0857948a7c9d88348bebb6af6758",
     "message": "AttestorNotListed(0x062D072F2Cd4E28659cdD434aD985dc5696d522C)",
-    "at": "2026-11-05T23:34:17.145Z"
+    "at": "2026-11-06T00:18:40.597Z"
   },
   "B_ENS_REVOKED": {
     "id": "B_ENS_REVOKED",
@@ -691,9 +691,9 @@
     "expected": "admitted; refused at execution: LeafRevokedInEns",
     "pass": true,
     "outcome": "reverted-in-batch",
-    "txHash": "0xace999157d8832fcafddff539746fb4b4ce7575059423bcfdf30a87228c1fa4d",
+    "txHash": "0x03675f840b417f1c6a2efac2cb8fb246155bb40603575dc12c685dde468aad9a",
     "message": "LeafRevokedInEns(0x855303e467745419d6be80bbb9f5d7c68f7286761e53355bcdffd7fd2506fdd1)",
-    "at": "2026-11-05T23:35:05.296Z"
+    "at": "2026-11-06T00:19:28.593Z"
   },
   "B-A2-eoa": {
     "id": "B-A2-eoa",
@@ -701,12 +701,12 @@
     "expected": "the skim works: this is what Verbatim prevents",
     "pass": true,
     "outcome": "mined",
-    "txHash": "0x2e4d20458e11e4afe41c14ff5bb8928a96ce2e3f0dcac6b08813ca73e891edea",
+    "txHash": "0x6c8e256473585839e32a6f9deef46501cf935759e665fdec4ee1b7e0b89fb10b",
     "extra": {
-      "victimGot": "29508",
-      "hookTook": "2921208"
+      "victimGot": "28723",
+      "hookTook": "2843568"
     },
-    "at": "2026-11-05T23:37:27.730Z"
+    "at": "2026-11-06T00:18:15.558Z"
   },
   "B-A2b": {
     "id": "B-A2b",
@@ -714,7 +714,7 @@
     "expected": "the device shows the risks; refused",
     "pass": true,
     "outcome": "rejected-at-mempool",
-    "message": "! NO MINIMUM OUTPUT | ! HOOK CAN TAKE YOUR OUTPUT | ! UNVERIFIED HOOK || Internal error from bundler (trace id: 9752e61b84104681bcb00d5ff96e1d83)",
-    "at": "2026-11-05T23:37:30.041Z"
+    "message": "! NO MINIMUM OUTPUT | ! HOOK CAN TAKE YOUR OUTPUT | ! UNVERIFIED HOOK || Internal error from bundler (trace id: 97937f41ba825672c3b85ddd3a367486)",
+    "at": "2026-11-06T00:18:17.935Z"
   }
 }

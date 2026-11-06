@@ -395,6 +395,19 @@ importers:
         specifier: ^4.19.0
         version: 4.23.15
 
+  tools/uniswap-evil:
+    dependencies:
+      playwright:
+        specifier: ^1.48.0
+        version: 1.64.1
+      viem:
+        specifier: ^2.21.0
+        version: 2.57.16(typescript@5.9.3)
+    devDependencies:
+      tsx:
+        specifier: ^4.19.0
+        version: 4.23.15
+
 packages:
 
   '@adraffy/ens-normalize@1.11.1':

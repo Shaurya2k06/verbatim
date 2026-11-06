@@ -2,11 +2,11 @@
   "network": "sepolia",
   "chainId": 11155111,
   "entryPoint": "0x0000000071727De22E5E9d8BAf0edAc6f37da032",
-  "account": "0x60de3ad371adcbbea1a89ffaa88ff24bec0ddfdc",
-  "statelessRenderer": "0xd290ea65d7f37d7389a7307341d57da6f600f12c",
-  "revocations": "0xeb530a329f1c7dca358d9a1ff935823c8e524569",
+  "account": "0xa1e877b2f6b167b52d0ad33ea7c73e3301829da7",
+  "statelessRenderer": "0x9a7de70e58d62727a7d3647fa510cbaeaa30bf2b",
+  "revocations": "0x66f026612e444af785f48bdeacf1faac31897e93",
   "ensTrustChecker": "0x6921ceaff12259930aa31f3645d14a2b886827ff",
-  "ensTrustAnchor": "0xc62e106d2c20b4774f7db999a217bea8987057b2",
+  "ensTrustAnchor": "0x2d0f90612c3e5d1f1b6056b8abb6701e755eae6e",
   "tokens": {
     "dUSDC": "0x7e068face3fc4a6826d182b1ec0e80d7d8979e0f",
     "dWETH": "0x42808f35830dfe250ad998b3b239c0776f01be97"
