@@ -30,10 +30,14 @@ const NODES = [
     id: "ts",
     kind: "untrusted",
     title: "displayvm-ts",
-    sub: "renders sentence T and spec S",
+    sub: "renders VTREE (T) and VSPEC (S)",
     detail:
-      "The TypeScript twin of the on-chain renderer. It is ours and still untrusted: if it disagrees with the chain, the transaction fails closed. 10,000 random cases per CI run compare the two byte for byte.",
-    files: [["packages/displayvm-ts", "packages/displayvm-ts"]],
+      "Two formats carry every transaction. VTREE is the sentence as canonical bytes: header, calls, warnings, guarantees. VSPEC is what must be true after the batch: balance deltas, allowances at zero, owners. Owners sign keccak256 of each. displayvm-ts is the TypeScript twin of the on-chain renderer that writes them. It is ours and still untrusted: if it disagrees with the chain, the transaction fails closed. 10,000 random cases per CI run compare the two byte for byte.",
+    files: [
+      ["packages/displayvm-ts", "packages/displayvm-ts"],
+      ["contracts/docs/VTREE.md", "VTREE spec"],
+      ["contracts/docs/VSPEC.md", "VSPEC spec"],
+    ],
   },
   {
     id: "signer",
@@ -92,9 +96,9 @@ const NODES = [
     id: "render",
     kind: "chain",
     title: "Render on chain",
-    sub: "a VERIFY frame rebuilds T from calldata",
+    sub: "a VERIFY frame rebuilds the VTREE",
     detail:
-      "In the VERIFY frame (or 4337 validation), DisplayVM runs the descriptors, URRender decodes the Universal Router and v4 actions, and hook risk is read from the hook address’s low bits. The result must equal the T the owners signed.",
+      "In the VERIFY frame (or 4337 validation), DisplayVM runs the descriptors, URRender decodes the Universal Router and v4 actions, and hook risk is read from the hook address’s low bits. The VTREE it writes must hash to what the owners signed, and the VSPEC it derives must match theirs.",
     files: [
       ["contracts/src/lib/DisplayVM.sol", "DisplayVM.sol"],
       ["contracts/src/uniswap/URRender.sol", "URRender.sol"],
@@ -113,9 +117,9 @@ const NODES = [
     id: "account",
     kind: "chain",
     title: "VerbatimAccount",
-    sub: "runs the calls, then asserts S",
+    sub: "runs the calls, then asserts VSPEC",
     detail:
-      "In an inner self-call: expiry, revocations, live re-checks, the calls, then every assertion the spec promised. No tracked holding may drop beyond what was signed, and no approval may survive. No DELEGATECALL, checked on the bytecode.",
+      "In an inner self-call: expiry, revocations, live re-checks, the calls, then every VSPEC assertion. No tracked holding may drop beyond what was signed, and no approval may survive. No DELEGATECALL, checked on the bytecode.",
     files: [
       ["contracts/src/account/VerbatimAccount.sol", "VerbatimAccount.sol"],
       ["contracts/src/lib/AssertionKit.sol", "AssertionKit.sol"],

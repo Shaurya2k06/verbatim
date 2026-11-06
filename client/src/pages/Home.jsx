@@ -187,7 +187,7 @@ function SideBySide({ list }) {
           <p className="lp-eyebrow">The difference</p>
           <h2 id="compare-title">Same route. Two wallets.</h2>
         </div>
-        <p className="lp-copy">A 0.001 ETH swap on Uniswap’s official Sepolia contracts, through a pool whose hook skims the output. Both results are recorded on a live network.</p>
+        <p className="lp-copy">A 0.001 ETH swap on Uniswap’s official Sepolia contracts, through a pool whose hook skims the output. Both results are recorded on a live network. The difference is the two things Verbatim adds: a VTREE, the sentence the chain rebuilds from the calldata, and a VSPEC, the promises it checks after the calls.</p>
       </div>
       <div className="lp-duel">
         <article className="lp-card lp-card-bad" {...reveal()}>
@@ -195,6 +195,14 @@ function SideBySide({ list }) {
           <h3>Ordinary wallet</h3>
           <p className="lp-card-big">{share !== null ? `${share}% gone` : "…"}</p>
           <dl className="lp-kv">
+            <div>
+              <dt>You signed</dt>
+              <dd>raw calldata. No VTREE, so nothing rebuilt what you read</dd>
+            </div>
+            <div>
+              <dt>After the swap</dt>
+              <dd>nothing checked. No VSPEC, so the hook’s cut stood</dd>
+            </div>
             <div>
               <dt>You received</dt>
               <dd>{got ? `${dusdc(got)} dUSDC` : "…"}</dd>
@@ -215,14 +223,24 @@ function SideBySide({ list }) {
           <p className="lp-card-big">Nothing moved</p>
           <dl className="lp-kv">
             <div>
-              <dt>The device showed</dt>
-              <dd>three risk lines, before signing</dd>
+              <dt>VTREE, what you read</dt>
+              <dd>the sentence, with three risk lines read from the hook’s address: no minimum output, hook can take your output, unverified hook</dd>
             </div>
             <div>
-              <dt>The account said</dt>
+              <dt>Rebuilt on chain</dt>
               <dd>
-                <code>PolicyRefused</code>
+                the same VTREE, from the real calldata. The policy refuses that hook: <code>PolicyRefused</code>
               </dd>
+            </div>
+            <div>
+              <dt>If the screen lied</dt>
+              <dd>
+                hide a warning, and the rebuilt VTREE no longer matches what was signed: <code>SpecHashMismatch</code>
+              </dd>
+            </div>
+            <div>
+              <dt>VSPEC, what must hold</dt>
+              <dd>ETH spent exactly as signed, output at or above the signed minimum, no approval left. Checked after the calls, or the batch reverts</dd>
             </div>
             <div>
               <dt>Recorded</dt>
@@ -232,7 +250,7 @@ function SideBySide({ list }) {
         </article>
       </div>
       <p className="lp-copy lp-duel-note" {...reveal()}>
-        We also compromised <b>Uniswap’s real interface</b>: it quoted <b>26.19 USDC</b>, and the ordinary wallet got <b>0.026</b>. Verbatim’s device showed three risk lines, and the account answered <code>PolicyRefused</code>.{" "}
+        We also compromised <b>Uniswap’s real interface</b>: it quoted <b>26.19 USDC</b>, and the ordinary wallet got <b>0.026</b>. The VTREE rebuilt from those exact bytes carried three risk lines, and the account answered <code>PolicyRefused</code>.{" "}
         <Link to="/uniswap">Watch the recording →</Link>
       </p>
       <div className="lp-ctas lp-ctas-center">

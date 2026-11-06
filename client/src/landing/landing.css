@@ -1159,6 +1159,12 @@ html:has(.lp) {
   grid-template-columns: 17ch minmax(0, 1fr);
   gap: 12px;
 }
+@media (max-width: 520px) {
+  .lp-kv div {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}
 .lp-kv dt {
   color: var(--mute);
 }

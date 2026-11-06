@@ -10,6 +10,7 @@ Read at a natural pace, the narration runs about 5:20 in total.
 - ERC-4337: "forty-three thirty-seven".
 - `displayvm-ts`: "display V M, T S".
 - `URRender`: "U R Render".
+- VTREE: "V tree". VSPEC: "V spec".
 - `verbatim-demo.eth`: "verbatim demo dot eth".
 
 ---
@@ -32,13 +33,13 @@ Read at a natural pace, the narration runs about 5:20 in total.
 
 **On screen:** the four steps. Hover each card as you read it.
 
-> **01.** Step one. A frontend builds the calls, the sentence T, and the spec S of guarantees. It may be tampered with, and so may the host, the RPC and the relayer. Verbatim trusts none of them.
+> **01.** Step one. A frontend builds the calls, the sentence as VTREE bytes, and its guarantees as VSPEC. It may be tampered with, and so may the host, the RPC and the relayer. Verbatim trusts none of them.
 
-> **02.** Step two. An offline device decodes T itself, shows the guarantees first, and signs the hashes of T and S with an expiry. It never signs raw calldata.
+> **02.** Step two. An offline device decodes the VTREE itself, shows the VSPEC guarantees first, and signs the hashes of both, with an expiry. It never signs raw calldata.
 
-> **03.** Step three. During validation, a VERIFY frame renders T again from the real calldata. If it differs from what was signed, the transaction never enters the mempool.
+> **03.** Step three. During validation, a VERIFY frame renders the VTREE again from the real calldata. If it differs from what was signed, the transaction never enters the mempool.
 
-> **04.** Step four. The calls run, then the account asserts every promise in S. If a balance is off, or an approval is left standing, the whole batch is undone.
+> **04.** Step four. The calls run, then the account asserts every promise in the VSPEC. If a balance is off, or an approval is left standing, the whole batch is undone.
 
 ## 4. Architecture: "Where the words are checked" (about 2:45)
 
@@ -48,15 +49,15 @@ Read at a natural pace, the narration runs about 5:20 in total.
 |---|---|
 | *(none yet)* | Here's the architecture, in the order a transaction meets it. Everything left of the device is untrusted. |
 | **Frontend** | The frontend, with the host, the RPC and the relayer. Anything they change shows up as different words. |
-| **displayvm-ts** | displayvm-ts is our TypeScript twin of the on-chain renderer. It's ours, and still untrusted: if it disagrees with the chain, the transaction fails closed. Ten thousand random cases per CI run compare the two, byte for byte. |
-| **Offline signer** | The offline signer is one HTML file, or an Android app with no internet permission. It reads the request from a rotating QR code, shows the guarantees first, and signs the owner digest: the hashes of T and S, the expiry, the snapshot root, the path, and a commitment to the transaction. The signature goes back by QR. On a frame transaction it's an explicit-digest signature, so the protocol checks every signature before any frame runs. |
+| **displayvm-ts** | Two formats carry every transaction. VTREE is the sentence as canonical bytes, and VSPEC is what must be true after the batch. Owners sign the hash of each. displayvm-ts is our TypeScript twin of the on-chain renderer that writes them. It's ours, and still untrusted: if it disagrees with the chain, the transaction fails closed. Ten thousand random cases per CI run compare the two, byte for byte. |
+| **Offline signer** | The offline signer is one HTML file, or an Android app with no internet permission. It reads the request from a rotating QR code, shows the guarantees first, and signs the owner digest: the hashes of the VTREE and VSPEC, the expiry, the snapshot root, the path, and a commitment to the transaction. The signature goes back by QR. On a frame transaction it's an explicit-digest signature, so the protocol checks every signature before any frame runs. |
 | **Paymaster** | Three paths carry it, and the first two are EIP-8141 frame transactions. The main one is the paymaster path: an expiry frame, a VERIFY frame for the account, a VERIFY frame for a staked paymaster, and the SENDER frame that executes. The paymaster renders from its own cache and rebuilds the owner digest. The canonical rules refuse this storage read. ERC-8421 admits it because the renderer is staked. That's what the alt mempool is for. |
 | **Stateless** | The stateless path drops the paymaster: an expiry frame, a VERIFY frame for the account, and the SENDER frame. The account renders from Merkle proofs carried inside the transaction, against a snapshot the attestors signed. No stake, and no global state. That makes it valid in any frame mempool. |
 | **ERC-4337** | And for chains without frames, the same logic behind any ERC-4337 bundler, also live on Sepolia. |
 | **Trust** | Trust decides which contracts, tokens and names may be rendered. The attestor quorum and the ENS publisher would both have to collude to lie, and the ENS exclusivity proof is read again at execution. |
-| **Render on chain** | Render on chain. DisplayVM runs the descriptors, URRender decodes the Universal Router and v4 actions, and hook risk is read from the low bits of the hook's address. The result must equal the T the owners signed. |
+| **Render on chain** | Render on chain. DisplayVM runs the descriptors, URRender decodes the Universal Router and v4 actions, and hook risk is read from the low bits of the hook's address. The VTREE it writes must hash to what the owners signed. |
 | **Refused** | If the words differ, the spec is weaker, the contract is unattested, or the policy refuses a risk, validation fails. Nobody pays, and nothing is broadcast. |
-| **VerbatimAccount** | Once admitted, VerbatimAccount works in an inner self-call: the expiry, revocations, live re-checks, the calls, then every assertion in the spec. There's no DELEGATECALL in it, which is checked on the bytecode. |
+| **VerbatimAccount** | Once admitted, VerbatimAccount works in an inner self-call: the expiry, revocations, live re-checks, the calls, then every assertion in the VSPEC. There's no DELEGATECALL in it, which is checked on the bytecode. |
 | **Lands** | If every promise holds, it lands: checked once on the words, and once on the effects. |
 | **Batch reverts** | If an assertion fails, everything the calls did is undone. The fee stays paid, and the signed digest can't be replayed. |
 
@@ -64,7 +65,7 @@ Read at a natural pace, the narration runs about 5:20 in total.
 
 **On screen:** the "99% gone" card beside the "Nothing moved" card, then the line about Uniswap's real interface under them.
 
-> Here's the difference, recorded on Sepolia. The same 0.001 ETH swap on Uniswap's official contracts, through a pool whose hook skims the output. The ordinary wallet lost nearly all of it. Verbatim's device showed three risk lines before signing, the account answered PolicyRefused, and nothing moved. We also compromised Uniswap's real interface: it quoted 26 USDC, and the ordinary wallet got 0.026.
+> Here's the difference, recorded on Sepolia. The same 0.001 ETH swap on Uniswap's official contracts, through a pool whose hook skims the output. The ordinary wallet lost nearly all of it. With Verbatim, the VTREE, the sentence the chain rebuilds from the calldata, carried three risk lines read from the hook's address. The account answered PolicyRefused, and nothing moved. Had the screen hidden a warning, the rebuilt VTREE wouldn't match, and the VSPEC would still hold the output to the signed minimum after the calls. We also compromised Uniswap's real interface: it quoted 26 USDC, and the ordinary wallet got 0.026.
 
 ## 6. "Stop trusting the screen" (about 15 s)
 
