@@ -1,19 +1,19 @@
-# VTREE v1: the display tree
+# VTREE v2: the display tree
 
 The canonical bytes of a sentence. `treeHash = keccak256(tree)` is what owners sign. Implemented in `contracts/src/lib/VTree.sol` and `packages/urrender/src/vtree.ts`, held byte-identical by `tools/difffuzz`; decoded strictly in `packages/displayvm-ts/src/device.ts`.
 
 All integers are big-endian. Every node is `type(u8) len(u16) payload`.
 
 ```
-Tree   := 0x56540001 Header Node*
-Header := chainId(u64) account(20) validUntil(u64)
+Tree   := 0x56540002 Header Node*
+Header := chainId(u64) account(20) expiry(u64) snapshotRoot(32) policyVersion(u32) path(u8)
 ```
 
-`validUntil` is a unix timestamp. There is no global trust epoch in the tree: each `CALL_BEGIN` binds its own `descHash` and attestation `version`, so revoking one descriptor touches only the trees that use it (`DECISIONS.md`, D-A7).
+`path` is 1 stateless, 2 paymaster, 3 ERC-4337. There is no global trust epoch: each call binds its own `descHash`. `expiry` is a unix timestamp, enforced by the expiry frame and again at execution.
 
 | Type | Name | Payload |
 |---|---|---|
-| 0x01 | CALL_BEGIN | target(20) codehash(32) selector(4) descHash(32) intent(str) publisher(str) attestStatus(u8) version(u64) |
+| 0x01 | CALL_BEGIN | target(20) codehash(32) selector(4) descHash(32) intent(str) publisher(str) attestStatus(u8) |
 | 0x02 | CALL_END | |
 | 0x10 | FIELD_ADDRESS | label(str) addr(20) nameSource(u8) name(str) flags(u8: bit 0 hasCode, bit 1 isSelf) |
 | 0x11 | FIELD_AMOUNT | label(str) token(20) symbol(str) decimals(u8) raw(u256) |
@@ -25,9 +25,8 @@ Header := chainId(u64) account(20) validUntil(u64)
 | 0x20 / 0x21 | GROUP_BEGIN / GROUP_END | label(str) / empty |
 | 0x30 | RISK | code(u16) args(bytes) |
 | 0x31 | BLIND | label(str) keccak(32) len(u32) boundBy(u16, 0xFFFF for unbound) |
-| 0x40 | FEE | token(20) symbol(str) decimals(u8) amount(u256) gasLimitTotal(u64) |
-| 0x41 | VALID_UNTIL | timestamp(u64) |
-| 0x42 | POLICY | policyHash(32) |
+| 0x40 | FEE | asset(20) amount(u256): declared frame limits times the fee cap (D-A19) |
+| 0x50 | GUARANTEE | op(u8) args: one node per VSPEC item, in VSPEC order, last in the tree. The device shows these first |
 
 `attestStatus`: 0 none, 1 attested with an ENS exclusivity proof, 2 attested without ENS (the frames devnet has none).
 
@@ -62,6 +61,6 @@ Header := chainId(u64) account(20) validUntil(u64)
 
 ## Default policy (`_applyPolicy`)
 
-Refuses: `UNVERIFIED_CONTRACT`, unbounded `BLIND`, `UNLIMITED_APPROVAL`, `SPENDER_UNATTESTED` (unless the approval is being set to zero), `UR_ALLOW_REVERT`, unsafe tokens, and any `HOOK_CAN_TAKE_*` combined with `NO_MIN_OUT` or `HOOK_UNVERIFIED`. A policy's `allowMask` lifts these one by one. `policyHash` is in the tree, so owners sign the policy in force.
+Refuses: `UNVERIFIED_CONTRACT`, unbounded `BLIND`, `UNLIMITED_APPROVAL`, `SPENDER_UNATTESTED` (unless the approval is being set to zero), `UR_ALLOW_REVERT`, unsafe tokens, and any `HOOK_CAN_TAKE_*` combined with `NO_MIN_OUT` or `HOOK_UNVERIFIED`. A policy's `allowMask` lifts these one by one. `policyVersion` is in the header, so owners sign the policy in force. The policy lives in the account (§7.4).
 
-Freshness is not a risk node. A validity beyond the policy's `maxTtl` (default 300 s) reverts `TtlTooLong` in execution, and the device refuses anything beyond its own `DEVICE_MAX_TTL` (600 s) by its own clock.
+`TTL_LONG` is not emitted. Validation cannot read the time, so a validity beyond the policy's `maxTtl` (default 300 s) reverts `TtlTooLong` in execution, and the device refuses anything beyond its own `DEVICE_MAX_TTL` (600 s) by its own clock.

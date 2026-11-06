@@ -55,7 +55,7 @@
               "token": {
                 "kind": "target"
               },
-              "amount": "0"
+              "min": "0"
             }
           ]
         }

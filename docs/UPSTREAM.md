@@ -19,6 +19,6 @@ Two questions:
 | What | Where it would go | Draft |
 |---|---|---|
 | Canonical-renderer rule, as a PR | `forshtat/mempool-workshop-sidecar` | [note](upstream/canonical-renderer-rule.md), [patch](upstream/canonical-renderer-rule.patch) |
-| Findings on the deployed sidecar | The track author, as an issue or note | "Where the deployed sidecar differs" in [ALTMEMPOOL.md](ALTMEMPOOL.md) |
+| Four rule findings and others | The track author, as an issue or note | [FINDINGS.md](FINDINGS.md) |
 | ERC draft: sentence-bound frame transactions | Ethereum Magicians | [draft](erc/sentence-bound-frame-transactions.md) |
-| ERC draft: canonical-renderer rule | Ethereum Magicians | [draft](erc/canonical-renderer-mempool-rule.md) |
+| ERC draft: signed attestation snapshots | Ethereum Magicians | [draft](erc/signed-attestation-snapshots.md) |

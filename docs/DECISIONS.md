@@ -90,6 +90,25 @@ Found by Slither's `return-bomb`, confirmed by a failing test, then fixed. Solid
 ### D-A18: registry import is display-only
 ERC-7730 has no effects, so imported descriptors render a sentence and get the default assertions, which fail closed if a tracked token is spent. Fields ERC-7730 marks hidden are shown anyway. `@.to` and `@.from` fields are dropped, since a call node already shows the target and the header the account. See `docs/REGISTRY.md`.
 
+### D-A19: what G1 changed from context.md, and why
+- **Expiry verifier address.** The context's `0x81413f...FfFf` has no code on the devnet. The deployed verifier is at `0x...8141`. The account takes it as a constructor argument.
+- **Frame 0 status is not read.** §9.1 implies relying on the frame. A probe showed a frame 0 starved of gas has status 0 and the transaction still mines, which would strip the expiry. Reading FRAMEPARAM STATUS instead broke ethrex's revert-data pass and masked every real revert reason. So the account requires frame 0's gas limit to be at least 3,100, and execution checks the time again.
+- **FEE amount.** §7.1 says MAX_FEE. On the deployed node `max_fee` is per gas, and the latest EIP's `max_cost` depends on the base fee at inclusion, so neither is known at signing. The tree shows declared frame limits times the fee cap, which leaves out intrinsic gas. The ticket check still uses the node's true maximum cost.
+- **Node deviations in VSPEC.** `IMPL_EQ` and `NAME_EQ` moved to 0x0D and 0x0E to free 0x0C. `P2ALLOW_LE` carries the Permit2 address.
+- **Extra leaf types.** ROUTER and SPENDER leaves were added, because §6's five types cannot say which code is a router or which spender is attested. DESC's value also holds publisher and status; PROXY holds upgrader, logic code hash, implementation and getter.
+- **Non-membership proofs are implemented, tested and optional.** A host leaving a proof out can only make a render refuse or show hex, never lie, and each proof costs validation gas.
+- **Stateless rendering is a separate contract.** It does not fit in an account under EIP-170. The account STATICCALLs it at an immutable address, so D10's no-delegatecall holds.
+- **The anchor uses records on `verbatim-anchor.eth`,** not a subname `attestors.verbatim-demo.eth`, because the checker handles second-level names only and `verbatim-demo.eth` is locked. `attestors` and `revoked` are two records, each with one scoped setter, rather than a record per revocation.
+
+### D-A20: what made the prefix fit
+The first G1 build measured 99-109k against the 100k cap. Changes, all in both renderers where they touch bytes: one batched reader call that also computes `txCommit` and returns signature entries; the policy word carried in frame 1's data and checked there, so the paymaster does no call or SLOAD for it; the snapshot as one commitment slot, with the rest in frame 2's data; the owner list hashed into 13 bytes of the policy slot, with the list in frame data, removing two SLOADs (a false match needs a 2^104 second-preimage search); publisher inside the descriptor blob; router kind read first on `execute`; a table for item sizes; no bounds checks on already validated descriptor bytes; smaller buffers (tree 3,072 bytes, 8 deltas). The Tick spacing field was dropped: it costs gas and tells a signer nothing they can act on.
+
+### D-A21: no standing approvals changes the swap and A6
+D9 means an ERC-20 swap must be `[permit2.approve, execute]` in one batch, which does not fit the deployed sidecar's cap at about 21k a call. The honest swap and A2 use native-ETH pools: one call and no approval. For the same reason EvilVault cannot hold a standing allowance on a real account, so the live A6 is a vault that keeps the ETH and credits no shares. The hidden pull stays as a Foundry test with an out-of-band allowance and a watched token. This conflict is worth raising in the findings: D9 and the flat cap together rule out ERC-20 swaps until BUDGET-010's 1M applies.
+
+### D-A22: the real-interface attack, and what its harness changes
+`tools/uniswap-evil` applies the malicious build step to a checkout of `Uniswap/interface`. To run at all, the checkout loses references to unpublished workspaces (`tools/uniswap-nx` and others), and defaults testnet mode on. The harness routes RPC to our provider and Trading API paths to its public host with the team's key. Other Uniswap backends refuse a localhost origin; they are not spoofed. See `STATUS.md` for how far this got.
+
 ## Every transaction field (Leg A)
 
 Nothing in the envelope is left unexamined. "Committed" means inside the digest owners sign.
@@ -97,18 +116,19 @@ Nothing in the envelope is left unexamined. "Committed" means inside the digest 
 | Field | Status | How | Test |
 |---|---|---|---|
 | `chain_id` | Committed | EIP-712 domain, tree header | `test_sig_other_chain_refused` |
-| `nonce_keys` | **Refused** unless `[0]` | `BadLayout(7)` | `test_refused_fields_blobs_and_keyed_nonces` |
+| `nonce_keys` | Irrelevant to safety | Not in `txCommit`, and no TXPARAM needs it: `consumed[D_owner]` stops the same content under another key (D23) | `test_B12_I13_same_digest_cannot_execute_twice`, B12 |
 | `nonce_seq` | Committed | `txCommit` | `test_txCommit_covers_every_committed_field` |
 | `sender` | Committed | Domain, tree, layout lock `BadLayout(2)` | `test_I3_signature_binds_fees_gas_and_frames` |
-| Frame count | Locked | Exactly 3, `BadLayout(0)` | A3 |
+| Frame count | Locked | 4 on the paymaster path, 3 on the stateless path, `BadLayout(0)` | A3 |
 | Frame modes, flags, targets | Locked | `BadLayout(3-5)` | A3, A3b |
 | Frame 2 value | Locked | Must be zero, `BadLayout(5)`; ETH moves through signed calls. EIP-8141 requires 0 on VERIFY frames | `test_I3_signature_binds_fees_gas_and_frames` |
 | Frame 2 selector | Locked | `executeVerified`, `BadLayout(6)` | `test_I3_signature_binds_fees_gas_and_frames` |
 | All frame gas limits (execution, state) | Committed | `txCommit` | `test_txCommit_covers_every_committed_field` |
-| Frame 0 data | Committed | Its tree hash, spec hash and `validUntil` are the digest | `test_I3_signature_binds_fees_gas_and_frames` |
-| Frame 1, 2 data | Committed | Hashes in `txCommit` | `test_txCommit_covers_every_committed_field` |
+| Frame 0 (expiry) | Locked and committed | Target, flags, value, 8-byte data, gas floor: `BadLayout(8)`. Data hash in `txCommit` | `test_A7b_failed_expiry_frame_is_refused`, `test_A7c_expiry_frame_must_be_the_real_verifier` |
+| Frame 1 data | Blanked | Its tree hash, spec hash, root and path are in the digest; proofs are bound by the root | `test_I3_signature_binds_fees_gas_and_frames` |
+| Other frames' data | Committed | Hashes in `txCommit` | `test_txCommit_covers_every_committed_field` |
 | `max_priority_fee`, `max_fee` | Committed | `txCommit` | `test_txCommit_covers_every_committed_field` |
-| `blob_hashes` | **Refused** if any | `BadLayout(7)` | `test_refused_fields_blobs_and_keyed_nonces` |
+| `blob_hashes` | **Refused** if any | `BadLayout(7)` | `test_refused_field_blobs` |
 | `max_fee_per_blob_gas` | Irrelevant | Blobs are refused, so nothing is paid at this rate | |
 | `signatures` | Checked | Count, scheme, `msg`, owner, ascending | `test_sig_*` |
 | `recent_root_references` | Irrelevant | Read by nothing in validation or the batch. A relayer changing it changes the transaction hash, not one effect. Our client always sends none | |
