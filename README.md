@@ -46,6 +46,8 @@ Secrets go in the root `.env` (see `.env.example`). `server/.env.example` lists 
 - **A captured attestor quorum.** It *can* mislabel spenders, tokens or names. The amounts in the signed guarantees, the no-standing-approvals rule, and execution-time revocation still hold.
 - **Drift** (Apr 2026) is a footnote only. A truthful sentence would have described those admin calls accurately; expiry is the only mitigation that applies.
 
+**Live:** https://verbatim-wallet.vercel.app. The ENS demo is at [/ens](https://verbatim-wallet.vercel.app/ens).
+
 **Where this stands:** every row in [PROOFS.md](contracts/docs/PROOFS.md) meets its expected result, on the final code, on the public frames devnet and Sepolia. The real Uniswap interface attack and the N=50 invalidation bench are recorded. What is left is yours: [contracts/docs/REPORT.md](contracts/docs/REPORT.md) lists it, and [STATUS.md](contracts/docs/STATUS.md) has the gates.
 
 ## It runs today
