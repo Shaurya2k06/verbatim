@@ -107,39 +107,54 @@ export const BENEFITS = [
   },
 ];
 
-export const PATHS = [
+/**
+ * The two frame paths, measured on the final build on the EF frames devnet (contracts/docs/GAS.md, ALTMEMPOOL.md, PROOFS.md).
+ * Gas is per frame, for a transfer and for a v4 swap (ETH in, real Universal Router). Signatures are protocol-checked explicit-digest
+ * entries at 2,800 gas each, and they count toward the 100,000 cap.
+ */
+export const FRAME_CAP = 100_000;
+export const FRAME_PATHS = [
   {
-    icon: "vault",
-    name: "Paymaster",
-    where: "EIP-8141 frames · ERC-8421 alt mempool",
-    body: "A staked paymaster renders from its own cache in a VERIFY frame and rebuilds the owners’ digest. The canonical rules refuse that storage read (StorageReadNonSender). ERC-8421 admits it because the renderer is staked: that is what the alt mempool is for. A transfer fit in 85,429 gas of the 100,000 cap.",
-    state: "Live on the EF frames devnet",
-    tone: "ok",
-  },
-  {
-    icon: "layers",
     name: "Stateless",
-    where: "EIP-8141 frames · any frame mempool",
-    body: "Trust travels inside the transaction as snapshot proofs and attestor signatures, so validation reads no global state and needs no stake. That makes it valid in any frame mempool.",
-    state: "Live on the EF frames devnet",
-    tone: "ok",
+    where: "any frame mempool · no stake",
+    frames: [
+      { mode: "VERIFY", target: "expiry verifier", does: "reverts once the signed expiry has passed" },
+      { mode: "VERIFY", target: "account", does: "checks the Merkle proofs, renders the calls, checks owners and attestors, applies policy. APPROVE: execution and payment" },
+      { mode: "SENDER", target: "account", does: "executeVerified: runs the calls, then asserts the guarantees" },
+    ],
+    sigs: "2 owners + 2 attestors",
+    gas: {
+      transfer: [["expiry", 3051], ["account", 76234], ["signatures", 11200]],
+      swap: [["expiry", 3051], ["account", 82291], ["signatures", 11200]],
+    },
+    facts: [
+      ["Trust arrives", "inside the transaction: 732 proof bytes for a transfer, plus attestor signatures"],
+      ["Size", "2,711 bytes for a transfer, about 1 KB more than the paymaster path"],
+      ["Snapshot rotated", "0 of 50 pending transactions invalidated"],
+      ["Limit", "hook routes do not fit the account frame’s 85,300 gas"],
+    ],
   },
   {
-    icon: "bundle",
-    name: "ERC-4337",
-    where: "the fallback, for chains without frames",
-    body: "The same logic behind any ERC-4337 bundler: account validation renders the sentence. Honest transfers landed on Sepolia through Pimlico and Alchemy, and a v4 swap through Uniswap’s official router.",
-    state: "Also live on Sepolia",
-    tone: "ok",
+    name: "Paymaster",
+    where: "ERC-8421 alt mempool · staked renderer",
+    frames: [
+      { mode: "VERIFY", target: "expiry verifier", does: "reverts once the signed expiry has passed" },
+      { mode: "VERIFY", target: "account", does: "locks the layout, checks the owners, refuses a replayed digest. APPROVE: execution" },
+      { mode: "VERIFY", target: "RendererPaymaster", does: "renders from its own cache, rebuilds the owners’ digest, takes this nonce’s fee ticket. APPROVE: payment" },
+      { mode: "SENDER", target: "account", does: "executeVerified: charges the fee first, runs the calls, then asserts the guarantees" },
+    ],
+    sigs: "2 owners",
+    gas: {
+      transfer: [["expiry", 3051], ["account", 16285], ["paymaster", 60493], ["signatures", 5600]],
+      swap: [["expiry", 3051], ["account", 16719], ["paymaster", 65218], ["signatures", 5600]],
+    },
+    facts: [
+      ["Trust arrives", "from the paymaster’s cache. The canonical rules refuse that read (StorageReadNonSender); ERC-8421 admits it for a staked entity"],
+      ["Size", "1,571 bytes for a transfer"],
+      ["Snapshot rotated", "50 of 50 pending transactions invalidated, because each signed the cached root"],
+      ["Limit", "ERC-8421 only, and the paymaster must stay staked"],
+    ],
   },
-];
-
-/** The frames evidence, from contracts/docs/ALTMEMPOOL.md (BENCH-N50, invalidation-bench.json) and FINDINGS.md. */
-export const FRAMES_EVIDENCE = [
-  ["50 of 50", "pending transactions invalidated by rotating the trust snapshot on the paymaster path"],
-  ["0 of 50", "invalidated by the same rotation on the stateless path, which carries its snapshot inside each transaction"],
-  ["Explicit digest", "owners sign over an explicit message, so the protocol checks every signature before any frame runs"],
-  ["4 rule findings", "for the ERC-8421 author: a flat 100k cap, no precompiles, no WebAuthn scheme, proxied tokens"],
 ];
 
 export const COVERS = [

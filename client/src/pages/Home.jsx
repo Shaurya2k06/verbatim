@@ -7,7 +7,7 @@ import { Failed } from "../components/States";
 import { TxLink } from "../components/TxLink";
 import { Architecture } from "../landing/Architecture";
 import { Boot } from "../landing/Boot";
-import { BENEFITS, COMMANDS, COVERS, EXCLUDES, EXPLORE, FAQ, FRAMES_EVIDENCE, PATHS, REFUSALS, STEPS, TRY, VERSUS } from "../landing/content";
+import { BENEFITS, COMMANDS, COVERS, EXCLUDES, EXPLORE, FAQ, FRAME_CAP, FRAME_PATHS, REFUSALS, STEPS, TRY, VERSUS } from "../landing/content";
 import { Finale } from "../landing/Finale";
 import { Footer } from "../landing/Footer";
 import { GateArt } from "../landing/GateArt";
@@ -290,35 +290,88 @@ function Benefits() {
   );
 }
 
+const SEG_LABEL = { expiry: "expiry frame", account: "account frame", paymaster: "paymaster frame", signatures: "signatures" };
+const fmt = (n) => n.toLocaleString("en-US");
+
+/** One validation prefix as a bar against the 100k cap: each frame's gas, the signatures, and what is left. */
+function GasBar({ what, parts }) {
+  const used = parts.reduce((n, [, g]) => n + g, 0);
+  const label = `${what}: ${parts.map(([k, g]) => `${SEG_LABEL[k]} ${fmt(g)}`).join(", ")}; ${fmt(used)} of ${fmt(FRAME_CAP)}, ${fmt(FRAME_CAP - used)} to spare`;
+  return (
+    <div className="lp-gas">
+      <div className="lp-gas-head">
+        <span>{what}</span>
+        <span>
+          <b>{fmt(used)}</b> of {fmt(FRAME_CAP)} · {fmt(FRAME_CAP - used)} to spare
+        </span>
+      </div>
+      <div className="lp-gas-bar" role="img" aria-label={label}>
+        {parts.map(([k, g]) => (
+          <span key={k} className={`lp-gas-seg lp-gas-${k}`} style={{ width: `${(g / FRAME_CAP) * 100}%` }} title={`${SEG_LABEL[k]}: ${fmt(g)} gas`} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function Paths() {
   return (
     <section className="lp-section" id="paths" aria-labelledby="paths-title">
       <div className="lp-head" {...reveal()}>
         <div>
-          <p className="lp-eyebrow">Where it runs</p>
-          <h2 id="paths-title">Frames first. ERC-4337 where there are none.</h2>
+          <p className="lp-eyebrow">Frame transactions</p>
+          <h2 id="paths-title">Two ways to fit under 100,000 gas</h2>
         </div>
-        <p className="lp-copy">Both frame paths are live on the public EF devnet, on the final build, under the 100,000 validation gas cap. With fifty transactions pending, rotating the trust snapshot invalidated all fifty on the paymaster path, and none on the stateless path.</p>
+        <p className="lp-copy">
+          An EIP-8141 transaction is a list of frames. VERIFY frames validate and end in APPROVE; the SENDER frame executes. The owners sign an explicit digest, so the protocol checks every signature before any frame runs, at 2,800 gas each, and that cost counts toward the cap: 100,000 was admitted, 100,001 refused. Both paths are live on the EF frames devnet.
+        </p>
       </div>
-      <ul className="lp-frames-evidence" aria-label="Evidence from the EF frames devnet">
-        {FRAMES_EVIDENCE.map(([big, what], i) => (
-          <li key={big} {...reveal(i)}>
-            <b>{big}</b>
-            <span>{what}</span>
-          </li>
-        ))}
-      </ul>
-      <ul className="lp-paths">
-        {PATHS.map((p, i) => (
-          <li key={p.name} {...reveal(i)}>
-            <IsoIcon name={p.icon} size={88} />
+      <div className="lp-fpaths">
+        {FRAME_PATHS.map((p, i) => (
+          <article key={p.name} className="lp-fpath" {...reveal(i)}>
             <h3>{p.name}</h3>
             <p className="lp-paths-where">{p.where}</p>
-            <p>{p.body}</p>
-            <span className={`lp-state lp-state-${p.tone}`}>{p.state}</span>
-          </li>
+            <ol className="lp-frames">
+              {p.frames.map((f, j) => (
+                <li key={j}>
+                  <span className="lp-frame-i">{j}</span>
+                  <span className={`lp-frame-mode lp-frame-${f.mode.toLowerCase()}`}>{f.mode}</span>
+                  <span className="lp-frame-body">
+                    <b>{f.target}</b>
+                    <span>{f.does}</span>
+                  </span>
+                </li>
+              ))}
+            </ol>
+            <p className="lp-frame-sigs">Signatures: {p.sigs}, checked by the protocol before frame 0</p>
+            <GasBar what="Transfer" parts={p.gas.transfer} />
+            <GasBar what="v4 swap" parts={p.gas.swap} />
+            <dl className="lp-kv lp-fpath-facts">
+              {p.facts.map(([k, v]) => (
+                <div key={k}>
+                  <dt>{k}</dt>
+                  <dd>{v}</dd>
+                </div>
+              ))}
+            </dl>
+          </article>
         ))}
-      </ul>
+      </div>
+      <div className="lp-gas-legend" aria-hidden="true">
+        {Object.entries(SEG_LABEL).map(([k, v]) => (
+          <span key={k}>
+            <i className={`lp-gas-seg lp-gas-${k}`} />
+            {v}
+          </span>
+        ))}
+        <span>
+          <i className="lp-gas-seg lp-gas-free" />
+          headroom to the cap
+        </span>
+      </div>
+      <p className="lp-honest">
+        <b>How the wallet chooses:</b> the stateless path when the account frame fits with 10,000 gas to spare, the paymaster path otherwise. Each extra call costs about 21,500 gas, so only single-call batches fit the flat cap today.
+      </p>
     </section>
   );
 }

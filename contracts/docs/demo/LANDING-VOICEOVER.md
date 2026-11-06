@@ -73,11 +73,23 @@ Read at a natural pace, the narration runs about 5:20 in total.
 
 > So risk arrives in plain words, read from the hook's address on chain. Every transaction carries a mandatory expiry. A name has to earn its place with a live exclusivity proof. And it all fits the rails you already have.
 
-## 7. "Frames first. ERC-4337 where there are none." (about 17 s)
+## 7. "Two ways to fit under 100,000 gas" (about 55 s)
 
-**On screen:** the four frames-evidence tiles, then the three path cards.
+**On screen:** the heading, then the Stateless card and the Paymaster card. Point at each frame as you name it, then at the gas bars.
 
-> Both frame paths are live on the public EF devnet, on the final build, under the hundred-thousand gas cap. With fifty transactions pending, rotating the trust snapshot invalidated all fifty on the paymaster path, and none on the stateless path.
+> An EIP-8141 transaction is a list of frames. VERIFY frames validate and must end in APPROVE; the SENDER frame executes. The owners sign an explicit digest, so the protocol checks every signature before any frame runs, at twenty-eight hundred gas each, and that counts toward the cap: a prefix at exactly a hundred thousand was admitted, one gas more was refused.
+
+**Stateless card:**
+
+> The stateless path is three frames. Frame zero is the expiry check. Frame one is the account's VERIFY frame, and it does all the work: it checks Merkle proofs carried inside the transaction, renders the calls, checks the owners and the attestors, and approves both execution and payment. Frame two executes. That's ninety thousand gas for a transfer and ninety-six and a half for a v4 swap. Most of it is the account frame, plus eleven thousand for four signatures.
+
+**Paymaster card:**
+
+> The paymaster path splits the work across four frames. The account's VERIFY frame only locks the layout and checks the owners, in about sixteen thousand gas. A staked paymaster renders in its own VERIFY frame, from its own cache, rebuilds the owners' digest and takes a fee ticket, in about sixty thousand. With only two signatures, a transfer costs eighty-five thousand four hundred.
+
+**The trade-off (the facts under each card):**
+
+> The trade-off is where trust lives. The stateless path carries its snapshot inside the transaction, so it needs no stake and runs in any frame mempool: rotating the snapshot invalidated none of fifty pending transactions. The paymaster reads its own storage, which the canonical rules refuse and ERC-8421 admits because it's staked. The same rotation invalidated all fifty, because each one signed the cached root. The wallet picks the stateless path when it fits with ten thousand gas to spare, and the paymaster path otherwise.
 
 ## 8. Proof: "Don't take this page's word for it" (about 10 s)
 
