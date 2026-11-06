@@ -5,7 +5,7 @@ import { REPO } from "../components/Layout";
 import { DevnetBanner, StatusBar } from "../components/StatusBar";
 import { Failed } from "../components/States";
 import { TxLink } from "../components/TxLink";
-import { AttackStage } from "../landing/AttackStage";
+import { Architecture } from "../landing/Architecture";
 import { Boot } from "../landing/Boot";
 import { BENEFITS, COMMANDS, COVERS, EXCLUDES, EXPLORE, FAQ, PATHS, REFUSALS, STEPS, TRY, VERSUS } from "../landing/content";
 import { Finale } from "../landing/Finale";
@@ -157,18 +157,18 @@ function How() {
   );
 }
 
-function Attacks({ list }) {
+function ArchitectureSection() {
   return (
-    <section className="lp-section" id="attacks" aria-labelledby="attacks-title">
+    <section className="lp-section" id="architecture" aria-labelledby="architecture-title">
       <div className="lp-head" {...reveal()}>
         <div>
-          <p className="lp-eyebrow">Attacks</p>
-          <h2 id="attacks-title">Six ways to lie. Watch where each one stops.</h2>
+          <p className="lp-eyebrow">Architecture</p>
+          <h2 id="architecture-title">Where the words are checked</h2>
         </div>
-        <p className="lp-copy">Each scene is backed by a recorded run. The line under it comes from the proof ledger, including which build it ran on.</p>
+        <p className="lp-copy">Everything left of the device is untrusted. The chain renders the sentence again before admitting the transaction, and holds it to its promises after the calls run.</p>
       </div>
       <div {...reveal(1)}>
-        <AttackStage proofs={list} />
+        <Architecture />
       </div>
     </section>
   );
@@ -512,7 +512,7 @@ export default function Home() {
         <Tagline />
         <How />
         <Rule />
-        <Attacks list={list} />
+        <ArchitectureSection />
         <SideBySide list={list} />
         <Rule />
         <Benefits />

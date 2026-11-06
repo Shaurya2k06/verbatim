@@ -23,6 +23,7 @@
     "@verbatim/urrender": "workspace:*",
     "@walletconnect/core": "^2.26.0",
     "@walletconnect/utils": "^2.26.0",
+    "@xyflow/react": "^12.12.1",
     "aos": "2.3.4",
     "jsqr": "^1.4.0",
     "marked": "^15.0.12",

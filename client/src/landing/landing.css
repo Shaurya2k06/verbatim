@@ -2242,3 +2242,154 @@ a:hover > .lp-ico,
     gap: 4px;
   }
 }
+
+/* Architecture: a React Flow diagram, with the selected box explained beside it */
+.lp-arch {
+  overflow: hidden;
+  border-radius: 16px;
+  background: var(--panel);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.lp-arch-canvas {
+  height: 480px;
+  min-width: 0;
+}
+.lp-arch-canvas.narrow {
+  height: 860px;
+}
+.lp-arch .react-flow {
+  --xy-background-color: transparent;
+  --xy-edge-label-background-color: var(--bg);
+  font-family: var(--mono);
+}
+.lp-arch .react-flow__handle {
+  width: 1px;
+  height: 1px;
+  min-width: 0;
+  min-height: 0;
+  border: 0;
+  background: transparent;
+}
+.lp-arch .react-flow__node {
+  cursor: pointer;
+}
+.lp-arch .react-flow__controls {
+  box-shadow: inset 0 0 0 1px var(--line);
+  border-radius: 2px;
+}
+.lp-arch .react-flow__controls-button {
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--mute);
+  fill: var(--mute);
+}
+.lp-arch .react-flow__controls-button:hover {
+  background: var(--soft);
+  color: var(--ink);
+  fill: var(--ink);
+}
+.lp-arch-node {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--bg);
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 16px;
+  transition: box-shadow 300ms var(--ease);
+}
+.lp-arch-node b {
+  font: 400 16px / 20px var(--head);
+}
+.lp-arch-sub {
+  color: var(--mute);
+}
+.lp-arch-kind {
+  margin: 0;
+  color: var(--mute);
+  font-size: 10px;
+  line-height: 14px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.lp-arch-untrusted .lp-arch-kind,
+.lp-arch-refuse .lp-arch-kind {
+  color: var(--risk);
+}
+.lp-arch-trusted .lp-arch-kind,
+.lp-arch-ok .lp-arch-kind {
+  color: var(--ok);
+}
+.lp-arch-chain .lp-arch-kind,
+.lp-arch-path .lp-arch-kind {
+  color: var(--info);
+}
+.lp-arch-untrusted {
+  box-shadow: inset 0 0 0 1px rgba(255, 107, 90, 0.35);
+}
+.lp-arch-trusted {
+  background: var(--okbg);
+  box-shadow: inset 0 0 0 1px rgba(141, 255, 176, 0.35);
+}
+.lp-arch-refuse {
+  background: var(--riskbg);
+}
+.lp-arch-ok {
+  background: var(--okbg);
+}
+.lp-arch-node:hover {
+  box-shadow: inset 0 0 0 1px rgba(233, 236, 243, 0.5);
+}
+.lp-arch-node.on {
+  box-shadow:
+    inset 0 0 0 1px var(--ink),
+    0 0 32px -8px rgba(233, 236, 243, 0.4);
+}
+.lp-arch-detail {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 8px 48px;
+  min-height: 176px;
+  padding: 32px 40px;
+  border-top: 1px solid var(--line);
+}
+.lp-arch-detail > div > p:not(.lp-arch-kind) {
+  max-width: 60em;
+}
+.lp-arch-detail h3 {
+  margin: 8px 0 12px;
+  font: 400 24px / 32px var(--head);
+}
+.lp-arch-detail p {
+  margin: 0 0 16px;
+  color: var(--mute);
+  font-size: 14px;
+  line-height: 22px;
+}
+.lp-arch-detail ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 24px;
+  margin: 16px 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+}
+.lp-arch-detail a {
+  color: var(--ink);
+}
+.lp-arch-detail a:hover {
+  color: var(--ok);
+}
+.lp-arch-detail .lp-arch-hint {
+  margin: 16px 0 0;
+  font-size: 12px;
+}
+@media (max-width: 760px) {
+  .lp-arch-detail {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 24px;
+  }
+}
