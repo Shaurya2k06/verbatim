@@ -1,6 +1,6 @@
 // What a signing device needs: strict VTREE decoding and display formatting. Refuses anything it does not know.
 import { bytesToHex, hexToBytes, type Address, type Hex } from "viem";
-import { NODE, RISK } from "@verbatim/urrender";
+import { NODE, RISK, SPEC, itemSize } from "@verbatim/urrender";
 
 export const RISK_NAMES: Record<number, string> = Object.fromEntries(Object.entries(RISK).map(([k, v]) => [v, k]));
 
@@ -13,6 +13,7 @@ export const RISK_TEXT: Record<number, string> = {
   [RISK.NO_POST_CHECK]: "NOT CHECKED AFTER SIGNING",
   [RISK.RECIPIENT_HAS_CODE]: "RECIPIENT IS A CONTRACT",
   [RISK.RECIPIENT_NOT_SELF]: "OUTPUT GOES TO ANOTHER ADDRESS",
+  [RISK.SPENDER_UNATTESTED]: "SPENDER IS NOT ATTESTED",
   [RISK.NO_MIN_OUT]: "NO MINIMUM OUTPUT",
   [RISK.HOOK_CAN_TAKE_INPUT]: "HOOK CAN TAKE YOUR INPUT",
   [RISK.HOOK_CAN_TAKE_OUTPUT]: "HOOK CAN TAKE YOUR OUTPUT",
@@ -21,7 +22,6 @@ export const RISK_TEXT: Record<number, string> = {
   [RISK.SWEEP_TO_OTHER]: "FUNDS SWEPT TO ANOTHER ADDRESS",
   [RISK.PERMIT2_ALLOWANCE_CHANGE]: "CHANGES PERMIT2 ALLOWANCE",
   [RISK.UR_ALLOW_REVERT]: "COMMAND MAY PARTIALLY FAIL",
-  [RISK.TTL_LONG]: "SIGNATURE VALID FOR A LONG TIME",
   [RISK.TOKEN_UNSAFE]: "REBASING OR FEE-ON-TRANSFER TOKEN",
 };
 
@@ -39,16 +39,17 @@ export type TreeNode =
   | { type: "GROUP_END" }
   | { type: "RISK"; code: number; args: Hex }
   | { type: "BLIND"; label: string; keccak: Hex; len: number; boundBy: number }
-  | { type: "FEE"; token: Address; symbol: string; decimals: number; amount: bigint; gasLimitTotal: bigint }
-  | { type: "VALID_UNTIL"; block: bigint }
-  | { type: "POLICY"; policyHash: Hex };
+  | { type: "FEE"; asset: Address; amount: bigint }
+  | { type: "GUARANTEE"; op: number; bytes: Hex };
 
 export interface DecodedTree {
   chainId: bigint;
   account: Address;
-  signedAtBlock: bigint;
-  validUntilBlock: bigint;
-  trustEpoch: bigint;
+  expiry: bigint;
+  snapshotRoot: Hex;
+  policyVersion: number;
+  /** 1 stateless, 2 paymaster, 3 ERC-4337 */
+  path: number;
   nodes: TreeNode[];
 }
 
@@ -97,8 +98,9 @@ class Reader {
 export function decodeTree(tree: Hex): DecodedTree {
   const d = hexToBytes(tree);
   const h = new Reader(d, d.length);
-  if (h.be(4) !== 0x56540001n) throw new Error("VTREE: bad magic");
-  const out: DecodedTree = { chainId: h.be(8), account: h.hex(20) as Address, signedAtBlock: h.be(8), validUntilBlock: h.be(8), trustEpoch: h.be(8), nodes: [] };
+  if (h.be(4) !== 0x56540002n) throw new Error("VTREE: bad magic");
+  const out: DecodedTree = { chainId: h.be(8), account: h.hex(20) as Address, expiry: h.be(8), snapshotRoot: h.hex(32), policyVersion: Number(h.be(4)), path: h.u8(), nodes: [] };
+  if (out.path < 1 || out.path > 3) throw new Error("VTREE: unknown path");
   while (h.p < d.length) {
     const type = h.u8();
     const len = Number(h.be(2));
@@ -155,14 +157,36 @@ function decodeNode(type: number, r: Reader): TreeNode {
     case NODE.BLIND:
       return { type: "BLIND", label: r.str(), keccak: r.hex(32), len: Number(r.be(4)), boundBy: Number(r.be(2)) };
     case NODE.FEE:
-      return { type: "FEE", token: r.hex(20) as Address, symbol: r.str(), decimals: r.u8(), amount: r.be(32), gasLimitTotal: r.be(8) };
-    case NODE.VALID_UNTIL:
-      return { type: "VALID_UNTIL", block: r.be(8) };
-    case NODE.POLICY:
-      return { type: "POLICY", policyHash: r.hex(32) };
+      return { type: "FEE", asset: r.hex(20) as Address, amount: r.be(32) };
+    case NODE.GUARANTEE: {
+      const at = r.p;
+      const op = r.u8();
+      let size: number;
+      try {
+        size = itemSize(op);
+      } catch {
+        throw new Error(`VTREE: unknown guarantee 0x${op.toString(16)}`);
+      }
+      r.p = at;
+      return { type: "GUARANTEE", op, bytes: r.hex(1 + size) };
+    }
     default:
       throw new Error(`VTREE: unknown node type 0x${type.toString(16)}`);
   }
+}
+
+/**
+ * The spec is the GUARANTEE section, re-encoded: §7.2. So the device derives what it signs instead of taking a hash from the
+ * host. A tree whose guarantees are not contiguous and last is refused.
+ */
+export function specOf(t: DecodedTree): Hex {
+  const items = t.nodes.filter((n): n is Extract<TreeNode, { type: "GUARANTEE" }> => n.type === "GUARANTEE");
+  const first = t.nodes.findIndex((n) => n.type === "GUARANTEE");
+  if (first < 0 || first !== t.nodes.length - items.length) throw new Error("VTREE: guarantees must be the last nodes");
+  const required = [SPEC.TRACKED_NO_DECREASE, SPEC.TRACKED_NO_ALLOW_INC, SPEC.ACCOUNT_INVARIANT, SPEC.APPROVALS_CLEARED];
+  if (items.length < 4 || required.some((op, i) => items[items.length - 4 + i].op !== op)) throw new Error("VTREE: a required guarantee is missing");
+  const n = items.length.toString(16).padStart(4, "0");
+  return `0x56530002${n}${items.map((g) => g.bytes.slice(2)).join("")}` as Hex;
 }
 
 /** Exact decimal, never rounded: digits, at most one dot, then the symbol. */
@@ -178,13 +202,73 @@ const shortAddr = (a: string) => a;
 export interface DeviceLine {
   text: string;
   risk?: boolean;
+  guarantee?: boolean;
   indent: number;
 }
 
-/** Every node becomes a line; risk lines are also lifted to the top, highlighted. */
+/** What this tree says about a token, so a guarantee can name it. An unnamed token stays an address. */
+function tokenNames(t: DecodedTree): Map<string, { symbol: string; decimals: number }> {
+  const m = new Map<string, { symbol: string; decimals: number }>([["0x0000000000000000000000000000000000000000", { symbol: "ETH", decimals: 18 }]]);
+  for (const n of t.nodes) if (n.type === "FIELD_AMOUNT") m.set(n.token.toLowerCase(), { symbol: n.symbol, decimals: n.decimals });
+  return m;
+}
+
+const addrAt = (h: string, byte: number) => `0x${h.slice(2 + byte * 2, 2 + (byte + 20) * 2)}`;
+const wordAt = (h: string, byte: number, len = 32) => BigInt(`0x${h.slice(2 + byte * 2, 2 + (byte + len) * 2)}`);
+
+/** One plain sentence per guarantee. Bytes: op, then the arguments. */
+export function guaranteeText(g: Extract<TreeNode, { type: "GUARANTEE" }>, t: DecodedTree, names = tokenNames(t)): string {
+  const b = g.bytes;
+  const you = (a: string) => (a.toLowerCase() === t.account.toLowerCase() ? "You" : a);
+  const amount = (asset: string, raw: bigint) => {
+    const n = names.get(asset.toLowerCase());
+    return n ? formatAmount(raw, n.decimals, n.symbol) : `${raw} of token ${asset}`;
+  };
+  switch (g.op) {
+    case SPEC.DELTA_EQ: {
+      const v = BigInt.asIntN(256, wordAt(b, 41));
+      const who = you(addrAt(b, 1));
+      const asset = addrAt(b, 21);
+      if (v === 0n) return `${who} end with the same ${amount(asset, 0n).split(" ").slice(1).join(" ")}`;
+      return v < 0n ? `${who} lose exactly ${amount(asset, -v)}` : `${who} gain exactly ${amount(asset, v)}`;
+    }
+    case SPEC.DELTA_GE:
+      return `${you(addrAt(b, 1))} receive at least ${amount(addrAt(b, 21), wordAt(b, 41))}`;
+    case SPEC.ALLOW_LE:
+      return `${addrAt(b, 21)} may spend at most ${amount(addrAt(b, 1), wordAt(b, 41))} afterwards`;
+    case SPEC.P2ALLOW_LE:
+      return `Through Permit2, ${addrAt(b, 41)} may spend at most ${amount(addrAt(b, 21), wordAt(b, 61, 20))} afterwards`;
+    case SPEC.OPERATOR_EQ:
+      return `${addrAt(b, 21)} ${wordAt(b, 41, 1) === 1n ? "may" : "may not"} move your items in ${addrAt(b, 1)}`;
+    case SPEC.OWNER_EQ:
+      return `${addrAt(b, 53)} owns item ${wordAt(b, 21)} of ${addrAt(b, 1)} afterwards`;
+    case SPEC.CODEHASH_EQ:
+      return `The code at ${addrAt(b, 1)} is what was attested`;
+    case SPEC.NO_CODE:
+      return `${addrAt(b, 1)} is not a contract`;
+    case SPEC.TRACKED_NO_DECREASE:
+      return "No other tracked holding decreases";
+    case SPEC.TRACKED_NO_ALLOW_INC:
+      return "No other Permit2 allowance grows";
+    case SPEC.ACCOUNT_INVARIANT:
+      return wordAt(b, 1, 1) === 1n ? "! Owners or policy may change" : "Owners and policy stay the same";
+    case SPEC.APPROVALS_CLEARED:
+      return "No approval outlives this transaction";
+    case SPEC.IMPL_EQ:
+      return `The proxy at ${addrAt(b, 1)} still runs ${addrAt(b, 25)}`;
+    case SPEC.NAME_EQ:
+      return `The name shown for ${addrAt(b, 1)} still resolves to it`;
+    default:
+      throw new Error(`VTREE: unknown guarantee 0x${g.op.toString(16)}`);
+  }
+}
+
+/** Every node becomes a line. Guarantees come first (§7.1), then risk lines, then the sentence. */
 export function formatForDevice(t: DecodedTree): DeviceLine[] {
+  const guarantees: DeviceLine[] = [];
   const risks: DeviceLine[] = [];
   const lines: DeviceLine[] = [];
+  const names = tokenNames(t);
   let indent = 0;
   const push = (text: string, extra: Partial<DeviceLine> = {}) => lines.push({ text, indent, ...extra });
   for (const n of t.nodes) {
@@ -238,15 +322,15 @@ export function formatForDevice(t: DecodedTree): DeviceLine[] {
         break;
       }
       case "FEE":
-        push(`Fee: ${formatAmount(n.amount, n.decimals, n.symbol)} (gas limit ${n.gasLimitTotal})`);
+        push(`Fee cap: ${formatAmount(n.amount, 18, "ETH")}`);
         break;
-      case "VALID_UNTIL":
-        push(`Valid until block ${n.block}`);
-        break;
-      case "POLICY":
-        push(`Policy ${n.policyHash}`);
+      case "GUARANTEE":
+        guarantees.push({ text: guaranteeText(n, t, names), indent: 0, guarantee: true });
         break;
     }
   }
-  return [...risks, ...lines];
+  lines.push({ text: `Valid until ${new Date(Number(t.expiry) * 1000).toISOString().replace("T", " ").slice(0, 19)} UTC`, indent: 0 });
+  lines.push({ text: `Policy version ${t.policyVersion}, path ${t.path === 1 ? "stateless" : t.path === 2 ? "paymaster" : "ERC-4337"}`, indent: 0 });
+  lines.push({ text: `Snapshot ${t.snapshotRoot}`, indent: 0 });
+  return [...guarantees, ...risks, ...lines];
 }

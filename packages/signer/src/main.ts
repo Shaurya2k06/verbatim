@@ -129,11 +129,11 @@ function open(text: string) {
   }
   const lines = el("div", { class: "panel" });
   for (const l of r.lines) {
-    lines.append(el("div", { class: l.risk ? "risk" : "line", style: `margin-left:${l.indent * 14}px` } as never, l.text));
+    lines.append(el("div", { class: l.risk ? "risk" : l.guarantee ? "guarantee" : "line", style: `margin-left:${l.indent * 14}px` } as never, l.text));
   }
   const meta = el("div", { class: "panel" },
     el("div", { class: "mono" }, `Account ${r.decoded.account}`),
-    el("div", { class: "mono" }, `Chain ${r.decoded.chainId}, signed at block ${r.decoded.signedAtBlock}`),
+    el("div", { class: "mono" }, `Chain ${r.decoded.chainId}, ${Number(r.decoded.expiry) - Math.floor(Date.now() / 1000)} seconds left to run`),
     el("div", { class: "mono" }, `Sentence hash ${r.treeHash}`),
   );
   app.replaceChildren(lines, meta, el("div", { class: "row" },
@@ -144,7 +144,7 @@ function open(text: string) {
 
 async function approve(r: Reviewed) {
   const a = privateKeyToAccount(key!);
-  const sig = await a.signTypedData(typedData(r.decoded, r, r.treeHash) as never);
+  const sig = await a.signTypedData(typedData(r.decoded, r, r.treeHash, r.specHash) as never);
   const text = encodeResponse(a.address, sig);
   const canvas = document.createElement("canvas");
   await QRCode.toCanvas(canvas, text, { errorCorrectionLevel: "L", margin: 2, width: 320 });

@@ -1,0 +1,13 @@
+{
+  "name": "@verbatim/snapshot-cli",
+  "version": "0.1.0",
+  "description": "Builds the sorted Merkle snapshot, emits proofs, collects attestor signatures.",
+  "type": "module",
+  "license": "MIT",
+  "main": "src/index.ts",
+  "exports": { ".": "./src/index.ts" },
+  "bin": { "verbatim-snapshot": "./src/cli.ts" },
+  "scripts": { "test": "vitest run" },
+  "dependencies": { "viem": "^2.21.0" },
+  "devDependencies": { "vitest": "^2.1.0", "tsx": "^4.19.0" }
+}

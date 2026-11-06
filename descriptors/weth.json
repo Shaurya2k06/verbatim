@@ -1,0 +1,7 @@
+{
+  "metadata": { "owner": "Verbatim demo attestors" },
+  "display": { "formats": {
+    "deposit()": { "intent": "Wrap ETH", "x-verbatim": { "exactWords": 0, "fields": [{ "label": "Wrap", "format": "ethValue" }], "effects": [{ "kind": "IN_VALUE", "token": { "kind": "target" } }] } },
+    "withdraw(uint256)": { "intent": "Unwrap to ETH", "x-verbatim": { "exactWords": 1, "fields": [{ "path": "0", "label": "Amount", "format": "tokenAmount", "token": { "kind": "target" } }], "effects": [{ "kind": "OUT_EXACT", "token": { "kind": "target" }, "amount": "0", "to": "0" }, { "kind": "IN_MIN", "token": { "kind": "const", "address": "0x0000000000000000000000000000000000000000" }, "amount": "0" }] } }
+  } }
+}

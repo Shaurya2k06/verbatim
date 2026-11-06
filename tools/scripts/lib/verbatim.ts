@@ -1,12 +1,11 @@
 import { encodeFunctionData, parseAbi, type Address, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { ChainTrust, prepare, withSignatures, type Call, type PrepareArgs, type Prepared } from "@verbatim/client";
+import { ChainTrust, PAYMASTER_ABI, PUBLIC_GATEWAY_GAS, prepare, withSignatures, type Call, type PrepareArgs, type Prepared } from "@verbatim/client";
 import { key, readState } from "./env";
-import { pub } from "./chain";
+import { pub, send } from "./chain";
 
 export const ERC20 = parseAbi(["function transfer(address,uint256)", "function approve(address,uint256)", "function balanceOf(address) view returns (uint256)", "function allowance(address,address) view returns (uint256)", "function mint(address,uint256)"]);
 export const ZERO: Address = "0x0000000000000000000000000000000000000000";
-export const FEE_RATE = 1100n;
 
 export const state = () => readState();
 export const trust = () => new ChainTrust(pub as never, state().paymaster);
@@ -24,12 +23,21 @@ export async function sign(p: Prepared, ownerKeys: string[] = OWNER_KEYS) {
   return withSignatures(p.tx, p.digest, sigs);
 }
 
+export const TICKET = 1_000_000_000_000n;
+
+/** Tickets are per nonce. Keeps the next few funded; anyone may pay them. */
+export async function ensureTickets(account: Address, paymaster: Address, count = 40n) {
+  const nonce = BigInt(await pub.getTransactionCount({ address: account }));
+  const [amount] = await pub.readContract({ address: paymaster, abi: PAYMASTER_ABI, functionName: "feeTicket", args: [account, nonce] });
+  if (amount >= TICKET) return;
+  await send(key("DEPLOYER_KEY"), paymaster, encodeFunctionData({ abi: PAYMASTER_ABI, functionName: "fundTickets", args: [account, nonce, count] }), TICKET * count, 15_000_000n);
+}
+
 export async function prepareTx(calls: Call[], opts: Partial<PrepareArgs> = {}) {
   const s = state();
-  // A pending transaction at the current nonce must clear first; the mempool will not replace it at the same fee.
-  const gas = opts.gas ?? (await import("@verbatim/client")).PUBLIC_GATEWAY_GAS;
-  const total = gas.frame0 + gas.frame1 + gas.frame2 + gas.frame2State;
-  return prepare({ client: pub as never, trust: trust(), account: s.account, paymaster: s.paymaster, calls, fee: { asset: ZERO, amount: total * FEE_RATE }, ...opts, gas });
+  const account = opts.account ?? s.account;
+  if (!opts.skipTickets) await ensureTickets(account, opts.paymaster ?? s.paymaster);
+  return prepare({ client: pub as never, trust: opts.trust ?? trust(), account, paymaster: opts.paymaster ?? s.paymaster, calls, ...opts, gas: opts.gas ?? PUBLIC_GATEWAY_GAS });
 }
 
 export const transferCall = (token: Address, to: Address, amount: bigint): Call => ({ target: token, value: 0n, data: encodeFunctionData({ abi: ERC20, functionName: "transfer", args: [to, amount] }) });

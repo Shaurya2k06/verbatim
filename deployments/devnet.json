@@ -1,55 +1,37 @@
 {
   "network": "frames-devnet",
   "chainId": 1337,
-  "mempool": "https://altmempoolgateway.forshtat.com/rpc",
+  "mempool": "https://altmempool.forshtat.com/rpc",
+  "gateway": "https://altmempoolgateway.forshtat.com/rpc",
   "node": "https://altmempool.forshtat.com",
   "explorer": "https://explorer.altmempool.wtf/",
   "stakingRegistry": "0xd51c04d7a0b01124e84de152f4e56d9eecb22d2f",
-  "frameReader": "0xd0d73854916c7bed37313fd14e7292749da75922",
-  "trustAdmin": "0x0b713622f1e05ec27bf134c703a624342af28cd9",
-  "account": "0xd797194917479e6072bf5a91d057ddf7a61292db",
-  "emptyDepositAccount": "0x6d4c32c95f54a5ef3144eedd634df3f5f71026b6",
-  "paymaster": "0xee656b20237fbadf51ba251a2512ef1bd2494382",
-  "accountCodehash": "0xa5d350eee50014d374f414565470369c77335310479e46f9d36d0dd5f5b127b7",
+  "expiryVerifier": "0x0000000000000000000000000000000000008141",
+  "frameReader": "0x5288f533e4528032c7e587ba43843efb7370ec27",
+  "statelessRenderer": "0x5a7f756d0edf935e9f84a6041b3b0f16c7ecb521",
+  "revocations": "0xa5dcd1a63279f04324d4cd69a998c1778a6d6612",
+  "trustAdmin": "0xe938359fce38a57be988af4756ed028337305bdf",
+  "account": "0x5e065985a4b1a95c0bd9173faa49801ad7097053",
+  "emptyDepositAccount": "0x154a46e9998c825e431d2acf4405454b6e67ea4f",
+  "paymaster": "0xdf2672849e3317f27157049589237922151fec76",
+  "accountCodehash": "0x4cde7abda07f65f782980782dca7ff443558296f1098b65f567dbadcb0c2d1a5",
   "deployTxs": {
-    "admin": "0x3fa5df35e6772a019668ed0f75c5e1b29ddb58adf7ab2eb18b23614953d6e799",
-    "account": "0xb064a7c8ec52f5e8d019573edbb87fd8675c95f3c56931153f52637fd5e28dc8",
-    "paymaster": "0xd17727235102005d9a4fc10c6d1fd3ae352f91b717487f807bf9070785bb1cc4"
+    "admin": "0x8b3088acd44fa23c0f9ea70c49c004cca29367dac6d6571f6a40d84b1acd2da2",
+    "account": "0x3ecd7d01d44561b8fdf9efd148a65487c5d052f051eb157180ea0adf86530261",
+    "paymaster": "0x3a3092c13d63e3b6ef616293b9ed49ef60cbb08ebc791ac25701191075dd0dc8"
   },
-  "stakeTx": "0x3e8cf277c88bebae8360382c87ef70c789fa79ca213bdcba90f5e736835b2863",
-  "refreshTrustTx": "0x57187e93ceca35cd817e217a54d3eded4bd26ed32f0ab8a5575b6bfb7e42db69",
+  "stakeTx": "0xb11667238ec24c8c929808847eafa90175ddfc674ab383083a27df5302333398",
+  "refreshTrustTx": "0x5a7cd853f03e2290368ecaee0f1da20706e05666f6d36a8245339df769d93b82",
   "tokens": {
-    "dUSDC": "0x4dfef81b27f0d4241b279f93bc3ba822d93235b6",
-    "dWETH": "0xf0447975d6fe039a027029891c1b08191fd267c9"
+    "dUSDC": "0xdf6c29f075e871e5650ca942da43f8f92ea8d933",
+    "dWETH": "0x6eb68ee533db6fd920312c5144053390946f359d"
   },
-  "evilVault": "0x1bd44ce016e484235c91d2327ed1aa775989c4c0",
+  "evilVault": "0x86d469b10ddb7166937ac019a027f6eea37c58e8",
   "skimHook": "0x5922EaBd0E54cAb41215937A531C71562e748044",
-  "gasBurner": "0xf3d1b8483a89df572935b76d591e20b4e04e5206",
-  "reenterer": "0xf59de55d290a1ae3f3ecee7c6a560944bb868e97",
-  "pools": {
-    "honest": {
-      "key": {
-        "currency0": "0x4dfef81b27f0d4241b279f93bc3ba822d93235b6",
-        "currency1": "0xf0447975d6fe039a027029891c1b08191fd267c9",
-        "fee": 3000,
-        "tickSpacing": 60,
-        "hooks": "0x0000000000000000000000000000000000000000"
-      },
-      "init": "0x8b969f5cc58b8e6622a2663fdec3ead31f865de3dd665d27246952d3151e31e3",
-      "liquidity": "0xd3cf88652047cdcaaaa9705e054842ec6bd749a3da54e00099df0657fd3178fc"
-    },
-    "evil": {
-      "key": {
-        "currency0": "0x4dfef81b27f0d4241b279f93bc3ba822d93235b6",
-        "currency1": "0xf0447975d6fe039a027029891c1b08191fd267c9",
-        "fee": 3000,
-        "tickSpacing": 60,
-        "hooks": "0x5922EaBd0E54cAb41215937A531C71562e748044"
-      },
-      "init": "0x7e6c5b4e2fc2097cba540d7ccb1ed7297f9758ec609c3aed062163fcc45ce511",
-      "liquidity": "0x34d4e6839c60663aee7b149e2c2e288a4c6638170c82c419cfcf75deccc69c1f"
-    }
-  },
+  "gasBurner": "0x0ecfb2f2bd241d6368b95f2b8d54e9b932e86982",
+  "returnBomb": "0x10ce2afa7582485a725d5443b27f9a9a14d089c5",
+  "reenterer": "0x0ef95c38a837d2deca74aa81194fa1c6f75ee937",
+  "pools": {},
   "uniswap": {
     "router": "0x5e2250a42608a5cc9f62e23ab24824ee25b5e2be",
     "permit2": "0x000000000022D473030F116dDEE9F6B43aC78BA3",

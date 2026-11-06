@@ -8,7 +8,11 @@
     "@verbatim/client": "workspace:*",
     "@verbatim/displayvm-ts": "workspace:*",
     "@verbatim/vdesc-compiler": "workspace:*",
-    "@verbatim/urrender": "workspace:*"
+    "@verbatim/urrender": "workspace:*",
+    "@verbatim/signer": "workspace:*",
+    "@verbatim/attestor-cli": "workspace:*",
+    "@verbatim/frame-tools": "workspace:*",
+    "@verbatim/snapshot-cli": "workspace:*"
   },
   "devDependencies": { "tsx": "^4.19.0" }
 }

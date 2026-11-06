@@ -8,7 +8,7 @@ export const SEL_EXECUTE_DEADLINE = 0x3593564cn;
 export const SEL_EXECUTE = 0x24856bc3n;
 
 export const CMD = { FLAG_ALLOW_REVERT: 0x80, MASK: 0x7f, V3_SWAP_EXACT_IN: 0x00, SWEEP: 0x04, PAY_PORTION: 0x06, WRAP_ETH: 0x0b, UNWRAP_WETH: 0x0c, V4_SWAP: 0x10 } as const;
-export const ACTION = { SWAP_EXACT_IN_SINGLE: 0x06, SETTLE_ALL: 0x0c, TAKE_ALL: 0x0f } as const;
+export const ACTION = { SWAP_EXACT_IN_SINGLE: 0x06, SWAP_EXACT_IN: 0x07, SETTLE_ALL: 0x0c, TAKE_ALL: 0x0f } as const;
 
 const MSG_SENDER = "0x0000000000000000000000000000000000000001";
 const ADDRESS_THIS = "0x0000000000000000000000000000000000000002";
@@ -64,7 +64,10 @@ export function renderUR(t: Buf, data: Uint8Array, c: URCtx) {
     const len = rdWord(data, elem);
     const inp = elem + 32n;
     if (inp + len > BigInt(data.length)) fail("MalformedUR");
-    if (raw & CMD.FLAG_ALLOW_REVERT) VT.risk(t, RISK.UR_ALLOW_REVERT);
+    if (raw & CMD.FLAG_ALLOW_REVERT) {
+      VT.risk(t, RISK.UR_ALLOW_REVERT);
+      c.risk |= BIT.ALLOW_REVERT;
+    }
     command(t, data, raw & CMD.MASK, inp, len, c);
   }
 }
@@ -124,14 +127,16 @@ function v4Swap(t: Buf, d: Uint8Array, inp: bigint, len: bigint, c: URCtx) {
   if (rdWord(d, pArr - 32n) !== nActions) fail("MalformedUR");
 
   for (let i = 0n; i < nActions; i += 3n) {
-    const known = rdU8(d, actions + i) === ACTION.SWAP_EXACT_IN_SINGLE && rdU8(d, actions + i + 1n) === ACTION.SETTLE_ALL && rdU8(d, actions + i + 2n) === ACTION.TAKE_ALL;
+    const swapAction = rdU8(d, actions + i);
+    const known = (swapAction === ACTION.SWAP_EXACT_IN_SINGLE || swapAction === ACTION.SWAP_EXACT_IN) && rdU8(d, actions + i + 1n) === ACTION.SETTLE_ALL && rdU8(d, actions + i + 2n) === ACTION.TAKE_ALL;
     if (!known) {
       VT.blind(t, "v4 actions", hashRange(d, inp, len), len);
       c.risk |= BIT.BLIND;
       VT.groupEnd(t);
       return;
     }
-    v4Single(t, d, pArr, i, inp + len, c);
+    if (swapAction === ACTION.SWAP_EXACT_IN) v4Multi(t, d, pArr, i, inp + len, c);
+    else v4Single(t, d, pArr, i, inp + len, c);
   }
   VT.groupEnd(t);
 }
@@ -177,7 +182,6 @@ function v4Single(t: Buf, d: Uint8Array, pArr: bigint, i: bigint, end: bigint, c
   c.amount(t, "Minimum received", tokenOut, min, c);
   if (maxIn !== amountIn) c.amount(t, "Maximum paid", tokenIn, maxIn, c);
   VT.fieldUint(t, "Pool fee", fee, UNIT.NONE);
-  VT.fieldUint(t, "Tick spacing", spacing, UNIT.NONE);
   if (minHop !== 0n) VT.fieldUint(t, "Min hop price", minHop, UNIT.NONE);
   if (hdLen !== 0n) VT.fieldBytes(t, "Hook data", hashRange(d, hd + 32n, hdLen), hdLen);
 
@@ -185,6 +189,12 @@ function v4Single(t: Buf, d: Uint8Array, pArr: bigint, i: bigint, end: bigint, c
     VT.risk(t, RISK.NO_MIN_OUT);
     c.risk |= BIT.NO_MIN_OUT;
   }
+  poolRisks(t, fee, hook, c);
+
+  swapEffects(tokenIn, tokenOut, amountIn, min, c);
+}
+
+function poolRisks(t: Buf, fee: bigint, hook: string, c: URCtx) {
   if (fee === DYNAMIC_FEE) VT.risk(t, RISK.HOOK_DYNAMIC_FEE);
   if (!same(hook, ZERO)) {
     const bits = BigInt(hook);
@@ -201,14 +211,63 @@ function v4Single(t: Buf, d: Uint8Array, pArr: bigint, i: bigint, end: bigint, c
       c.risk |= BIT.HOOK_UNVERIFIED;
     }
   }
+}
 
-  c.effects.addDelta(c.account, tokenIn, -toInt(amountIn), false);
-  c.effects.addDelta(c.account, tokenOut, toInt(min), true);
+function swapEffects(tokenIn: string, tokenOut: string, amountIn: bigint, min: bigint, c: URCtx) {
   if (same(tokenIn, ZERO)) {
-    if (c.value < amountIn) fail("UnsupportedETHFlow");
+    if (c.value !== amountIn) fail("UnsupportedETHFlow");
   } else {
-    c.effects.p2AllowLe(c.permit2, tokenIn, c.router, SPEC.P2_RELATIVE, amountIn);
+    c.effects.addDelta(c.account, tokenIn, -toInt(amountIn), false);
+    c.effects.p2AllowLe(c.permit2, tokenIn, c.router, 0n);
   }
+  c.effects.addDelta(c.account, tokenOut, toInt(min), true);
+}
+
+const MAX_HOPS = 4n;
+
+/** SWAP_EXACT_IN: ExactInputParams, where the older router's layout has no per-hop price array. */
+function v4Multi(t: Buf, d: Uint8Array, pArr: bigint, i: bigint, end: bigint, c: URCtx) {
+  const [p, pn] = param(d, pArr, i, end);
+  const legacy = !!c.legacyParams;
+  if (pn < 0x20n) fail("MalformedUR");
+  const s = p + rdWord(d, p);
+  const tokenIn = rdAddr(d, s);
+  const path = s + rdWord(d, s + 32n);
+  const amountIn = rdWord(d, s + (legacy ? 64n : 96n));
+  const minOut = rdWord(d, s + (legacy ? 96n : 128n));
+  const hops = rdWord(d, path);
+  if (hops === 0n || hops > MAX_HOPS || amountIn === 0n || amountIn >> 128n !== 0n || minOut >> 128n !== 0n) fail("MalformedUR");
+  const pathEls = path + 32n;
+  const last = pathEls + rdWord(d, pathEls + (hops - 1n) * 32n);
+  const tokenOut = rdAddr(d, last);
+  const [sp, sn] = param(d, pArr, i + 1n, end);
+  const [tp, tn] = param(d, pArr, i + 2n, end);
+  if (sn < 64n || tn < 64n) fail("MalformedUR");
+  if (!same(rdAddr(d, sp), tokenIn) || !same(rdAddr(d, tp), tokenOut)) fail("MalformedUR");
+  const maxIn = rdWord(d, sp + 32n);
+  const takeMin = rdWord(d, tp + 32n);
+  const min = takeMin > minOut ? takeMin : minOut;
+
+  c.amount(t, "You pay", tokenIn, amountIn, c);
+  c.amount(t, "Minimum received", tokenOut, min, c);
+  if (maxIn !== amountIn) c.amount(t, "Maximum paid", tokenIn, maxIn, c);
+  if (min === 0n) {
+    VT.risk(t, RISK.NO_MIN_OUT);
+    c.risk |= BIT.NO_MIN_OUT;
+  }
+  for (let h = 0n; h < hops; h++) {
+    const el = pathEls + rdWord(d, pathEls + h * 32n);
+    const via = rdAddr(d, el);
+    const fee = rdWord(d, el + 32n);
+    const hook = rdAddr(d, el + 96n);
+    const hd = el + rdWord(d, el + 128n);
+    const hdLen = rdWord(d, hd);
+    if (h + 1n < hops) c.amount(t, "Through", via, 0n, c);
+    VT.fieldUint(t, "Pool fee", fee, UNIT.NONE);
+    if (hdLen !== 0n) VT.fieldBytes(t, "Hook data", hashRange(d, hd + 32n, hdLen), hdLen);
+    poolRisks(t, fee, hook, c);
+  }
+  swapEffects(tokenIn, tokenOut, amountIn, min, c);
 }
 
 const ZERO = "0x0000000000000000000000000000000000000000";
@@ -289,7 +348,7 @@ function v3Swap(t: Buf, d: Uint8Array, inp: bigint, len: bigint, c: URCtx) {
   }
   if (payer === 1n) {
     c.effects.addDelta(c.account, tokenIn, -toInt(amountIn), false);
-    c.effects.p2AllowLe(c.permit2, tokenIn, c.router, SPEC.P2_RELATIVE, amountIn);
+    c.effects.p2AllowLe(c.permit2, tokenIn, c.router, 0n);
   }
   if (!same(to, c.router)) c.effects.addDelta(to, tokenOut, toInt(minOut), true);
   VT.groupEnd(t);

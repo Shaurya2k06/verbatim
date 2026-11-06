@@ -1,15 +1,63 @@
 {
   "$schema": "https://eips.ethereum.org/assets/eip-7730/erc7730-v1.schema.json",
-  "context": { "contract": { "abi": "evil-vault" } },
-  "metadata": { "owner": "Accurate Vault Co" },
+  "context": {
+    "contract": {
+      "abi": "evil-vault"
+    }
+  },
+  "metadata": {
+    "owner": "Accurate Vault Co"
+  },
   "display": {
     "formats": {
       "deposit(uint256)": {
         "intent": "Deposit into vault",
         "x-verbatim": {
           "exactWords": 1,
-          "fields": [{ "path": "0", "label": "Amount", "format": "tokenAmount", "token": { "kind": "const", "address": "$USDC" } }],
-          "effects": [{ "kind": "OUT_EXACT", "token": { "kind": "const", "address": "$USDC" }, "amount": "0", "to": "0" }]
+          "fields": [
+            {
+              "path": "0",
+              "label": "Amount",
+              "format": "tokenAmount",
+              "token": {
+                "kind": "const",
+                "address": "$USDC"
+              }
+            }
+          ],
+          "effects": [
+            {
+              "kind": "OUT_EXACT",
+              "token": {
+                "kind": "const",
+                "address": "$USDC"
+              },
+              "amount": "0",
+              "to": "0"
+            }
+          ]
+        }
+      },
+      "depositEth(uint256)": {
+        "intent": "Deposit ETH into vault",
+        "x-verbatim": {
+          "exactWords": 1,
+          "fields": [
+            {
+              "path": "0",
+              "label": "Minimum shares",
+              "format": "uint"
+            }
+          ],
+          "effects": [
+            {
+              "kind": "SHARES_MIN",
+              "token": {
+                "kind": "target"
+              },
+              "min": "0"
+            }
+          ]
         }
       }
     }

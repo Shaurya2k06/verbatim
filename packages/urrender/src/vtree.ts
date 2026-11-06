@@ -13,20 +13,20 @@ const fail = (code: string): never => {
 export const NODE = {
   CALL_BEGIN: 0x01, CALL_END: 0x02,
   FIELD_ADDRESS: 0x10, FIELD_AMOUNT: 0x11, FIELD_UINT: 0x12, FIELD_BOOL: 0x13, FIELD_ENUM: 0x14, FIELD_BYTES: 0x15, FIELD_ETH_VALUE: 0x16,
-  GROUP_BEGIN: 0x20, GROUP_END: 0x21, RISK: 0x30, BLIND: 0x31, FEE: 0x40, VALID_UNTIL: 0x41, POLICY: 0x42,
+  GROUP_BEGIN: 0x20, GROUP_END: 0x21, RISK: 0x30, BLIND: 0x31, FEE: 0x40, GUARANTEE: 0x50,
 } as const;
 
 export const UNIT = { NONE: 0, TIMESTAMP: 1, BIPS: 2 } as const;
 
 export const RISK = {
   UNLIMITED_APPROVAL: 0x0001, OPERATOR_APPROVAL: 0x0002, UPGRADEABLE_TARGET: 0x0003, UNVERIFIED_CONTRACT: 0x0004, TRUST_CHANGE: 0x0005,
-  NO_POST_CHECK: 0x0006, RECIPIENT_HAS_CODE: 0x0007, RECIPIENT_NOT_SELF: 0x0008, NO_MIN_OUT: 0x0101, HOOK_CAN_TAKE_INPUT: 0x0102,
+  NO_POST_CHECK: 0x0006, RECIPIENT_HAS_CODE: 0x0007, RECIPIENT_NOT_SELF: 0x0008, SPENDER_UNATTESTED: 0x0009, NO_MIN_OUT: 0x0101, HOOK_CAN_TAKE_INPUT: 0x0102,
   HOOK_CAN_TAKE_OUTPUT: 0x0103, HOOK_DYNAMIC_FEE: 0x0104, HOOK_UNVERIFIED: 0x0105, SWEEP_TO_OTHER: 0x0106, PERMIT2_ALLOWANCE_CHANGE: 0x0107,
-  UR_ALLOW_REVERT: 0x0108, TTL_LONG: 0x0201, TOKEN_UNSAFE: 0x0202,
+  UR_ALLOW_REVERT: 0x0108, TOKEN_UNSAFE: 0x0202,
 } as const;
 
 export const BIT = {
-  UNVERIFIED: 1 << 0, BLIND: 1 << 1, UNLIMITED: 1 << 2, NO_MIN_OUT: 1 << 3, HOOK_TAKE: 1 << 4, HOOK_UNVERIFIED: 1 << 5, TTL_LONG: 1 << 6, TOKEN_UNSAFE: 1 << 7, TRUST_CHANGE: 1 << 8,
+  UNVERIFIED: 1 << 0, BLIND: 1 << 1, UNLIMITED: 1 << 2, NO_MIN_OUT: 1 << 3, HOOK_TAKE: 1 << 4, HOOK_UNVERIFIED: 1 << 5, SPENDER_UNATTESTED: 1 << 6, TOKEN_UNSAFE: 1 << 7, TRUST_CHANGE: 1 << 8, ALLOW_REVERT: 1 << 9,
 } as const;
 
 const beBytes = (v: bigint, n: number): number[] => {
@@ -204,8 +204,8 @@ export const VT = {
 };
 
 export const SPEC = {
-  MAGIC: 0x56530001, DELTA_EQ: 0x01, DELTA_GE: 0x02, ALLOW_LE: 0x03, P2ALLOW_LE: 0x04, OPERATOR_EQ: 0x05, OWNER_EQ: 0x06, CODEHASH_EQ: 0x07, NO_CODE: 0x08,
-  TRACKED_NO_DECREASE: 0x09, TRACKED_NO_ALLOW_INC: 0x0a, ACCOUNT_INVARIANT: 0x0b, IMPL_EQ: 0x0c, NAME_EQ: 0x0d, P2_ABSOLUTE: 0, P2_RELATIVE: 1,
+  MAGIC: 0x56530002, DELTA_EQ: 0x01, DELTA_GE: 0x02, ALLOW_LE: 0x03, P2ALLOW_LE: 0x04, OPERATOR_EQ: 0x05, OWNER_EQ: 0x06, CODEHASH_EQ: 0x07, NO_CODE: 0x08,
+  TRACKED_NO_DECREASE: 0x09, TRACKED_NO_ALLOW_INC: 0x0a, ACCOUNT_INVARIANT: 0x0b, APPROVALS_CLEARED: 0x0c, IMPL_EQ: 0x0d, NAME_EQ: 0x0e,
 } as const;
 
 const INT_MIN = -(1n << 255n);
@@ -215,6 +215,36 @@ export const toInt = (v: bigint): bigint => {
   if (v >> 255n !== 0n) fail("TooManyEffects");
   return v;
 };
+
+/** Item sizes, excluding the op byte. Fails closed on anything unknown. */
+export function itemSize(op: number): number {
+  switch (op) {
+    case SPEC.DELTA_EQ:
+    case SPEC.DELTA_GE:
+    case SPEC.ALLOW_LE:
+    case SPEC.OWNER_EQ:
+    case SPEC.NAME_EQ:
+      return 72;
+    case SPEC.P2ALLOW_LE:
+      return 80;
+    case SPEC.OPERATOR_EQ:
+      return 41;
+    case SPEC.CODEHASH_EQ:
+      return 52;
+    case SPEC.NO_CODE:
+      return 20;
+    case SPEC.TRACKED_NO_DECREASE:
+    case SPEC.TRACKED_NO_ALLOW_INC:
+    case SPEC.APPROVALS_CLEARED:
+      return 0;
+    case SPEC.ACCOUNT_INVARIANT:
+      return 1;
+    case SPEC.IMPL_EQ:
+      return 44;
+    default:
+      return fail("BadItem");
+  }
+}
 
 export class Effects {
   deltas: { holder: string; asset: string; value: bigint; ge: boolean }[] = [];
@@ -234,7 +264,7 @@ export class Effects {
         return;
       }
     }
-    if (this.deltas.length === 16) fail("TooManyEffects");
+    if (this.deltas.length === 8) fail("TooManyEffects");
     this.deltas.push({ holder: h, asset: a, value, ge });
   }
   allowLe(token: string, spender: string, max: bigint) {
@@ -244,13 +274,12 @@ export class Effects {
     this.other.word(max);
     this.nOther++;
   }
-  p2AllowLe(permit2: string, token: string, spender: string, mode: number, value: bigint) {
+  p2AllowLe(permit2: string, token: string, spender: string, max: bigint) {
     this.other.u8(SPEC.P2ALLOW_LE);
     this.other.addr(permit2);
     this.other.addr(token);
     this.other.addr(spender);
-    this.other.u8(mode);
-    this.other.be(value, 20);
+    this.other.be(max, 20);
     this.nOther++;
   }
   operatorEq(c: string, op: string, v: boolean) {
@@ -292,10 +321,12 @@ export class Effects {
     this.other.word(packedName);
     this.nOther++;
   }
-  finish(trustChange: boolean): Uint8Array {
+  /** The spec, and the same items as the tree's GUARANTEE section, byte for byte. */
+  finish(trustChange: boolean, t: Buf): Uint8Array {
     const s = new Buf(1 << 30);
     s.be(SPEC.MAGIC, 4);
-    s.be(this.deltas.length + this.nOther + 3, 2);
+    const n = this.deltas.length + this.nOther + 4;
+    s.be(n, 2);
     for (const d of this.deltas) {
       s.u8(d.ge ? SPEC.DELTA_GE : SPEC.DELTA_EQ);
       s.addr(d.holder);
@@ -307,6 +338,16 @@ export class Effects {
     s.u8(SPEC.TRACKED_NO_ALLOW_INC);
     s.u8(SPEC.ACCOUNT_INVARIANT);
     s.u8(trustChange ? 1 : 0);
-    return s.toBytes();
+    s.u8(SPEC.APPROVALS_CLEARED);
+    const spec = s.toBytes();
+    let q = 6;
+    for (let i = 0; i < n; i++) {
+      const size = 1 + itemSize(spec[q]);
+      const at = VT.begin(t, NODE.GUARANTEE);
+      t.copy(spec, q, size);
+      VT.end(t, at);
+      q += size;
+    }
+    return spec;
   }
 }

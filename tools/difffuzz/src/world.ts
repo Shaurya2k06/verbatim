@@ -2,7 +2,7 @@
 import { encodeAbiParameters, encodeFunctionData, keccak256, parseAbi, toHex, type Address, type Hex } from "viem";
 import { packStr, type Desc, type RenderIn, type TokenInfo, type Trust } from "@verbatim/displayvm-ts";
 import { compile, type FunctionSpec } from "@verbatim/vdesc-compiler";
-import { v4ExactInSingleInput, executeData, wrapInput, sweepInput, payPortionInput, v3Input, MSG_SENDER, ADDRESS_THIS, CMD, type PoolKey } from "@verbatim/urrender";
+import { v4ExactInSingleInput, v4ExactInInput, executeData, wrapInput, sweepInput, payPortionInput, v3Input, MSG_SENDER, ADDRESS_THIS, CMD, type PoolKey } from "@verbatim/urrender";
 
 export const ACCOUNT: Address = "0x00000000000000000000000000000000000a11ce";
 export const TOKEN: Address = "0x0000000000000000000000000000000000007070";
@@ -98,6 +98,7 @@ const TOKENS: Record<string, TokenInfo & { text: string; len: number }> = {
 export const worldTokens = () => Object.entries(TOKENS).map(([token, t]) => ({ token: token as Address, symbol: t.text, len: t.len, decimals: t.decimals, flags: t.flags }));
 
 export const worldProxy = { codehash: ch("proxy"), upgrader: UPGRADER, logic: LOGIC, impl: IMPL, getter: "0x5c60da1b" as Hex };
+export const worldSpenders: Address[] = [BOB, PERMIT2];
 export const worldHooks = [ch("inputhook"), ch("plainhook")];
 export const worldRouterCode = ch("router");
 export const worldLegacyRouterCode = ch("legacy router");
@@ -116,6 +117,7 @@ export function tsTrust(): Trust {
     nameOf: (a) => worldNames[a.toLowerCase()] ?? ZERO32,
     nameResolver: () => NAME_RESOLVER,
     hookIsAttested: (c) => worldHooks.includes(c),
+    spenderIsAttested: (a) => worldSpenders.includes(a.toLowerCase() as Address),
     codeKind: (c) => (c === worldRouterCode ? 1 : c === worldLegacyRouterCode ? 3 : c === worldProxy.codehash ? 2 : 0),
     routerConfig: () => ({ permit2: PERMIT2, weth: WETH, publisher: ROUTER_PUBLISHER }),
     proxyTemplate: () => ({ upgrader: UPGRADER, logicCodehash: LOGIC, impl: IMPL, getter: worldProxy.getter }),
@@ -187,6 +189,13 @@ function urCall(r: ReturnType<typeof rng>): Call {
     const rcpt = r.pick([MSG_SENDER, MSG_SENDER, ADDRESS_THIS, BOB, CONTRACT_RECIPIENT]);
     if (kind <= 2) {
       commands.push(CMD.V4_SWAP | flag);
+      if (r.next() < 0.3) {
+        // Multi-hop, with hops that sometimes lie about their last currency relative to TAKE_ALL by way of hostile hooks.
+        const hops = 1 + r.int(5);
+        const path = Array.from({ length: hops }, (_, h) => ({ currency: h % 2 ? TOKEN : TOKEN2, fee: r.pick([100, 500, 3000, 0x800000]), tickSpacing: 60, hooks: r.pick([hook, "0x0000000000000000000000000000000000000000" as Address]), hookData: (r.next() < 0.2 ? "0x1234" : "0x") as Hex }));
+        inputs.push(v4ExactInInput({ currencyIn: TOKEN, path, amountIn: 1n + BigInt(r.int(1e9)), amountOutMinimum: r.next() < 0.3 ? 0n : BigInt(r.int(1e9)), legacyParams }));
+        continue;
+      }
       inputs.push(v4ExactInSingleInput({ key, zeroForOne: z, amountIn: 1n + BigInt(r.int(1e9)), amountOutMinimum: r.next() < 0.3 ? 0n : BigInt(r.int(1e9)), minHopPriceX36: r.next() < 0.2 ? r.uint() : 0n, hookData: r.next() < 0.2 ? r.bytes(r.int(40)) : "0x", settleMax: r.next() < 0.2 ? r.uint() : undefined, takeMin: r.next() < 0.2 ? BigInt(r.int(1e9)) : undefined, legacyParams }));
     } else if (kind === 3) {
       commands.push(CMD.WRAP_ETH | flag);
@@ -273,7 +282,6 @@ function mangle(r: ReturnType<typeof rng>, c: Call): Call {
 }
 
 const BODY = [
-  { type: "tuple", components: [{ type: "address" }, { type: "uint256" }] },
   { type: "tuple[]", components: [{ type: "address" }, { type: "uint256" }, { type: "bytes" }] },
   { type: "bytes" },
 ] as const;
@@ -282,22 +290,82 @@ export function makeCase(seed: number): RenderIn {
   const r = rng(seed);
   const n = r.next() < 0.05 ? 0 : 1 + r.int(4);
   const calls = Array.from({ length: n }, () => mangle(r, call(r)));
-  const feeAsset = r.pick(["0x0000000000000000000000000000000000000000" as Address, "0x0000000000000000000000000000000000000000" as Address, TOKEN, UNKNOWN, UNSAFE]);
-  const feeAmount = BigInt(r.int(1e9));
-  const body = encodeAbiParameters(BODY, [[feeAsset, feeAmount], calls.map((c) => [c.target, c.value, c.data]) as never, "0x"]);
+  const body = encodeAbiParameters(BODY, [calls.map((c) => [c.target, c.value, c.data]) as never, "0x"]);
   // Hints occasionally lie: claiming code on an address with none, or omitting one that has it.
   const hints = ALL_HINTS.filter(() => r.next() < 0.95);
   if (r.next() < 0.05) hints.push(BOB);
   return {
     chainId: 1337n,
     account: ACCOUNT,
-    signedAtBlock: BigInt(r.int(1e8)),
-    ttl: BigInt(r.pick([5, 25, 25, 25, 200])),
-    feeAsset,
-    feeAmount,
-    gasLimitTotal: BigInt(r.int(5e6)),
-    policyHash: r.bytes(32),
+    expiry: BigInt(1_800_000_000 + r.int(1e6)),
+    snapshotRoot: r.bytes(32),
+    policyVersion: 1 + r.int(5),
+    path: 1 + r.int(3),
+    feeAsset: "0x0000000000000000000000000000000000000000",
+    maxFee: BigInt(r.int(1e9)),
     body,
     hints,
   };
+}
+
+function ZERO_ADDR(): Address {
+  return "0x0000000000000000000000000000000000000000";
+}
+
+const named = (calls: Call[]): RenderIn => ({
+  chainId: 1337n,
+  account: ACCOUNT,
+  expiry: 1_800_000_000n,
+  snapshotRoot: `0x${"ab".repeat(32)}`,
+  policyVersion: 1,
+  path: 2,
+  feeAsset: ZERO_ADDR(),
+  maxFee: 1000n,
+  body: encodeAbiParameters(BODY, [calls.map((c) => [c.target, c.value, c.data]) as never, "0x"]),
+  hints: ALL_HINTS,
+});
+
+/** One deterministic case per supported selector and router command. */
+export function namedCases(): [string, RenderIn][] {
+  const key: PoolKey = { currency0: TOKEN, currency1: TOKEN2, fee: 3000, tickSpacing: 60, hooks: ZERO_ADDR() };
+  const dl = 2_000_000_000n;
+  const fn = (functionName: string, args: unknown[]) => encodeFunctionData({ abi: ABI, functionName, args } as never);
+  const ur = (cmds: number[], inputs: Hex[], value = 0n, target: Address = ROUTER): Call => ({ target, value, data: executeData(cmds, inputs, dl) });
+  const swap = v4ExactInSingleInput({ key, zeroForOne: true, amountIn: 1000n, amountOutMinimum: 900n });
+  const cases: [string, Call][] = [
+    ["erc20.transfer", { target: TOKEN, value: 0n, data: fn("transfer", [BOB, 5n]) }],
+    ["erc20.approve", { target: TOKEN, value: 0n, data: fn("approve", [PERMIT2, 5n]) }],
+    ["erc20.approve unlimited", { target: TOKEN, value: 0n, data: fn("approve", [PERMIT2, (1n << 256n) - 1n]) }],
+    ["erc20.approve unattested spender", { target: TOKEN, value: 0n, data: fn("approve", [CONTRACT_RECIPIENT, 5n]) }],
+    ["erc721.setApprovalForAll", { target: TOKEN, value: 0n, data: fn("setApprovalForAll", [BOB, true]) }],
+    ["erc721.safeTransferFrom", { target: TOKEN, value: 0n, data: fn("safeTransferFrom", [ACCOUNT, BOB, 7n]) }],
+    ["permit2.approve", { target: TOKEN, value: 0n, data: fn("approve", [TOKEN, BOB, 5n, 99]) }],
+    ["vault.deposit", { target: VAULT, value: 0n, data: fn("deposit", [5n, 1]) }],
+    ["vault.note", { target: VAULT, value: 0n, data: fn("note", ["0x1234"]) }],
+    ["vault.setAdmin", { target: VAULT, value: 0n, data: fn("setAdmin", [BOB]) }],
+    ["vault.mint with value", { target: VAULT, value: 5n, data: fn("mint", [5n]) }],
+    ["multi.forward nested", { target: MULTI, value: 0n, data: fn("forward", [TOKEN, 0n, fn("transfer", [BOB, 5n])]) }],
+    ["proxy.transfer", { target: PROXY, value: 0n, data: fn("transfer", [BOB, 5n]) }],
+    ["eth.send", { target: BOB, value: 5n, data: "0x" }],
+    ["unattested", { target: UNATTESTED, value: 0n, data: "0xdeadbeef" }],
+    ["ur.v4_swap", ur([CMD.V4_SWAP], [swap])],
+    ["ur.v4_swap legacy params", ur([CMD.V4_SWAP], [v4ExactInSingleInput({ key, zeroForOne: true, amountIn: 1000n, amountOutMinimum: 900n, legacyParams: true })], 0n, LEGACY_ROUTER)],
+    ["ur.v4_swap skim hook, no minimum", ur([CMD.V4_SWAP], [v4ExactInSingleInput({ key: { ...key, hooks: SKIM_HOOK }, zeroForOne: true, amountIn: 1000n, amountOutMinimum: 0n })])],
+    ["ur.v4_swap attested input hook", ur([CMD.V4_SWAP], [v4ExactInSingleInput({ key: { ...key, hooks: INPUT_HOOK }, zeroForOne: true, amountIn: 1000n, amountOutMinimum: 900n })])],
+    ["ur.v4_swap dynamic fee", ur([CMD.V4_SWAP], [v4ExactInSingleInput({ key: { ...key, fee: 0x800000 }, zeroForOne: true, amountIn: 1000n, amountOutMinimum: 900n })])],
+    ["ur.v4_swap_exact_in two hops", ur([CMD.V4_SWAP], [v4ExactInInput({ currencyIn: TOKEN, path: [{ currency: TOKEN2, fee: 3000, tickSpacing: 60, hooks: ZERO_ADDR() }, { currency: WETH, fee: 500, tickSpacing: 10, hooks: INPUT_HOOK }], amountIn: 1000n, amountOutMinimum: 900n })])],
+    ["ur.v4_swap_exact_in legacy layout", ur([CMD.V4_SWAP], [v4ExactInInput({ currencyIn: TOKEN, path: [{ currency: TOKEN2, fee: 3000, tickSpacing: 60, hooks: ZERO_ADDR() }], amountIn: 1000n, amountOutMinimum: 900n, legacyParams: true })], 0n, LEGACY_ROUTER)],
+    ["ur.v4_swap_exact_in no minimum through a skim hook", ur([CMD.V4_SWAP], [v4ExactInInput({ currencyIn: TOKEN, path: [{ currency: TOKEN2, fee: 3000, tickSpacing: 60, hooks: SKIM_HOOK }], amountIn: 1000n, amountOutMinimum: 0n })])],
+    ["ur.v3_swap_exact_in two hops", ur([CMD.V3_SWAP_EXACT_IN], [v3Input({ recipient: MSG_SENDER, amountIn: 1000n, amountOutMin: 900n, path: `0x${TOKEN.slice(2)}000bb8${TOKEN2.slice(2)}0001f4${WETH.slice(2)}` as Hex, payerIsUser: true })])],
+    ["ur.wrap_eth", ur([CMD.WRAP_ETH], [wrapInput(MSG_SENDER, 5n)], 5n)],
+    ["ur.unwrap_weth", ur([CMD.UNWRAP_WETH], [wrapInput(MSG_SENDER, 5n)])],
+    ["ur.sweep", ur([CMD.SWEEP], [sweepInput(TOKEN, MSG_SENDER, 5n)])],
+    ["ur.sweep elsewhere", ur([CMD.SWEEP], [sweepInput(TOKEN, BOB, 5n)])],
+    ["ur.pay_portion", ur([CMD.PAY_PORTION], [payPortionInput(TOKEN, BOB, 25n)])],
+    ["ur.v3_swap_exact_in", ur([CMD.V3_SWAP_EXACT_IN], [v3Input({ recipient: MSG_SENDER, amountIn: 1000n, amountOutMin: 900n, path: `0x${TOKEN.slice(2)}000bb8${TOKEN2.slice(2)}` as Hex, payerIsUser: true })])],
+    ["ur.allow_revert", ur([CMD.SWEEP | CMD.FLAG_ALLOW_REVERT], [sweepInput(TOKEN, MSG_SENDER, 5n)])],
+    ["ur.unknown command", ur([0x0a], ["0x1234"])],
+    ["ur.command above 0x3f", ur([0x40], ["0x1234"])],
+  ];
+  return cases.map(([n, c]) => [n, named([c])]);
 }

@@ -14,7 +14,7 @@ This is the `[only_verify, pay]` prefix of PREFIX-010. Owner signatures are two 
 
 ## Why this needs the alt mempool
 
-The paymaster reads its own storage to render: descriptors, token info, policies, deposits. The canonical mempool refuses that (ethrex reports `StorageReadNonSender` on every one of these transactions). ERC-8421 admits it for a staked entity. Live proof: the honest rows in `PROOFS.md`.
+The paymaster reads its own storage to render: descriptors, token info, policies, fee tickets. The canonical mempool refuses that (ethrex reports `StorageReadNonSender` on every one of these transactions). ERC-8421 admits it for a staked entity. Live proof: the honest rows in `PROOFS.md`.
 
 ## Rules we rely on
 
@@ -25,7 +25,7 @@ The paymaster reads its own storage to render: descriptors, token info, policies
 | STORAGE-031 | Frame 1, a staked entity, reads its own storage |
 | STAKING-010 | Paymaster staked through its own `stake()`, because the registry keys on `msg.sender`: 0.012 ETH, delay 86,400 s |
 | CALLING-010 | Validation never touches an address with no code. Addresses claimed to have code come as signed hints, and everything else is asserted code-free at execution |
-| OPCODES | No TIMESTAMP, NUMBER, BALANCE or GAS-then-not-a-call in validation. TTL is checked in execution |
+| OPCODES | No TIMESTAMP, NUMBER, BALANCE or GAS-then-not-a-call in validation. Expiry is checked in execution |
 | SOLVENCY-010 | The paymaster's balance covers each transaction's maximum cost |
 
 ## Where the deployed sidecar differs (findings)
@@ -35,6 +35,8 @@ These are the most useful thing we can hand the track. All reproduced live; see 
 1. **Flat 100k prefix cap, staked or not.** ERC-8421's BUDGET-010 gives a staked entity 1,000,000 and the landing page says 2,500,000. The deployed `validationPrefix.ts:288` applies a single `MAX_VERIFY_GAS = 100,000` to the whole prefix, including signature cost. A probe paymaster staked with 0.012 ETH was refused at 120k.
 2. **`precompiles: []` blocks ecrecover.** CALLING-040 allows core precompiles. The deployed config treats 0x01 as an undeployed contract, so a bespoke-signature wallet cannot call `ecrecover`. We moved signature recovery to protocol-validated entries.
 3. **Gateway gossip link can drop.** On the night of 5 November the gateway reported `peers: []` and held every sender's transactions at `New` while still answering "admitted". The miner's sidecar still worked. A client cannot tell from the admission response.
+
+Also still true on the deployed sidecar: **a staked entity may read its own storage** (STORAGE-031 admits it, the canonical mempool says `StorageReadNonSender`), and that is the whole reason this design needs stake. [`docs/upstream/canonical-renderer-rule.md`](upstream/canonical-renderer-rule.md) proposes admitting a recognised renderer without stake, with a patch.
 
 ## What fitting in 100k cost us
 
@@ -56,19 +58,19 @@ One shared paymaster is a shared risk, so this is the central question. A pendin
 - (a) the sender's own state changing;
 - (b) revocation of a descriptor or hook **that transaction uses**;
 - (c) code appearing at an address it claimed empty (and a lying claim fails at execution anyway);
-- (d) the sender's own deposit changing, which only it, or its own delayed withdrawal, can do.
+- (d) the sender's own fee ticket for that nonce being reclaimed, which only it can start, and which takes a delay.
 
 Three design choices exist purely for this:
 
 - **No third-party reads in validation.** No ENS, no proxy slots, no oracles, no token balances. Those checks move to execution.
-- **Per-descriptor hashes in the tree, not a global root (D5).** And the tree's `trustEpoch` is the maximum over descriptors it used, not the store's epoch. An early draft used the store's, and any refresh would have invalidated the whole pool.
-- **Fees from a prepaid deposit in the paymaster's own storage (D16).** No token balance to race.
+- **Per-descriptor hashes in the tree, not a global root (D5).** The tree has no global epoch at all: each call binds its own `descHash` and attestation version. An early draft used the store's epoch, and any refresh would have invalidated the whole pool.
+- **Fees from a per-nonce ticket in the paymaster's own storage.** No token balance to race, and no two pending transactions share one: each nonce has its own prepaid amount (A14).
 
 **Measured** (`INVALIDATION` in `PROOFS.md`): of 5 signed transactions, an unrelated `refreshTrust` invalidated none, and revoking one descriptor invalidated exactly the one using it. **Limit of this measurement:** validation was re-run through `ethrex_simulateFrameTransaction`, the same call the sidecar makes. The five share a sender, so they were not all held pending in the mempool at once, and we did not observe the sidecar's own eviction.
 
 ## Other trade-offs
 
-- **VERIFY frames are static, so Leg A cannot reserve a fee.** `FEE_HEADROOM = 4`: validation demands a deposit covering four fees, matching the sidecar's 4-pending-per-sender limit. With more pending than that, `charge` could fail in frame 2. Then nothing protected runs and the paymaster absorbs that gas. Leg B can write, so it reserves properly.
+- **VERIFY frames are static, so Leg A cannot reserve a fee.** It prepays instead: `fundTickets` stores an amount per nonce, validation demands `ticket[nonce] >= amount >= TXPARAM max cost`, and frame 2 consumes it. Tickets are ETH only and cost one extra funding transaction, which is the price of pending transactions being independent.
 - **Stake is not slashed.** It prices identity and nothing more (ERC-8421). A malicious staked renderer is limited by the account's code hash pin and by reputation, not by loss of stake.
 - **Trust in frame 1.** The paymaster does not recheck the layout. It pins the sender's code hash, and that code enforced the layout in frame 0, which the protocol ran first. This saves gas and depends on that pin.
 - **The APPROVE patch is a build step.** One LOG1 byte becomes APPROVE at deploy (`D-A3`), after checking exactly one LOG1 exists. It avoids DELEGATECALL in the account, at the cost of an unusual deploy path. A proper compiler target would remove it.

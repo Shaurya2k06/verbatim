@@ -1,0 +1,26 @@
+[
+ {
+  "name": "transfer",
+  "expiry": 3051,
+  "frame0": 16112,
+  "frame1": 60482
+ },
+ {
+  "name": "approve",
+  "expiry": 3051,
+  "frame0": 16121,
+  "frame1": 64032
+ },
+ {
+  "name": "permit2.approve",
+  "expiry": 3051,
+  "frame0": 16146,
+  "frame1": 69058
+ },
+ {
+  "name": "v4 swap (ETH in)",
+  "expiry": 3051,
+  "frame0": 16546,
+  "frame1": 65439
+ }
+]

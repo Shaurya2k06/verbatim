@@ -97,6 +97,13 @@ library Buf {
         }
     }
 
+    /// For attested descriptors only, whose shape VDesc.validate already walked. Saves a bounds check per byte.
+    function u8At(bytes memory d, uint256 off) internal pure returns (uint256 v) {
+        assembly ("memory-safe") {
+            v := byte(0, mload(add(add(d, 0x20), off)))
+        }
+    }
+
     function rdWord(bytes memory d, uint256 off) internal pure returns (uint256 v) {
         _in(d, off, 32);
         assembly ("memory-safe") {
@@ -145,13 +152,13 @@ library Buf {
     }
 }
 
-/// VTREE v1 node writers (docs/VTREE.md).
+/// VTREE v2 node writers (docs/VTREE.md).
 library VTree {
     using Buf for Buf.B;
 
     error StrTooLong();
 
-    uint32 internal constant MAGIC = 0x56540001;
+    uint32 internal constant MAGIC = 0x56540002;
 
     uint8 internal constant CALL_BEGIN = 0x01;
     uint8 internal constant CALL_END = 0x02;
@@ -167,8 +174,7 @@ library VTree {
     uint8 internal constant RISK = 0x30;
     uint8 internal constant BLIND = 0x31;
     uint8 internal constant FEE = 0x40;
-    uint8 internal constant VALID_UNTIL = 0x41;
-    uint8 internal constant POLICY = 0x42;
+    uint8 internal constant GUARANTEE = 0x50;
 
     uint8 internal constant UNIT_NONE = 0;
     uint8 internal constant UNIT_TIMESTAMP = 1;
@@ -291,6 +297,7 @@ library Risk {
     uint16 internal constant NO_POST_CHECK = 0x0006;
     uint16 internal constant RECIPIENT_HAS_CODE = 0x0007;
     uint16 internal constant RECIPIENT_NOT_SELF = 0x0008;
+    uint16 internal constant SPENDER_UNATTESTED = 0x0009;
     uint16 internal constant NO_MIN_OUT = 0x0101;
     uint16 internal constant HOOK_CAN_TAKE_INPUT = 0x0102;
     uint16 internal constant HOOK_CAN_TAKE_OUTPUT = 0x0103;
@@ -299,7 +306,6 @@ library Risk {
     uint16 internal constant SWEEP_TO_OTHER = 0x0106;
     uint16 internal constant PERMIT2_ALLOWANCE_CHANGE = 0x0107;
     uint16 internal constant UR_ALLOW_REVERT = 0x0108;
-    uint16 internal constant TTL_LONG = 0x0201;
     uint16 internal constant TOKEN_UNSAFE = 0x0202;
 
     // Seen-set bits, kept separate from wire codes so policy checks are one mask test.
@@ -309,19 +315,31 @@ library Risk {
     uint256 internal constant BIT_NO_MIN_OUT = 1 << 3;
     uint256 internal constant BIT_HOOK_TAKE = 1 << 4;
     uint256 internal constant BIT_HOOK_UNVERIFIED = 1 << 5;
-    uint256 internal constant BIT_TTL_LONG = 1 << 6;
+    uint256 internal constant BIT_SPENDER_UNATTESTED = 1 << 6;
     uint256 internal constant BIT_TOKEN_UNSAFE = 1 << 7;
     uint256 internal constant BIT_TRUST_CHANGE = 1 << 8;
+    uint256 internal constant BIT_ALLOW_REVERT = 1 << 9;
 }
 
-/// VSPEC v1 (docs/VSPEC.md): collects effects during a render and serialises them deterministically.
+/// §9.3, identical on both paths. `allow` lifts the matching default refusal, in Risk.BIT_* positions.
+library PolicyRules {
+    function refuses(uint256 risk, uint256 allow) internal pure returns (bool) {
+        uint256 refused = Risk.BIT_UNVERIFIED | Risk.BIT_BLIND | Risk.BIT_UNLIMITED | Risk.BIT_SPENDER_UNATTESTED | Risk.BIT_TOKEN_UNSAFE | Risk.BIT_ALLOW_REVERT;
+        if (risk & refused & ~allow != 0) return true;
+        return risk & Risk.BIT_HOOK_TAKE != 0 && allow & Risk.BIT_HOOK_TAKE == 0 && risk & (Risk.BIT_NO_MIN_OUT | Risk.BIT_HOOK_UNVERIFIED) != 0;
+    }
+}
+
+/// VSPEC v2 (docs/VSPEC.md): collects effects during a render and serialises them deterministically.
 library VSpec {
     using Buf for Buf.B;
+    using Buf for bytes;
 
     error ConflictingEffects();
+    error BadItem();
     error TooManyEffects();
 
-    uint32 internal constant MAGIC = 0x56530001;
+    uint32 internal constant MAGIC = 0x56530002;
 
     uint8 internal constant DELTA_EQ = 0x01;
     uint8 internal constant DELTA_GE = 0x02;
@@ -334,13 +352,11 @@ library VSpec {
     uint8 internal constant TRACKED_NO_DECREASE = 0x09;
     uint8 internal constant TRACKED_NO_ALLOW_INC = 0x0a;
     uint8 internal constant ACCOUNT_INVARIANT = 0x0b;
-    uint8 internal constant IMPL_EQ = 0x0c;
-    uint8 internal constant NAME_EQ = 0x0d;
+    uint8 internal constant APPROVALS_CLEARED = 0x0c;
+    uint8 internal constant IMPL_EQ = 0x0d;
+    uint8 internal constant NAME_EQ = 0x0e;
 
-    uint8 internal constant P2_ABSOLUTE = 0;
-    uint8 internal constant P2_RELATIVE = 1;
-
-    uint256 internal constant MAX_DELTAS = 16;
+    uint256 internal constant MAX_DELTAS = 8;
 
     /// Deltas are a flat, uninitialised run of 3 words each, guarded by `nDeltas`: holder (with the GE flag at
     /// bit 160), asset, value. Allocating sixteen structs per render costs more than the rest of derive.
@@ -408,13 +424,12 @@ library VSpec {
         e.nOther++;
     }
 
-    function p2AllowLe(Effects memory e, address permit2, address token, address spender, uint8 mode, uint256 value) internal pure {
+    function p2AllowLe(Effects memory e, address permit2, address token, address spender, uint256 max) internal pure {
         e.other.u8(P2ALLOW_LE);
         e.other.addr(permit2);
         e.other.addr(token);
         e.other.addr(spender);
-        e.other.u8(mode);
-        e.other.be(value, 20);
+        e.other.be(max, 20);
         e.nOther++;
     }
 
@@ -464,11 +479,19 @@ library VSpec {
         e.nOther++;
     }
 
-    /// `MAGIC nItems deltas others defaults`.
-    function finish(Effects memory e, bool trustChange) internal pure returns (bytes memory) {
+    /// Item sizes, excluding the op byte: a table, since every render walks every item.
+    function itemSize(uint8 op) internal pure returns (uint256 n) {
+        if (op == 0 || op > 14) revert BadItem();
+        // Byte `op`, counting from the low end: 1..14 are 72,72,72,80,41,72,52,20,0,0,1,0,44,72.
+        n = (uint256(0x482c000100001434482950484848ff) >> (uint256(op) * 8)) & 0xff;
+    }
+
+    /// `MAGIC nItems deltas others defaults`, and the same items as the tree's GUARANTEE section, byte for byte.
+    function finish(Effects memory e, bool trustChange, Buf.B memory t) internal pure returns (bytes memory) {
         Buf.B memory s = Buf.alloc(e.nDeltas * 73 + e.other.len + 16);
         s.be(MAGIC, 4);
-        s.be(e.nDeltas + e.nOther + 3, 2);
+        uint256 n = e.nDeltas + e.nOther + 4;
+        s.be(n, 2);
         uint256 p = e.deltas;
         for (uint256 i = 0; i < e.nDeltas; i++) {
             uint256 h;
@@ -490,6 +513,16 @@ library VSpec {
         s.u8(TRACKED_NO_ALLOW_INC);
         s.u8(ACCOUNT_INVARIANT);
         s.u8(trustChange ? 1 : 0);
-        return s.toBytes();
+        s.u8(APPROVALS_CLEARED);
+        bytes memory spec = s.toBytes();
+        uint256 q = 6;
+        for (uint256 i = 0; i < n; i++) {
+            uint256 size = 1 + itemSize(uint8(spec.rdU8(q)));
+            uint256 at = VTree.begin(t, VTree.GUARANTEE);
+            t.copy(spec, q, size);
+            VTree.end(t, at);
+            q += size;
+        }
+        return spec;
     }
 }

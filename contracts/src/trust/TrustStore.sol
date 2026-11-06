@@ -38,11 +38,22 @@ abstract contract TrustStoreLayout {
         bytes4 getter;
     }
 
+    /// An offchain ERC-8176 attestation (EAS offchain v2) over the descriptor's JSON, by one attestor.
+    struct Attestation8176 {
+        uint64 time;
+        uint64 expirationTime;
+        bytes32 salt;
+        bytes signature;
+    }
+
     struct DescUpdate {
         bytes32 codehash;
         bytes4 selector;
         bytes vdesc;
         bytes32 publisher;
+        /// keccak256 of the descriptor's JCS form: ERC-8176's `descriptorHash`. The update's signatures bind it to `vdesc`.
+        bytes32 descriptorHash;
+        Attestation8176[] attestations;
     }
 
     struct TokenUpdate {
@@ -76,23 +87,33 @@ abstract contract TrustStoreLayout {
 
     struct TrustUpdate {
         uint64 epoch;
+        /// The attested snapshot this cache belongs to (§6). Every tree on the paymaster path states this root.
+        bytes32 root;
+        uint64 issuedAt;
+        uint64 expiry;
         DescUpdate[] descriptors;
         Revocation[] revocations;
         TokenUpdate[] tokens;
         ProxyUpdate[] proxies;
         RouterUpdate[] routers;
         bytes32[] hooks;
+        address[] spenders;
         NameUpdate[] names;
     }
 
     uint64 internal _trustEpoch;
+    /// keccak256(abi.encode(root, issuedAt, expiry)). One slot, because validation reads it on every transaction.
+    bytes32 internal _snapshotCommit;
+    bytes32 internal _snapshotRoot;
+    uint64 internal _snapshotIssuedAt;
+    uint64 internal _snapshotExpiry;
     mapping(bytes32 => mapping(bytes4 => DescSlot)) internal _descOf;
-    mapping(bytes32 => mapping(bytes4 => bytes32)) internal _publisherOf;
     mapping(bytes32 => bool) internal _everRevoked;
     mapping(address => TokenSlot) internal _tokens;
     mapping(bytes32 => uint8) internal _codeKind_;
     mapping(bytes32 => ProxyTemplate) internal _proxyTemplates;
     mapping(bytes32 => bool) internal _attestedHooks;
+    mapping(address => bool) internal _attestedSpenders;
     mapping(address => bytes32) internal _names;
     mapping(address => address) internal _nameResolvers;
 
@@ -100,44 +121,40 @@ abstract contract TrustStoreLayout {
     mapping(address => bool) internal _isAttestor;
     uint8 internal _attestorThreshold;
 
-    // Deposits, fees and policies (§7.2). Declared here so the render path and the admin module share one layout.
-    struct Policy {
-        uint64 ttl;
-        uint64 allowMask;
-        bool set;
-    }
-
+    // Deposits and fees (§7.2). Declared here so the render path and the admin module share one layout.
     struct Deposit {
         uint128 amount;
         uint128 pendingWithdraw;
     }
 
-    struct FeeAsset {
-        uint128 ratePerGas;
-        bool allowed;
+    /// A fee prepaid for one nonce of one account, so no two pending transactions can draw on the same money.
+    struct FeeTicket {
+        uint128 amount;
+        uint64 reclaimAt;
     }
 
-    mapping(address => Policy) internal _policyOf;
     mapping(address => mapping(address => Deposit)) internal _deposits;
     mapping(address => mapping(address => uint256)) internal _withdrawReadyAt;
-    mapping(address => FeeAsset) internal _feeAssets;
+    mapping(address => mapping(uint256 => FeeTicket)) internal _feeTickets;
     mapping(address => uint256) internal _feesAccrued;
 
     uint256 internal constant WITHDRAW_DELAY_ = 1 hours;
 
     event Deposited(address indexed account, address indexed asset, uint256 amount);
     event WithdrawRequested(address indexed account, address indexed asset, uint256 amount, uint256 readyAt);
-    event PolicySet(address indexed account, bytes32 indexed policyHash);
+    event TicketsFunded(address indexed account, uint256 indexed firstNonce, uint256 count, uint256 each);
 
     error WithdrawNotReady(uint256 readyAt);
     error TransferFailed();
 
     error EpochNotIncreasing();
+    error BadSnapshotTimes(uint64 issuedAt, uint64 expiry);
     error NotEnoughAttestors();
     error AttestorsNotSorted();
     error DescriptorRevoked();
     error BadSymbol();
     error NoNamesOnThisLeg();
+    error AttestationInvalid(bytes32 descriptorHash, address attester);
 
     event TrustRefreshed(uint64 indexed epoch, bytes32 indexed updateHash);
 }
@@ -156,8 +173,17 @@ abstract contract TrustStore is DisplayVM, TrustStoreLayout {
     function _descriptor(bytes32 codehash, bytes4 selector) internal view virtual override returns (Desc memory d) {
         DescSlot memory s = _descOf[codehash][selector];
         if (s.blob == address(0) || s.revoked) return d;
-        d.blob = SSTORE2.read(s.blob);
-        d.publisher = _publisherOf[codehash][selector];
+        // The blob is publisher(32) || vdesc: one read for both.
+        bytes memory b = SSTORE2.read(s.blob);
+        bytes32 publisher;
+        assembly ("memory-safe") {
+            publisher := mload(add(b, 0x20))
+            let n := sub(mload(b), 0x20)
+            b := add(b, 0x20)
+            mstore(b, n)
+        }
+        d.blob = b;
+        d.publisher = publisher;
         d.epoch = s.epoch;
         d.status = s.status;
     }
@@ -183,6 +209,10 @@ abstract contract TrustStore is DisplayVM, TrustStoreLayout {
 
     function _nameResolver(address a) internal view virtual override returns (address) {
         return _nameResolvers[a];
+    }
+
+    function _spenderIsAttested(address spender) internal view virtual override returns (bool) {
+        return _attestedSpenders[spender];
     }
 
     function _hookIsAttested(bytes32 codehash) internal view virtual override returns (bool) {
@@ -216,12 +246,22 @@ contract TrustAdmin is TrustStoreLayout {
             if (s <= last || !_isAttestor[s]) revert AttestorsNotSorted();
             last = s;
         }
+        if (u.issuedAt > block.timestamp || u.expiry <= block.timestamp) revert BadSnapshotTimes(u.issuedAt, u.expiry);
         _trustEpoch = u.epoch;
+        _snapshotCommit = keccak256(abi.encode(u.root, u.issuedAt, u.expiry));
+        _snapshotRoot = u.root;
+        _snapshotIssuedAt = u.issuedAt;
+        _snapshotExpiry = u.expiry;
 
         for (uint256 i = 0; i < u.revocations.length; i++) {
             Revocation calldata r = u.revocations[i];
             DescSlot storage slot = _descOf[r.codehash][r.selector];
-            if (slot.blob != address(0)) _everRevoked[keccak256(SSTORE2.read(slot.blob))] = true;
+            if (slot.blob != address(0)) {
+                bytes memory stored = SSTORE2.read(slot.blob);
+                bytes memory vdesc = new bytes(stored.length - 32);
+                for (uint256 k = 0; k < vdesc.length; k++) vdesc[k] = stored[k + 32];
+                _everRevoked[keccak256(vdesc)] = true;
+            }
             slot.revoked = true;
         }
         for (uint256 i = 0; i < u.descriptors.length; i++) {
@@ -229,9 +269,9 @@ contract TrustAdmin is TrustStoreLayout {
             bytes32 descHash = keccak256(d.vdesc);
             if (_everRevoked[descHash]) revert DescriptorRevoked();
             VDesc.validate(d.vdesc);
+            _checkAttestations(d);
             uint8 status = _checkPublisher(d.publisher, descHash);
-            _descOf[d.codehash][d.selector] = DescSlot(SSTORE2.write(d.vdesc), u.epoch, status, false);
-            _publisherOf[d.codehash][d.selector] = d.publisher;
+            _descOf[d.codehash][d.selector] = DescSlot(SSTORE2.write(abi.encodePacked(d.publisher, d.vdesc)), u.epoch, status, false);
         }
         for (uint256 i = 0; i < u.tokens.length; i++) {
             TokenUpdate calldata t = u.tokens[i];
@@ -244,6 +284,7 @@ contract TrustAdmin is TrustStoreLayout {
         }
         for (uint256 i = 0; i < u.routers.length; i++) _codeKind_[u.routers[i].codehash] = u.routers[i].legacy ? 3 : 1;
         for (uint256 i = 0; i < u.hooks.length; i++) _attestedHooks[u.hooks[i]] = true;
+        for (uint256 i = 0; i < u.spenders.length; i++) _attestedSpenders[u.spenders[i]] = true;
         for (uint256 i = 0; i < u.names.length; i++) {
             NameUpdate calldata n = u.names[i];
             _checkName(n.addr, n.name, n.resolver);
@@ -264,8 +305,13 @@ contract TrustAdmin is TrustStoreLayout {
         return (d.blob, d.epoch, d.status, d.revoked);
     }
 
-    function publisherOf(bytes32 c, bytes4 s) external view returns (bytes32) {
-        return _publisherOf[c][s];
+    function publisherOf(bytes32 c, bytes4 s) external view returns (bytes32 publisher) {
+        address blob = _descOf[c][s].blob;
+        if (blob == address(0)) return bytes32(0);
+        bytes memory b = SSTORE2.read(blob);
+        assembly ("memory-safe") {
+            publisher := mload(add(b, 0x20))
+        }
     }
 
     function tokens(address t) external view returns (bytes11 symbol, uint8 symLen, uint8 decimals, uint8 flags, bool known) {
@@ -298,9 +344,8 @@ contract TrustAdmin is TrustStoreLayout {
         return _everRevoked[h];
     }
 
-    function policyOf(address a) external view returns (uint64 ttl, uint64 allowMask, bool set) {
-        Policy memory p = _policyOf[a];
-        return (p.ttl, p.allowMask, p.set);
+    function snapshot() external view returns (bytes32 root, uint64 issuedAt, uint64 expiry) {
+        return (_snapshotRoot, _snapshotIssuedAt, _snapshotExpiry);
     }
 
     function deposits(address a, address asset) external view returns (uint128 amount, uint128 pendingWithdraw) {
@@ -308,9 +353,13 @@ contract TrustAdmin is TrustStoreLayout {
         return (d.amount, d.pendingWithdraw);
     }
 
-    function feeAssets(address asset) external view returns (uint128 ratePerGas, bool allowed) {
-        FeeAsset memory f = _feeAssets[asset];
-        return (f.ratePerGas, f.allowed);
+    function feeTicket(address account, uint256 nonce) external view returns (uint128 amount, uint64 reclaimAt) {
+        FeeTicket memory f = _feeTickets[account][nonce];
+        return (f.amount, f.reclaimAt);
+    }
+
+    function attestedSpenders(address a) external view returns (bool) {
+        return _attestedSpenders[a];
     }
 
     function feesAccrued(address asset) external view returns (uint256) {
@@ -359,9 +408,44 @@ contract TrustAdmin is TrustStoreLayout {
         }
     }
 
-    function setPolicy(uint64 ttl, uint64 allowMask) external {
-        _policyOf[msg.sender] = Policy(ttl, allowMask, true);
-        emit PolicySet(msg.sender, keccak256(abi.encode(ttl, allowMask)));
+    /// Anyone may prepay an account's next fees. The value is split evenly over `count` nonces.
+    function fundTickets(address account, uint256 firstNonce, uint256 count) external payable {
+        uint256 each = msg.value / count;
+        for (uint256 i = 0; i < count; i++) _feeTickets[account][firstNonce + i].amount += uint128(each);
+        emit TicketsFunded(account, firstNonce, count, each);
+    }
+
+    /// A ticket stops validating as soon as this is called, and pays out only after a delay longer than any signature
+    /// can live, so its reclaim cannot race a transaction that is already pending.
+    function requestReclaim(uint256 nonce) external {
+        _feeTickets[msg.sender][nonce].reclaimAt = uint64(block.timestamp + WITHDRAW_DELAY_);
+    }
+
+    function reclaim(uint256 nonce) external {
+        FeeTicket memory f = _feeTickets[msg.sender][nonce];
+        if (f.reclaimAt == 0 || block.timestamp < f.reclaimAt) revert WithdrawNotReady(f.reclaimAt);
+        delete _feeTickets[msg.sender][nonce];
+        (bool ok, ) = msg.sender.call{value: f.amount}("");
+        if (!ok) revert TransferFailed();
+    }
+
+    // ERC-8176's constants: its canonical schema and EIP-712 domain, fixed to Ethereum mainnet's EAS whatever chain
+    // this runs on. EAS revocations live on mainnet too, so they cannot be read here; `Revocation` above is our path.
+    bytes32 private constant SCHEMA_8176 = 0xe023eef113c1670774801c34b377fdf612dd8a4d2fa92fe382e15bd91fafb5c2;
+    bytes32 private constant EAS_DOMAIN = keccak256(abi.encode(keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"), keccak256("EAS Attestation"), keccak256("0.26"), uint256(1), address(0xA1207F3BBa224E2c9c3c6D5aF63D0eb1582Ce587)));
+    bytes32 private constant ATTEST_TYPEHASH = keccak256("Attest(uint16 version,bytes32 schema,address recipient,uint64 time,uint64 expirationTime,bool revocable,bytes32 refUID,bytes data,bytes32 salt)");
+
+    /// At least the attestor threshold of unexpired ERC-8176 attestations, from distinct attestors, in ascending order.
+    function _checkAttestations(DescUpdate calldata d) private view {
+        if (d.attestations.length < _attestorThreshold) revert NotEnoughAttestors();
+        address last;
+        for (uint256 i = 0; i < d.attestations.length; i++) {
+            Attestation8176 calldata a = d.attestations[i];
+            bytes32 structHash = keccak256(abi.encode(ATTEST_TYPEHASH, uint16(2), SCHEMA_8176, address(0), a.time, a.expirationTime, true, bytes32(0), keccak256(abi.encode(d.descriptorHash)), a.salt));
+            address signer = _recover(keccak256(abi.encodePacked(hex"1901", EAS_DOMAIN, structHash)), a.signature);
+            if (signer <= last || !_isAttestor[signer] || (a.expirationTime != 0 && block.timestamp > a.expirationTime)) revert AttestationInvalid(d.descriptorHash, signer);
+            last = signer;
+        }
     }
 
     /// Leg A has no ENS and caches no names.

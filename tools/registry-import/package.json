@@ -1,0 +1,1 @@
+{ "name": "@verbatim/registry-import", "private": true, "type": "module", "license": "MIT", "scripts": { "import": "tsx src/import.ts" }, "dependencies": { "viem": "^2.21.0", "@verbatim/vdesc-compiler": "workspace:*" }, "devDependencies": { "tsx": "^4.19.0" } }

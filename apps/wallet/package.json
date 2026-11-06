@@ -1,9 +1,25 @@
 {
-  "name": "@verbatim/wallet",
-  "private": true,
-  "type": "module",
-  "license": "MIT",
-  "scripts": { "dev": "vite --port 5174 --strictPort", "build": "vite build" },
-  "dependencies": { "viem": "^2.21.0", "@verbatim/app-kit": "workspace:*", "@verbatim/client": "workspace:*", "@verbatim/displayvm-ts": "workspace:*", "@verbatim/frames-sdk": "workspace:*", "@verbatim/urrender": "workspace:*" },
-  "devDependencies": { "vite": "^5.4.0" }
+ "name": "@verbatim/wallet",
+ "private": true,
+ "type": "module",
+ "license": "MIT",
+ "scripts": {
+  "dev": "vite --port 5174 --strictPort",
+  "build": "vite build"
+ },
+ "dependencies": {
+  "viem": "^2.21.0",
+  "@verbatim/app-kit": "workspace:*",
+  "@verbatim/client": "workspace:*",
+  "@verbatim/displayvm-ts": "workspace:*",
+  "@verbatim/frames-sdk": "workspace:*",
+  "@verbatim/urrender": "workspace:*",
+  "@reown/walletkit": "^1.2.0",
+  "@walletconnect/core": "^2.21.0",
+  "@walletconnect/utils": "^2.21.0",
+  "@verbatim/snapshot-cli": "workspace:*"
+ },
+ "devDependencies": {
+  "vite": "^5.4.0"
+ }
 }

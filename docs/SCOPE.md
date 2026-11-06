@@ -3,7 +3,7 @@
 **In scope**
 - A human signer reading a sentence on a device, approving a transaction whose calldata a frontend or host may have tampered with (the Bybit class).
 - An accurate-looking contract call with hidden effects on **tracked** assets or permissions: the "contract told the truth; the chain caught what it did" case.
-- Stale pre-signed authority: `VALID_UNTIL` kills it within N blocks. This is a partial Drift mitigation only.
+- Stale pre-signed authority: an absolute `validUntil` kills it within minutes.
 - Swap frontends lying about the minimum output, route, recipient, or hook risk (the Uniswap case).
 
 **Out of scope (say it first)**

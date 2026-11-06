@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 // docs/GAS.md and docs/PROOFS.md, from receipts on the live chains. Every number is re-read here, not copied from a log.
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -75,6 +76,24 @@ budget would hold over 40 calls, against the renderer's own limit of 16.
 1,500,000 of it, why a first approval costs much more than a later one (ledger entries are new slots), and why deploying the
 paymaster took about 34M gas.
 
+## Every demo transaction against the 100k cap
+
+Measured by \`tools/scripts/measure.ts\` with generous limits, so each figure is what the frame used. The checklist's floor is 8,000 of headroom.
+
+| Transaction | Expiry | Account | Paymaster | Signatures | Prefix | Headroom |
+|---|---:|---:|---:|---:|---:|---:|
+${JSON.parse(readFileSync(resolve(ROOT, "docs/prefix-measurements.json"), "utf8")).map((r: any) => `| ${r.name} | ${fmt(r.expiry)} | ${fmt(r.frame0)} | ${fmt(r.frame1)} | 5,600 | ${fmt(r.expiry + r.frame0 + r.frame1 + 5600)} | ${fmt(100000 - r.expiry - r.frame0 - r.frame1 - 5600)} |`).join("\n")}
+
+Multi-hop swaps are not supported. \`V3_SWAP_EXACT_IN\` renders, but the devnet's router has no v3 factory, so it cannot run there. v4 \`SWAP_EXACT_IN\` and \`PERMIT2_TRANSFER_FROM\` render as \`BLIND\` and are refused, which is proof A17. Adding them is future work and each must keep this floor.
+
+## Patched bytecode
+
+Each holds exactly one LOG1 before patching, checked in CI by \`tools/scripts/check-bytecode.ts\`. Hashes of the artifacts' patched runtimes; deployed code differs where immutables are filled in.
+
+\`\`\`
+${execFileSync("npx", ["tsx", "check-bytecode.ts"], { cwd: resolve(ROOT, "tools/scripts"), encoding: "utf8" }).trim()}
+\`\`\`
+
 ## Leg B: Sepolia (ERC-4337, EntryPoint v0.7)
 
 \`actualGasUsed\` from the bundler's receipt, covering account validation, paymaster render, the batch and overhead.
@@ -120,8 +139,8 @@ ${all.filter((p) => !LEG_B.test(p.id)).map((p) => row(p, devnetLink)).join("\n")
 **What the "plain EOA" row shows:** \`A2-eoa\` is the same evil route sent from an ordinary wallet. Received \`${proofs["A2-eoa"]?.extra?.victimReceivedRaw}\` raw dUSDC, while the hook's
 beneficiary took \`${proofs["A2-eoa"]?.extra?.hookTookRaw}\`. That is the loss Verbatim's rejections prevent.
 
-**Revocation (\`INVALIDATION\`):** of 5 signed transactions, an unrelated \`refreshTrust\` invalidated none, and revoking one descriptor invalidated exactly the one using it
-(${JSON.stringify(proofs.INVALIDATION?.extra?.afterRevocation)}). Measured by re-running validation through \`ethrex_simulateFrameTransaction\`, the call the sidecar itself makes. They share a
+**Revocation (\`A15\`):** of 5 signed transactions, an unrelated \`refreshTrust\` invalidated none, and revoking one descriptor invalidated exactly the one using it
+(${JSON.stringify(proofs.A15?.extra?.afterRevocation)}). Measured by re-running validation through \`ethrex_simulateFrameTransaction\`, the call the sidecar itself makes. They share a
 sender, so they were not all held pending at once.
 
 **Explorer links** name the miner's node (\`?node=...\`), because the explorer otherwise asks the gateway, which did not see these. There each honest row shows "On chain" and "Every rule passed", with the admission report for frame 0 (sender) and frame 1 (payer).

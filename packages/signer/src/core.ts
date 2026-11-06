@@ -2,11 +2,10 @@
 // `treeHash` is computed here from the displayed bytes and never accepted from the host.
 import { gunzipSync, gzipSync, strFromU8, strToU8 } from "fflate";
 import { hashTypedData, keccak256, type Hex } from "viem";
-import { decodeTree, formatForDevice, type DecodedTree, type DeviceLine } from "@verbatim/displayvm-ts";
+import { decodeTree, formatForDevice, specOf, type DecodedTree, type DeviceLine } from "@verbatim/displayvm-ts";
 
 export interface Request {
   tree: Hex;
-  specHash: Hex;
   /** Not checkable here: the layout lock and the on-chain re-render are what bind it. */
   txCommit: Hex;
 }
@@ -15,6 +14,8 @@ export interface Reviewed extends Request {
   decoded: DecodedTree;
   lines: DeviceLine[];
   treeHash: Hex;
+  /** Derived from the tree's own guarantees. The host never supplies it. */
+  specHash: Hex;
   digest: Hex;
 }
 
@@ -24,15 +25,15 @@ const unb64 = (s: string) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/
 const HEX32 = /^0x[0-9a-f]{64}$/;
 
 export function encodeRequest(r: Request): string {
-  return `VBT1:${b64(gzipSync(strToU8(JSON.stringify({ t: r.tree, s: r.specHash, c: r.txCommit }))))}`;
+  return `VBT1:${b64(gzipSync(strToU8(JSON.stringify({ t: r.tree, c: r.txCommit }))))}`;
 }
 
 export function decodeRequest(text: string): Request {
   const m = text.trim().match(/^VBT1:([A-Za-z0-9_-]+)$/);
   if (!m) throw new Error("not a Verbatim signing request");
   const o = JSON.parse(strFromU8(gunzipSync(unb64(m[1]))));
-  if (typeof o.t !== "string" || !HEX32.test(o.s) || !HEX32.test(o.c)) throw new Error("malformed signing request");
-  return { tree: o.t, specHash: o.s, txCommit: o.c };
+  if (typeof o.t !== "string" || !HEX32.test(o.c)) throw new Error("malformed signing request");
+  return { tree: o.t, txCommit: o.c };
 }
 
 /** Splits for an animated QR, when one code would be too dense to scan. */
@@ -56,19 +57,27 @@ export class FrameCollector {
   }
 }
 
-export function review(r: Request): Reviewed {
+/** The longest a device will sign for, in seconds. A signature that outlives this is durable authority. */
+export const DEVICE_MAX_TTL = 600;
+
+/** `now` is the device's own clock: the host cannot move it. */
+export function review(r: Request, now: number = Math.floor(Date.now() / 1000)): Reviewed {
   const decoded = decodeTree(r.tree);
+  const until = Number(decoded.expiry);
+  if (until > now + DEVICE_MAX_TTL) throw new Error(`this signature would stay valid for ${until - now} seconds, and the limit is ${DEVICE_MAX_TTL}`);
+  if (until <= now) throw new Error("this sentence has already expired");
   const treeHash = keccak256(r.tree);
-  const digest = hashTypedData(typedData(decoded, r, treeHash));
-  return { ...r, decoded, lines: formatForDevice(decoded), treeHash, digest };
+  const specHash = keccak256(specOf(decoded));
+  const digest = hashTypedData(typedData(decoded, r, treeHash, specHash));
+  return { ...r, decoded, lines: formatForDevice(decoded), treeHash, specHash, digest };
 }
 
-export function typedData(d: DecodedTree, r: Request, treeHash: Hex) {
+export function typedData(d: DecodedTree, r: Request, treeHash: Hex, specHash: Hex) {
   return {
-    domain: { name: "Verbatim", version: "1", chainId: d.chainId, verifyingContract: d.account },
-    types: { VerbatimTx: [{ name: "txCommit", type: "bytes32" }, { name: "treeHash", type: "bytes32" }, { name: "specHash", type: "bytes32" }, { name: "signedAtBlock", type: "uint64" }] },
-    primaryType: "VerbatimTx" as const,
-    message: { txCommit: r.txCommit, treeHash, specHash: r.specHash, signedAtBlock: d.signedAtBlock },
+    domain: { name: "Verbatim", version: "11", chainId: d.chainId, verifyingContract: d.account },
+    types: { Tx: [{ name: "treeHash", type: "bytes32" }, { name: "specHash", type: "bytes32" }, { name: "expiry", type: "uint64" }, { name: "snapshotRoot", type: "bytes32" }, { name: "path", type: "uint8" }, { name: "txCommit", type: "bytes32" }] },
+    primaryType: "Tx" as const,
+    message: { treeHash, specHash, expiry: d.expiry, snapshotRoot: d.snapshotRoot, path: d.path, txCommit: r.txCommit },
   };
 }
 

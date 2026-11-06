@@ -17,9 +17,6 @@ export const trust = () => new ChainTrust(client as never, d.paymaster);
 
 export const ERC20 = parseAbi(["function transfer(address,uint256)", "function approve(address,uint256)", "function balanceOf(address) view returns (uint256)"]);
 export const ZERO: Address = "0x0000000000000000000000000000000000000000";
-export const FEE_RATE = 1100n;
-const gasTotal = PUBLIC_GATEWAY_GAS.frame0 + PUBLIC_GATEWAY_GAS.frame1 + PUBLIC_GATEWAY_GAS.frame2 + PUBLIC_GATEWAY_GAS.frame2State;
-export const DEFAULT_FEE = { asset: ZERO, amount: gasTotal * FEE_RATE };
 
 export const el = <K extends keyof HTMLElementTagNameMap>(tag: K, props: Record<string, unknown> = {}, ...kids: (Node | string)[]) => {
   const e = document.createElement(tag);
@@ -41,16 +38,20 @@ const ERRORS = parseAbi([
   "error TreeMismatch(bytes32 expected, bytes32 actual)",
   "error SpecHashMismatch(bytes32 expected, bytes32 actual)",
   "error PolicyRefused(uint256 risk)",
-  "error InsufficientDeposit(uint256 available, uint256 needed)",
-  "error FeeTooLow(uint256 min, uint256 amount)",
-  "error FeeAssetNotAllowed(address asset)",
+  "error DigestMismatch(bytes32 expected, bytes32 signed)",
+  "error Replayed(bytes32 digest)",
+  "error SnapshotMissing()",
+  "error SnapshotExpiresTooSoon(uint64 expiry, uint64 snapshotExpiry)",
+  "error SnapshotTtlTooLong(uint256 ttl, uint256 max)",
+  "error NoTicket(uint256 nonce, uint256 needed)",
+  "error TtlTooLong(uint256 remaining, uint256 maxTtl)",
   "error NotCanonicalSender(bytes32 codehash)",
   "error BadLayout(uint256 check)",
   "error BadSignatureEntry()",
   "error SignersNotSortedOrUnknown()",
   "error FrameReadFailed()",
   "error AssertionFailed(uint256 index, uint256 expected, uint256 actual)",
-  "error Expired(uint256 blockNumber, uint256 lastValid)",
+  "error Expired(uint256 timestamp, uint256 expiry)",
   "error CallFailed(uint256 index, bytes reason)",
   "error CodeChanged(address target)",
   "error CodeAppeared(address target)",
@@ -60,10 +61,14 @@ const EXPLAIN: Record<string, string> = {
   TreeMismatch: "The calldata does not render to the sentence you signed.",
   SpecHashMismatch: "The assertions do not match the sentence you signed.",
   PolicyRefused: "The sentence is true, and your policy refuses it.",
-  InsufficientDeposit: "The fee deposit cannot cover this.",
-  BadLayout: "The transaction is not the required three-frame shape.",
+  DigestMismatch: "The signatures cover something other than what this transaction renders to.",
+  Replayed: "This exact signed content has already run.",
+  SnapshotExpiresTooSoon: "The signature outlives the attested snapshot. Trust needs refreshing.",
+  NoTicket: "No fee is prepaid for this transaction's nonce.",
+  TtlTooLong: "The signature stays valid for longer than your policy allows.",
+  BadLayout: "The transaction is not the required four-frame shape.",
   BadSignatureEntry: "The signatures do not cover this transaction.",
-  FrameReadFailed: "The transaction is not the required three-frame shape.",
+  FrameReadFailed: "Frame data could not be read.",
   AssertionFailed: "The contract did something the sentence did not say. Everything was undone.",
   Expired: "The signature is past its validity window.",
   CallFailed: "A call in the batch reverted. Everything was undone.",
@@ -100,7 +105,7 @@ export function batchOutcome(r: FrameReceipt, account: Address): { ok: boolean |
 }
 
 /** Owners' signing hand-off: a QR for the offline device, and locally held demo keys for the laptop owner. */
-export function signingPanel(p: { tree: Hex; specHash: Hex; txCommit: Hex }, needed: number, onReady: (sigs: OwnerSig[]) => void): HTMLElement {
+export function signingPanel(p: { tree: Hex; txCommit: Hex }, needed: number, onReady: (sigs: OwnerSig[]) => void): HTMLElement {
   const sigs = new Map<string, OwnerSig>();
   const status = el("div", { class: "line" }, `0 of ${needed} signatures`);
   const add = (s: OwnerSig) => {
@@ -153,7 +158,7 @@ export function signingPanel(p: { tree: Hex; specHash: Hex; txCommit: Hex }, nee
           /* storage blocked */
         }
         const rv = review(p);
-        const sig = await a.signTypedData(deviceTypedData(rv.decoded, p, rv.treeHash) as never);
+        const sig = await a.signTypedData(deviceTypedData(rv.decoded, p, rv.treeHash, rv.specHash) as never);
         add({ signer: a.address, sig });
         err.replaceChildren();
       } catch (e) {
@@ -165,7 +170,7 @@ export function signingPanel(p: { tree: Hex; specHash: Hex; txCommit: Hex }, nee
   );
 }
 
-export function digestFor(p: { tree: Hex; specHash: Hex; txCommit: Hex }): Hex {
+export function digestFor(p: { tree: Hex; txCommit: Hex }): Hex {
   return review(p).digest;
 }
 
@@ -194,7 +199,7 @@ export async function sendAndReport(tx: FrameTx, account: Address, box: HTMLElem
 }
 
 export const prepareCalls = (calls: Call[], extra: Partial<Parameters<typeof prepare>[0]> = {}) =>
-  prepare({ client: client as never, trust: trust(), account: d.account, paymaster: d.paymaster, calls, fee: DEFAULT_FEE, ...extra });
+  prepare({ client: client as never, trust: trust(), account: d.account, paymaster: d.paymaster, calls, gas: PUBLIC_GATEWAY_GAS, ...extra });
 
 export { PAYMASTER_ABI, encodeFunctionData, hashTypedData, typedData, txCommit, withSignatures };
 export type { Call, OwnerSig, Prepared };

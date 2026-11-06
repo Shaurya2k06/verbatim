@@ -9,7 +9,7 @@
       "setThreshold(uint8)": { "intent": "Change signature threshold", "x-verbatim": { "exactWords": 1, "fields": [{ "path": "0", "label": "Threshold", "format": "uint" }], "flags": ["ADMIN"] } },
       "addWatch(address)": { "intent": "Watch a token", "x-verbatim": { "exactWords": 1, "fields": [{ "path": "0", "label": "Token", "format": "address" }], "flags": ["ADMIN"] } },
       "removeWatch(address)": { "intent": "Stop watching a token", "x-verbatim": { "exactWords": 1, "fields": [{ "path": "0", "label": "Token", "format": "address" }], "flags": ["ADMIN"] } },
-      "pruneLedger(uint256)": { "intent": "Prune approval ledger", "x-verbatim": { "exactWords": 1, "fields": [{ "path": "0", "label": "Entry", "format": "uint" }], "flags": ["ADMIN"] } }
+      "setPolicy(uint32,uint32,uint32)": { "intent": "Change signing policy", "x-verbatim": { "exactWords": 3, "fields": [{ "path": "0", "label": "Max TTL seconds", "format": "uint" }, { "path": "1", "label": "Max snapshot TTL", "format": "uint" }, { "path": "2", "label": "Allow mask", "format": "uint" }], "flags": ["ADMIN"] } }
     }
   }
 }

@@ -8,15 +8,27 @@ import {RendererPaymasterBase} from "../src/paymaster/RendererPaymaster.sol";
 import {DisplayVM} from "../src/lib/DisplayVM.sol";
 import {TrustAdmin, TrustStoreLayout} from "../src/trust/TrustStore.sol";
 import {TestToken} from "../src/demo/TestTokens.sol";
-import {EvilVault, GasBurner, Reenterer} from "../src/demo/EvilVault.sol";
+import {EvilVault} from "../src/demo/EvilVault.sol";
 import {SkimHook} from "../src/demo/SkimHook.sol";
+import {StatelessRenderer} from "../src/stateless/StatelessRenderer.sol";
+import {RevocationRegistry} from "../src/stateless/RevocationRegistry.sol";
 
 contract TestAccount is VerbatimAccountBase, MockFrames {
-    constructor(address r, address[] memory o, uint8 t, FrameEnv env) VerbatimAccountBase(r, 200, o, t) MockFrames(env) {}
+    constructor(address r, address p2, address sr, address reg, address[] memory o, uint8 t, address[] memory att, FrameEnv env) VerbatimAccountBase(r, p2, EXPIRY, sr, reg, o, t, att, 2) MockFrames(env) {}
+
+    address internal constant EXPIRY = address(0x8141);
+
+    function watchForTest(address t) external {
+        _watchlist.push(t);
+    }
 }
 
 contract TestPaymaster is RendererPaymasterBase, MockFrames {
     constructor(bytes32 ch, address owner_, address admin, address p2, address weth, bytes32 pub_, address[] memory a, uint8 t, FrameEnv env) RendererPaymasterBase(ch, owner_, admin, p2, weth, pub_, a, t) MockFrames(env) {}
+
+    function setTicketForTest(address a, uint256 nonce, uint128 amount) external {
+        _feeTickets[a][nonce].amount = amount;
+    }
 
     function renderView(DisplayVM.In memory i) external view returns (bytes memory tree, bytes memory spec, uint256 risk) {
         DisplayVM.Out memory o = _render(i);
@@ -90,19 +102,28 @@ abstract contract Base is Test {
     MockPermit2 internal p2;
     MockRouter internal router;
     uint64 internal epoch;
+    StatelessRenderer internal sr_;
+    RevocationRegistry internal reg_;
+
+    function renderer() internal view returns (StatelessRenderer) {
+        return sr_;
+    }
+
+    function registry() internal view returns (RevocationRegistry) {
+        return reg_;
+    }
 
     struct Plan {
-        VerbatimCore.Fee fee;
         VerbatimCore.Call[] calls;
         bytes spec;
         bytes tree;
         address[] hints;
-        uint64 signedAt;
+        uint64 expiry;
         uint256 risk;
     }
 
     function setUp() public virtual {
-        vm.roll(1000);
+        vm.warp(T0);
         env = new FrameEnv();
         admin = new TrustAdmin();
         address[] memory owners = new address[](3);
@@ -114,16 +135,14 @@ abstract contract Base is Test {
         attestors[1] = vm.addr(AT2);
         attestors[2] = vm.addr(AT3);
 
-        address predicted = vm.computeCreateAddress(address(this), vm.getNonce(address(this)) + 1);
-        account = new TestAccount(predicted, owners, 2, env);
         p2 = new MockPermit2();
-        predicted = vm.computeCreateAddress(address(this), vm.getNonce(address(this)));
-        // The account was built against the first prediction, so redeploy it against the paymaster's real address.
-        account = new TestAccount(vm.computeCreateAddress(address(this), vm.getNonce(address(this)) + 1), owners, 2, env);
+        sr_ = new StatelessRenderer(address(p2), address(0x9090), PUBLISHER);
+        reg_ = new RevocationRegistry(attestors, 2);
+        account = new TestAccount(vm.computeCreateAddress(address(this), vm.getNonce(address(this)) + 1), address(p2), address(sr_), address(reg_), owners, 2, attestors, env);
         rpm = new TestPaymaster(address(account).codehash, address(this), address(admin), address(p2), address(0x9090), PUBLISHER, attestors, 2, env);
         assertEq(account.RENDERER_PAYMASTER(), address(rpm));
-        rpm.setFeeAsset(address(0), 1, true);
-        admin_().deposit{value: 1 ether}(address(account), address(0), 0);
+        vm.deal(address(this), 100 ether);
+        admin_().fundTickets{value: 1 ether}(address(account), 1, 100);
         vm.deal(address(account), 1 ether);
 
         usdc = new TestToken("Demo USD", "dUSDC", 6);
@@ -135,13 +154,16 @@ abstract contract Base is Test {
 
         TrustStoreLayout.TrustUpdate memory u = emptyUpdate();
         u.descriptors = new TrustStoreLayout.DescUpdate[](4);
-        u.descriptors[0] = TrustStoreLayout.DescUpdate(address(usdc).codehash, 0xa9059cbb, transferDesc(), ATTESTORS);
-        u.descriptors[1] = TrustStoreLayout.DescUpdate(address(usdc).codehash, 0x095ea7b3, approveDesc(), ATTESTORS);
-        u.descriptors[2] = TrustStoreLayout.DescUpdate(address(vault).codehash, 0xb6b55f25, depositDesc(address(usdc)), ATTESTORS);
-        u.descriptors[3] = TrustStoreLayout.DescUpdate(address(account).codehash, 0x7065cb48, addOwnerDesc(), ATTESTORS);
+        u.descriptors[0] = _du(address(usdc).codehash, 0xa9059cbb, transferDesc());
+        u.descriptors[1] = _du(address(usdc).codehash, 0x095ea7b3, approveDesc());
+        u.descriptors[2] = _du(address(vault).codehash, 0xb6b55f25, depositDesc(address(usdc)));
+        u.descriptors[3] = _du(address(account).codehash, 0x7065cb48, addOwnerDesc());
         u.tokens = new TrustStoreLayout.TokenUpdate[](2);
         u.tokens[0] = TrustStoreLayout.TokenUpdate(address(usdc), bytes11("dUSDC"), 5, 6, 0);
         u.tokens[1] = TrustStoreLayout.TokenUpdate(address(weth), bytes11("dWETH"), 5, 18, 0);
+        u.spenders = new address[](2);
+        u.spenders[0] = address(vault);
+        u.spenders[1] = address(p2);
         u.routers = new TrustStoreLayout.RouterUpdate[](1);
         u.routers[0] = TrustStoreLayout.RouterUpdate(address(router).codehash, false);
         refresh(u);
@@ -152,8 +174,41 @@ abstract contract Base is Test {
         return TrustAdmin(payable(address(rpm)));
     }
 
+    bytes32 internal constant ROOT = keccak256("snapshot root");
+
     function emptyUpdate() internal returns (TrustStoreLayout.TrustUpdate memory u) {
         u.epoch = ++epoch;
+        u.root = ROOT;
+        u.issuedAt = uint64(block.timestamp);
+        u.expiry = uint64(block.timestamp + 6 hours);
+    }
+
+    bytes32 internal constant EAS_DOMAIN = keccak256(abi.encode(keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"), keccak256("EAS Attestation"), keccak256("0.26"), uint256(1), address(0xA1207F3BBa224E2c9c3c6D5aF63D0eb1582Ce587)));
+    bytes32 internal constant SCHEMA_8176 = 0xe023eef113c1670774801c34b377fdf612dd8a4d2fa92fe382e15bd91fafb5c2;
+    bytes32 internal constant ATTEST_TYPEHASH = keccak256("Attest(uint16 version,bytes32 schema,address recipient,uint64 time,uint64 expirationTime,bool revocable,bytes32 refUID,bytes data,bytes32 salt)");
+
+    function att8176(uint256 k, bytes32 descriptorHash, uint64 expiry, bytes32 schema) internal pure returns (TrustStoreLayout.Attestation8176 memory a) {
+        a.time = 1;
+        a.expirationTime = expiry;
+        a.salt = keccak256(abi.encode(k));
+        bytes32 h = keccak256(abi.encode(ATTEST_TYPEHASH, uint16(2), schema, address(0), a.time, a.expirationTime, true, bytes32(0), keccak256(abi.encode(descriptorHash)), a.salt));
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(k, keccak256(abi.encodePacked(hex"1901", EAS_DOMAIN, h)));
+        a.signature = abi.encodePacked(r, s, v);
+    }
+
+    /// A descriptor update carrying two valid ERC-8176 attestations, in ascending attester order.
+    function _du(bytes32 ch, bytes4 sel, bytes memory vdesc) internal pure returns (TrustStoreLayout.DescUpdate memory d) {
+        bytes32 dh = keccak256(abi.encode("json of", vdesc));
+        uint256[2] memory keys = [AT1, AT2];
+        if (vm.addr(AT1) > vm.addr(AT2)) keys = [AT2, AT1];
+        d.codehash = ch;
+        d.selector = sel;
+        d.vdesc = vdesc;
+        d.publisher = ATTESTORS;
+        d.descriptorHash = dh;
+        d.attestations = new TrustStoreLayout.Attestation8176[](2);
+        d.attestations[0] = att8176(keys[0], dh, 0, SCHEMA_8176);
+        d.attestations[1] = att8176(keys[1], dh, 0, SCHEMA_8176);
     }
 
     function refresh(TrustStoreLayout.TrustUpdate memory u) internal {
@@ -196,6 +251,15 @@ abstract contract Base is Test {
         return bytes.concat(hex"56440001", hex"12", "Deposit into vault", hex"01", hex"01", hex"0100", hex"02", hex"06", "Amount", hex"02", abi.encodePacked(token), hex"01", hex"01", hex"02", abi.encodePacked(token), hex"0100", hex"0100", hex"0000");
     }
 
+    /// One argument; the vault's own balanceOf must rise by at least it.
+    function depositEthDesc() internal pure returns (bytes memory) {
+        return bytes.concat(hex"56440001", hex"0b", "Deposit ETH", hex"01", hex"01", hex"0100", hex"03", hex"06", "Shares", hex"00", hex"01", hex"05", hex"00", hex"0100", hex"0000");
+    }
+
+    function p2ApproveDesc() internal pure returns (bytes memory) {
+        return bytes.concat(hex"56440001", hex"0f", "Permit2 approve", hex"04", hex"00", hex"01", hex"07", hex"01", hex"0100", hex"0101", hex"0102", hex"0000");
+    }
+
     function addOwnerDesc() internal pure returns (bytes memory) {
         return bytes.concat(hex"56440001", hex"0c", "Add an owner", hex"01", hex"01", hex"0100", hex"01", hex"09", "New owner", hex"00", hex"00", hex"0004");
     }
@@ -203,44 +267,41 @@ abstract contract Base is Test {
     // ----------------------------------------------------------------------- planning -----------
 
     function allHints(VerbatimCore.Call[] memory calls) internal view returns (address[] memory h) {
-        h = new address[](calls.length + 2);
+        h = new address[](calls.length + 3);
         for (uint256 i = 0; i < calls.length; i++) h[i] = calls[i].target;
         h[calls.length] = address(router);
         h[calls.length + 1] = address(vault);
+        h[calls.length + 2] = address(p2);
     }
 
-    function policyHash() internal view returns (bytes32) {
-        return rpm.policyHashOf(address(account));
+    function body(VerbatimCore.Call[] memory calls, bytes memory spec) internal pure returns (bytes memory) {
+        return abi.encode(calls, spec);
     }
 
-    function body(VerbatimCore.Fee memory fee, VerbatimCore.Call[] memory calls, bytes memory spec) internal pure returns (bytes memory) {
-        return abi.encode(fee, calls, spec);
-    }
-
+    uint256 internal constant GAS_EXPIRY = 5_000;
     uint256 internal constant GAS_F0 = 100_000;
     uint256 internal constant GAS_F1 = 1_000_000;
     uint256 internal constant GAS_F2 = 5_000_000;
-    uint256 internal constant GAS_TOTAL = GAS_F0 + GAS_F1 + GAS_F2;
+    uint256 internal constant FEE = 1000;
+    uint256 internal nonceNow = 1;
+    uint64 internal constant T0 = 1_800_000_000;
 
-    function plan(VerbatimCore.Call[] memory calls, uint64 signedAt) internal view returns (Plan memory p) {
-        p.fee = VerbatimCore.Fee(address(0), GAS_TOTAL);
+    function plan(VerbatimCore.Call[] memory calls, uint64 expiry) internal view returns (Plan memory p) {
         p.calls = calls;
-        p.signedAt = signedAt;
+        p.expiry = expiry;
         p.hints = allHints(calls);
-        DisplayVM.In memory i = input(p);
-        (p.tree, p.spec, p.risk) = rpm.renderView(i);
+        (p.tree, p.spec, p.risk) = rpm.renderView(input(p));
     }
 
     function input(Plan memory p) internal view returns (DisplayVM.In memory i) {
         i.chainId = uint64(block.chainid);
         i.account = address(account);
-        i.signedAtBlock = p.signedAt;
-        i.ttl = rpm.ttlOf(address(account));
-        i.feeAsset = p.fee.asset;
-        i.feeAmount = p.fee.amount;
-        i.gasLimitTotal = uint64(GAS_TOTAL);
-        i.policyHash = policyHash();
-        i.body = body(p.fee, p.calls, "");
+        i.expiry = p.expiry;
+        i.snapshotRoot = ROOT;
+        i.policyVersion = account.policyVersion();
+        i.path = 2;
+        i.maxFee = 100 * (GAS_EXPIRY + GAS_F0 + GAS_F1 + GAS_F2);
+        i.body = body(p.calls, "");
         i.hints = p.hints;
     }
 
@@ -253,23 +314,30 @@ abstract contract Base is Test {
         return one(address(usdc), abi.encodeWithSelector(0xa9059cbb, to, amount));
     }
 
+    /// §7.4, computed the way a client must, from the transaction alone.
     function txCommit() internal view returns (bytes32) {
-        FrameEnv.Frame memory f0 = env.frame(0);
-        FrameEnv.Frame memory f1 = env.frame(1);
-        FrameEnv.Frame memory f2 = env.frame(2);
-        return keccak256(abi.encode(env.nonce(), env.maxPriorityFee(), env.maxFee(), f0.gasLimit, f0.stateGas, f1.gasLimit, f1.stateGas, f2.gasLimit, f2.stateGas, keccak256(f1.data), keccak256(f2.data)));
+        uint256 n = env.frameCount();
+        bytes memory b = abi.encode(block.chainid, env.sender(), env.nonce(), env.maxPriorityFee(), env.maxFee(), n);
+        for (uint256 i = 0; i < n; i++) {
+            FrameEnv.Frame memory f = env.frame(i);
+            b = bytes.concat(b, abi.encode(f.mode, f.flags, f.target, f.value, f.gasLimit, f.stateGas, i == 1 ? bytes32(0) : keccak256(f.data)));
+        }
+        return keccak256(bytes.concat(b, abi.encode(env.sigCount(), env.blobCount())));
     }
 
     /// Loads the transaction into the mock protocol, with owners O1 and O2 signing what `treeHash` and `specHash` say.
     function load(Plan memory p, bytes32 treeHash, bytes32 specHash) internal {
         env.reset();
-        env.setTx(address(account), 1, 1, 100);
-        bytes memory f0 = abi.encodeCall(VerbatimAccountBase.verifyFrame, (treeHash, specHash, p.signedAt));
-        bytes memory f1 = abi.encodeCall(RendererPaymasterBase.verifyFrame, (p.hints));
-        bytes memory f2 = abi.encodeCall(VerbatimAccountBase.executeVerified, (p.fee, p.calls, p.spec));
-        env.pushFrame(FrameEnv.Frame(1, 2, address(account), GAS_F0, 0, 0, f0));
-        env.pushFrame(FrameEnv.Frame(1, 1, address(rpm), GAS_F1, 0, 0, f1));
-        env.pushFrame(FrameEnv.Frame(2, 0, address(account), GAS_F2, 0, 0, f2));
+        env.setTx(address(account), nonceNow, 1, 100);
+        env.setMaxCost(FEE);
+        bytes memory f1 = abi.encodeCall(VerbatimAccountBase.verifyFrame, (treeHash, specHash, ROOT, uint8(2), account.policyWord(), account.owners(), bytes("")));
+        (bytes32 root, uint64 issuedAt, uint64 snapExpiry) = admin_().snapshot();
+        bytes memory f2 = abi.encodeCall(RendererPaymasterBase.verifyFrame, (p.hints, root, issuedAt, snapExpiry));
+        bytes memory f3 = abi.encodeCall(VerbatimAccountBase.executeVerified, (p.calls, p.spec));
+        env.pushFrame(FrameEnv.Frame(1, 0, account.EXPIRY_VERIFIER(), GAS_EXPIRY, 0, 0, abi.encodePacked(p.expiry)));
+        env.pushFrame(FrameEnv.Frame(1, 2, address(account), GAS_F0, 0, 0, f1));
+        env.pushFrame(FrameEnv.Frame(1, 1, address(rpm), GAS_F1, 0, 0, f2));
+        env.pushFrame(FrameEnv.Frame(2, 0, address(account), GAS_F2, 0, 0, f3));
         signWith(p, treeHash, specHash, O1, O2);
     }
 
@@ -278,12 +346,15 @@ abstract contract Base is Test {
     }
 
     function signWith(Plan memory p, bytes32 treeHash, bytes32 specHash, uint256 k1, uint256 k2) internal {
-        bytes32 d = account.digestOf(txCommit(), treeHash, specHash, p.signedAt);
         address a1 = vm.addr(k1);
         address a2 = vm.addr(k2);
         if (a1 > a2) (a1, a2) = (a2, a1);
-        env.pushSig(FrameEnv.Sig(1, a1, d));
-        env.pushSig(FrameEnv.Sig(1, a2, d));
+        // The two entries count toward txCommit, so they go in with a placeholder first.
+        env.pushSig(FrameEnv.Sig(1, a1, bytes32(0)));
+        env.pushSig(FrameEnv.Sig(1, a2, bytes32(0)));
+        bytes32 d = account.digestOf(treeHash, specHash, p.expiry, ROOT, 2, txCommit());
+        env.setSig(0, FrameEnv.Sig(1, a1, d));
+        env.setSig(1, FrameEnv.Sig(1, a2, d));
     }
 
     /// The next frame call as the protocol would make it: data read first, so the prank lands on the frame itself.
@@ -295,8 +366,8 @@ abstract contract Base is Test {
     }
 
     function expectFrame0(bytes memory err) internal {
-        env.setCurrent(0);
-        bytes memory data = env.frame(0).data;
+        env.setCurrent(1);
+        bytes memory data = env.frame(1).data;
         vm.prank(address(0xaa));
         vm.expectRevert(err);
         (bool ok, ) = address(account).call(data);
@@ -304,8 +375,8 @@ abstract contract Base is Test {
     }
 
     function expectFrame1(bytes memory err) internal {
-        env.setCurrent(1);
-        bytes memory data = env.frame(1).data;
+        env.setCurrent(2);
+        bytes memory data = env.frame(2).data;
         vm.prank(address(0xaa));
         vm.expectRevert(err);
         (bool ok, ) = address(rpm).call(data);
@@ -322,8 +393,8 @@ abstract contract Base is Test {
     }
 
     function frame0() internal {
-        env.setCurrent(0);
-        FrameEnv.Frame memory f = env.frame(0);
+        env.setCurrent(1);
+        FrameEnv.Frame memory f = env.frame(1);
         vm.prank(address(0xaa));
         (bool ok, bytes memory ret) = address(account).call(f.data);
         _bubble(ok, ret);
@@ -331,8 +402,8 @@ abstract contract Base is Test {
     }
 
     function frame1() internal {
-        env.setCurrent(1);
-        FrameEnv.Frame memory f = env.frame(1);
+        env.setCurrent(2);
+        FrameEnv.Frame memory f = env.frame(2);
         vm.prank(address(0xaa));
         (bool ok, bytes memory ret) = address(rpm).call(f.data);
         _bubble(ok, ret);
@@ -340,8 +411,8 @@ abstract contract Base is Test {
     }
 
     function frame2() internal returns (bool batchOk, bytes memory err) {
-        env.setCurrent(2);
-        FrameEnv.Frame memory f = env.frame(2);
+        env.setCurrent(3);
+        FrameEnv.Frame memory f = env.frame(3);
         vm.recordLogs();
         vm.prank(address(account));
         (bool ok, bytes memory ret) = address(account).call(f.data);
@@ -358,7 +429,9 @@ abstract contract Base is Test {
         load(p);
         frame0();
         frame1();
-        return frame2();
+        (bool ok, bytes memory err) = frame2();
+        nonceNow++;
+        return (ok, err);
     }
 
     function _bubble(bool ok, bytes memory ret) internal pure {

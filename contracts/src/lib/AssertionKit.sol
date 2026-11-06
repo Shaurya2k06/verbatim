@@ -14,27 +14,6 @@ library AssertionKit {
 
     uint256 internal constant READ_GAS = 100_000;
 
-    uint8 internal constant LEDGER_ERC20 = 1;
-    uint8 internal constant LEDGER_PERMIT2 = 2;
-    uint8 internal constant LEDGER_OPERATOR = 3;
-
-    struct LedgerEntry {
-        uint8 kind;
-        address token;
-        address spender;
-        address permit2;
-    }
-
-    struct Pre {
-        address[] assets;
-        uint256[] balances;
-        address[] holders;
-        address[] holderAssets;
-        uint256[] holderBalances;
-        uint256[] p2;
-        uint256[] allowances;
-    }
-
     function _read(address target, bytes memory data) private view returns (uint256 v) {
         (bool ok, bytes memory out) = target.staticcall{gas: READ_GAS}(data);
         if (!ok || out.length < 32) revert ReadFailed(target);
@@ -63,26 +42,8 @@ library AssertionKit {
         return address(uint160(_read(collection, abi.encodeWithSelector(0x6352211e, id))));
     }
 
-    function ledgerRead(LedgerEntry memory l, address owner) internal view returns (uint256) {
-        if (l.kind == LEDGER_ERC20) return erc20Allowance(l.token, owner, l.spender);
-        if (l.kind == LEDGER_PERMIT2) return p2Allowance(l.permit2, owner, l.token, l.spender);
-        return isOperator(l.token, owner, l.spender) ? 1 : 0;
-    }
-
-    /// Walks a spec, calling `visit`-style logic through the returned cursor. Item sizes, excluding the op byte.
     function itemSize(uint8 op) internal pure returns (uint256) {
-        if (op == VSpec.DELTA_EQ || op == VSpec.DELTA_GE) return 72;
-        if (op == VSpec.ALLOW_LE) return 72;
-        if (op == VSpec.P2ALLOW_LE) return 81;
-        if (op == VSpec.OPERATOR_EQ) return 41;
-        if (op == VSpec.OWNER_EQ) return 72;
-        if (op == VSpec.CODEHASH_EQ) return 52;
-        if (op == VSpec.NO_CODE) return 20;
-        if (op == VSpec.TRACKED_NO_DECREASE || op == VSpec.TRACKED_NO_ALLOW_INC) return 0;
-        if (op == VSpec.ACCOUNT_INVARIANT) return 1;
-        if (op == VSpec.IMPL_EQ) return 44;
-        if (op == VSpec.NAME_EQ) return 72;
-        revert BadSpec();
+        return VSpec.itemSize(op);
     }
 
     function header(bytes memory spec) internal pure returns (uint256 n) {

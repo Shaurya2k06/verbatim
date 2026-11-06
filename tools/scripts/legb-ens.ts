@@ -57,6 +57,13 @@ if (!st().registered) {
 if (!st().records) {
   const setter = encodeFunctionData({ abi: RESOLVER_ABI, functionName: "setText", args: [dns, "clear-signing", ""] });
   const a = await tx({ address: resolver, abi: RESOLVER_ABI, functionName: "grantSetterRoles", args: [setter, council] });
+  // The anchor name's two records: who may attest, and what is revoked. Each its own scoped role, like clear-signing.
+  if (process.argv.includes("--anchor")) {
+    for (const key of ["attestors", "revoked"]) {
+      const s2 = encodeFunctionData({ abi: RESOLVER_ABI, functionName: "setText", args: [dns, key, ""] });
+      await tx({ address: resolver, abi: RESOLVER_ABI, functionName: "grantSetterRoles", args: [s2, council] });
+    }
+  }
   const addrBytes = (process.env.NAME_ADDRESS ?? addr3()) as Hex;
   const b = await tx({ address: resolver, abi: RESOLVER_ABI, functionName: "setAddress", args: [dns, 60n, addrBytes] });
   console.log("setter granted", a.transactionHash, "address record", b.transactionHash);
