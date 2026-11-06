@@ -1,23 +1,15 @@
 import { Suspense, lazy } from "react";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { Layout, PageBoundary } from "./components/Layout";
 import { Loading } from "./components/States";
 import { NetworkProvider } from "./lib/network-context";
 import Home from "./pages/Home";
 import Proofs from "./pages/Proofs";
-import Suites from "./pages/Suites";
 
 // Heavier pages load on demand: they bring the renderer, the signer core and WalletConnect.
 const Demo = lazy(() => import("./pages/Demo"));
-const Attack = lazy(() => import("./pages/Attack"));
-const Wallet = lazy(() => import("./pages/Wallet"));
-const Sentences = lazy(() => import("./pages/Sentences"));
-const Xray = lazy(() => import("./pages/Xray"));
+const Uniswap = lazy(() => import("./pages/Uniswap"));
 const Ens = lazy(() => import("./pages/Ens"));
-const Trust = lazy(() => import("./pages/Trust"));
-const Mempool = lazy(() => import("./pages/Mempool"));
-const Standards = lazy(() => import("./pages/Standards"));
-const History = lazy(() => import("./pages/History"));
 
 function NotFound() {
   return (
@@ -26,6 +18,19 @@ function NotFound() {
       <p className="lede">There is no page here.</p>
     </>
   );
+}
+
+/** The old live-demo page is now /demo; its swap cases moved to the Uniswap page. */
+function SuitesRedirect() {
+  const { hash } = useLocation();
+  const uniswap = ["#skim", "#honest-swap"].includes(hash);
+  return <Navigate to={`${uniswap ? "/uniswap" : "/demo"}${hash}`} replace />;
+}
+
+/** The test history is the second view of the proofs page. */
+function HistoryRedirect() {
+  const { search } = useLocation();
+  return <Navigate to={`/proofs${search ? `${search}&` : "?"}view=history`} replace />;
 }
 
 const page = (C) => (
@@ -39,7 +44,7 @@ export default function App() {
     <BrowserRouter>
       <NetworkProvider>
         <Routes>
-          {/* The landing page and the live demo bring their own navigation and footer. */}
+          {/* The landing page brings its own navigation and footer. */}
           <Route
             index
             element={
@@ -48,27 +53,13 @@ export default function App() {
               </PageBoundary>
             }
           />
-          <Route
-            path="suites"
-            element={
-              <PageBoundary path="/suites">
-                <Suites />
-              </PageBoundary>
-            }
-          />
           <Route element={<Layout />}>
             <Route path="demo" element={page(Demo)} />
-            <Route path="attack" element={page(Attack)} />
-            <Route path="wallet" element={page(Wallet)} />
-            <Route path="sentences" element={page(Sentences)} />
-            <Route path="xray" element={page(Xray)} />
+            <Route path="uniswap" element={page(Uniswap)} />
+            <Route path="suites" element={<SuitesRedirect />} />
             <Route path="ens" element={page(Ens)} />
-            <Route path="trust" element={page(Trust)} />
-            <Route path="mempool" element={page(Mempool)} />
             <Route path="proofs" element={<Proofs />} />
-            <Route path="history" element={page(History)} />
-            <Route path="standards" element={page(Standards)} />
-            {/* /bounty appears only once an L2 deployment with a funded bounty wallet is published. Until then /standards says so. */}
+            <Route path="history" element={<HistoryRedirect />} />
             <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>

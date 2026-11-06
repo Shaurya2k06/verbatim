@@ -61,11 +61,11 @@ function Hero({ data, error, list, s }) {
         </p>
         <p className="lp-lede">Bybit lost $1.5B because its signers approved what a tampered screen showed them. Verbatim makes Ethereum rebuild every transaction into the sentence you signed. Different words, and it never reaches the mempool. Broken promise, and the whole batch reverts.</p>
         <div className="lp-ctas">
-          <Link className="lp-btn lp-btn-primary" to="/suites">
+          <Link className="lp-btn lp-btn-primary" to="/demo">
             See the demo
           </Link>
-          <Link className="lp-btn lp-btn-outline" to="/attack">
-            Attack us
+          <Link className="lp-btn lp-btn-outline" to="/uniswap">
+            On Uniswap
           </Link>
         </div>
         <HeroProof s={s} />
@@ -232,7 +232,7 @@ function SideBySide({ list }) {
         </article>
       </div>
       <div className="lp-ctas lp-ctas-center">
-        <Link className="lp-btn lp-btn-outline" to="/suites#skim">
+        <Link className="lp-btn lp-btn-outline" to="/uniswap#skim">
           Run both, live
         </Link>
       </div>
@@ -529,11 +529,11 @@ export default function Home() {
             Read it. Sign it. The chain checks both.
           </p>
           <div className="lp-ctas lp-ctas-center">
-            <Link className="lp-btn lp-btn-primary" to="/suites">
+            <Link className="lp-btn lp-btn-primary" to="/demo">
               See the demo
             </Link>
-            <Link className="lp-btn lp-btn-outline" to="/attack">
-              Attack us
+            <Link className="lp-btn lp-btn-outline" to="/uniswap">
+              On Uniswap
             </Link>
           </div>
         </section>

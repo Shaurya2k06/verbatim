@@ -14,7 +14,7 @@ import { useData } from "../lib/data";
 import { EVIDENCE, GROUPS, OUTCOME, errorName, evidenceOf, groupOf, legOf } from "../lib/evidence";
 import { useNetwork } from "../lib/network-context";
 import { addressUrl, rpc, txUrl } from "../lib/networks";
-import { RunView } from "./Suites";
+import { RunView } from "../components/SuiteRunner";
 
 const LEGS = { devnet: "Frames devnet", sepolia: "Sepolia" };
 const RESULTS = { met: "expected met", notmet: "expected not met", notrun: "not run" };
@@ -428,7 +428,7 @@ function LiveRuns() {
     <>
       <h2 className="section">Live demo runs</h2>
       <p className="muted small">
-        Runs anyone started from <Link to="/suites">the live demo</Link>, on Sepolia. The server keeps these in memory, so this list starts empty each time it restarts.
+        Runs anyone started from <Link to="/demo">the live demo</Link>, on Sepolia. The server keeps these in memory, so this list starts empty each time it restarts.
       </p>
       {error ? (
         <div className="muted small">The server is not reachable, so there are no live runs to show: {error.message}</div>

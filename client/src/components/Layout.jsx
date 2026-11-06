@@ -8,18 +8,10 @@ import "../landing/landing.css";
 import "../landing/app.css";
 
 export const ROUTES = [
-  ["/suites", "Live demo"],
-  ["/demo", "Side-by-side"],
-  ["/attack", "Attack us"],
-  ["/wallet", "Wallet"],
-  ["/sentences", "Sentences"],
-  ["/xray", "Hook X-ray"],
+  ["/demo", "Live demo"],
+  ["/uniswap", "Uniswap"],
   ["/ens", "ENS"],
-  ["/trust", "Trust"],
-  ["/mempool", "Mempool"],
-  ["/proofs", "Proofs"],
-  ["/history", "History"],
-  ["/standards", "Standards"],
+  ["/proofs", "History & proofs"],
 ];
 
 /** One page failing must not blank the site: show the error, keep the navigation. */

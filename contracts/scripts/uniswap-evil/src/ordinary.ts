@@ -1,5 +1,5 @@
 // The ordinary wallet, in the real UI, under the evil build. Shows what the UI says, then what happened.
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { chromium } from "playwright";
 import { createPublicClient, createWalletClient, http, parseAbi, type Hex } from "viem";
@@ -203,6 +203,8 @@ if (!sent.length) {
 }
 const tx = sent[0];
 const hash = hashes[0];
+// The exact bytes the page produced, kept so they can be handed to Verbatim again on screen (verbatim-half.ts).
+writeFileSync(`${out}/sent-tx.json`, JSON.stringify({ to: tx.to, data: tx.data, value: tx.value ?? "0x0", hash, quoted: buy }, null, 1));
 const r = await pub.waitForTransactionReceipt({ hash });
 const got = (await bal(dUSDC, acct.address)) - victimBefore;
 const took = (await bal(dUSDC, hook)) - hookBefore;

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { explainRevert } from "@verbatim/app-kit/errors";
 import { Evidence, Pill } from "../components/Badge";
@@ -6,6 +6,8 @@ import { Failed, Loading } from "../components/States";
 import { TxLink } from "../components/TxLink";
 import { useData } from "../lib/data";
 import { EVIDENCE, GROUPS, OUTCOME, errorName, rows, summary } from "../lib/evidence";
+
+const History = lazy(() => import("./History"));
 
 const LEGS = { devnet: "Frames devnet", sepolia: "Sepolia" };
 const fmtGas = (n) => n.toLocaleString();
@@ -120,7 +122,7 @@ function Select({ label, value, onChange, options }) {
   );
 }
 
-export default function Proofs() {
+function ProofLedger() {
   const d = useData(["proofs.json", "manifest.json"]);
   const [params, setParams] = useSearchParams();
   const [open, setOpen] = useState(() => new Set(params.get("id") ? [params.get("id")] : []));
@@ -145,7 +147,7 @@ export default function Proofs() {
     <>
       <h1>Proof ledger</h1>
       <p className="lede">
-        Every claim, checkable. Each row is what a live network returned when the proof scripts ran. Earlier runs of each row are in <Link to="/history">the test history</Link>.
+        Every claim, checkable. Each row is what a live network returned when the proof scripts ran. Earlier runs of each row are in <Link to="/proofs?view=history">the test history</Link>.
       </p>
       <div className="counters">
         <div className="counter">
@@ -207,6 +209,32 @@ export default function Proofs() {
           />
         ))}
       </ul>
+    </>
+  );
+}
+
+/** One page, two views: the ledger (one run per claim) and the history (every run on record). Each view keeps its own filters. */
+export default function Proofs() {
+  const [params, setParams] = useSearchParams();
+  const view = params.get("view") === "history" || params.get("run") || params.get("tx") ? "history" : "ledger";
+  const pick = (v) => setParams(v === "history" ? { view: "history" } : {});
+  return (
+    <>
+      <div className="viewtabs" role="tablist" aria-label="History and proofs">
+        <button role="tab" aria-selected={view === "ledger"} className={view === "ledger" ? "primary" : ""} onClick={() => pick("ledger")}>
+          Proof ledger
+        </button>
+        <button role="tab" aria-selected={view === "history"} className={view === "history" ? "primary" : ""} onClick={() => pick("history")}>
+          Test history
+        </button>
+      </div>
+      {view === "history" ? (
+        <Suspense fallback={<Loading what="Loading the history" />}>
+          <History />
+        </Suspense>
+      ) : (
+        <ProofLedger />
+      )}
     </>
   );
 }

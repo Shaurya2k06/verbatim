@@ -78,7 +78,7 @@ export function LandingNav({ base = "", pages = null }) {
           </nav>
         ) : (
           <nav aria-label="Sections" className="lp-nav-links">
-            <Link to="/suites">Demo</Link>
+            <Link to="/demo">Demo</Link>
             {SECTIONS.map(([href, label]) => (
               <a key={href} href={base + href}>
                 {label}
@@ -104,7 +104,7 @@ export function LandingNav({ base = "", pages = null }) {
             ))
           ) : (
             <>
-              <Link to="/suites" onClick={close}>
+              <Link to="/demo" onClick={close}>
                 Demo
               </Link>
               {SECTIONS.map(([href, label], i) => (

@@ -36,7 +36,7 @@ export const STEPS = [
     step: "The frontend builds it",
     body: "It may be honest. It may be tampered with. Verbatim assumes nothing, and treats the host, the RPC and the relayer the same way.",
     log: "frontend → calls, sentence T, spec S",
-    to: "/demo",
+    to: "/uniswap",
     more: "See both routes",
   },
   {
@@ -44,24 +44,24 @@ export const STEPS = [
     step: "You read it and sign",
     body: "An offline device decodes the sentence itself, shows the guarantees first, and signs its hash, not the calldata. It needs no internet, registry or metadata.",
     log: "QR → device → sign(hash T, hash S, expiry)",
-    to: "/wallet",
-    more: "Open the wallet",
+    to: "/demo#lifecycle",
+    more: "Watch the device sign",
   },
   {
     icon: "gate",
     step: "The chain renders it again",
     body: "During validation, a contract rebuilds the sentence from the real calldata. If it differs from what you signed, the transaction is refused before it enters the mempool.",
     log: "render(calldata) ≠ T  →  TreeMismatch",
-    to: "/mempool",
-    more: "Compare the paths",
+    to: "/demo#lifecycle",
+    more: "Follow one swap",
   },
   {
     icon: "check",
     step: "Execution keeps the promise",
     body: "The calls run, then the account asserts what the sentence guaranteed. If a balance is off or an approval is left standing, everything is undone.",
     log: "assert(S) fails  →  batch reverted",
-    to: "/sentences",
-    more: "Explore sentences",
+    to: "/demo#cases",
+    more: "Break a promise",
   },
 ];
 
@@ -163,16 +163,12 @@ export const BENEFITS = [
     icon: "warning",
     title: "Risk arrives in plain words",
     body: "What a Uniswap v4 hook may do is written in the low bits of its address. Verbatim reads those bits on chain and puts the warning in the sentence you sign.",
-    to: "/xray",
-    more: "X-ray a hook",
   },
   {
     say: "the contract said one thing and did another",
     icon: "check",
     title: "Promises are checked after the calls",
     body: "A truthful description is not enough. No tracked holding may drop beyond what you signed, and no approval survives the batch.",
-    to: "/sentences",
-    more: "Read real sentences",
   },
   {
     say: "that signature is weeks old",
@@ -239,20 +235,17 @@ export const EXCLUDES = [
 ];
 
 export const TRY = [
-  { to: "/suites", title: "Run the suites", body: "No wallet or keys needed. Pick a case, and it runs on Sepolia while you watch." },
-  { to: "/demo", title: "Tamper with a swap", body: "Choose the route and the amount yourself. Signing the Verbatim side needs two owner keys." },
-  { to: "/attack", title: "Run a team session", body: "Others pick attacks from their phones while your team signs on the device." },
-  { to: "/wallet", title: "Use the wallet", body: "A working account on Sepolia, for owners. Everything it sends is a sentence they read." },
+  { to: "/demo", title: "Run the live demo", body: "No wallet or keys needed. Follow one swap from the click to the block, or run the whole demo in order." },
+  { to: "/uniswap", title: "Tamper with a swap", body: "The same swap twice on Uniswap's contracts: an ordinary wallet and Verbatim. Follow one swap from the click to the block." },
+  { to: "/ens", title: "Check an ENS name", body: "Run the exclusivity proof on any name, and see a lookalike refused." },
+  { to: "/proofs", title: "Read every record", body: "Every claim with its evidence, and every test run on record." },
 ];
 
 export const EXPLORE = [
-  ["/sentences", "Sentences", "Explore what people actually approved", "doc"],
-  ["/xray", "Hook X-ray", "Paste a v4 hook, read its powers", "scan"],
+  ["/demo", "Live demo", "End-to-end workflows on Sepolia", "scan"],
+  ["/uniswap", "Uniswap", "Every Uniswap test and demo, in one place", "build"],
   ["/ens", "ENS", "Run the exclusivity proof on any name", "tag"],
-  ["/trust", "Trust", "Attestors, snapshots and revocation", "layers"],
-  ["/mempool", "Mempool", "Two validation paths, measured", "rails"],
-  ["/proofs", "Proofs", "Every claim, with its evidence", "check"],
-  ["/standards", "Standards", "ERC drafts and findings", "build"],
+  ["/proofs", "History & proofs", "Every claim, and every run on record", "check"],
 ];
 
 export const COMMANDS = `pnpm install

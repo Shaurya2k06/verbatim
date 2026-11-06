@@ -1,6 +1,6 @@
 // Records the 3-minute demo on the current site, live on Sepolia: the laptop (the site, built from this checkout) on the left, the
 // phone (the offline signer, every network request blocked) on the right. It opens with the recorded attack on Uniswap's real
-// interface (contracts/docs/demo/uniswap-interface-attack.mp4), then runs everything else live.
+// interface (contracts/docs/demo/uniswap-interface-attack.mp4), then runs everything else live: /uniswap (the side-by-side swap) and /demo (the general cases).
 // Writes contracts/docs/demo/verbatim-demo.mp4. Needs the root .env (OWNER1_KEY on the phone, OWNER2_KEY as the laptop's demo key,
 // DEMO_EOA_KEY for the ordinary wallet), ffmpeg on PATH, and Sepolia test ETH in the account. Usage: pnpm record-site
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
@@ -153,7 +153,7 @@ async function outcome(scope: Locator, want: RegExp, beat: string, after: string
 const done = recorder();
 
 // ---- 0:45 the side-by-side, live ----
-await site.goto(`${SITE}/demo`);
+await site.goto(`${SITE}/uniswap`);
 await show(site, "Now live on Sepolia, against Uniswap's official v4 contracts. Left: an ordinary wallet. Right: Verbatim. Same tampered frontend.");
 await site.getByRole("button", { name: "Run from an ordinary wallet" }).waitFor({ timeout: 90_000 });
 await hold(5000);
@@ -187,45 +187,30 @@ await hold(3000);
 await sign(verbatim, "The phone shows the frontend's sentence, an honest swap. The calldata underneath is the skim.");
 await outcome(verbatim, /TreeMismatch|SpecHashMismatch/, "frontend lies, chain re-renders", "The account re-rendered the real calldata and it isn't what was signed. Refused before the mempool.");
 
-// ---- 1:15 the contract tells the truth, then does more ----
-await site.goto(`${SITE}/attack`);
-await show(site, "Attack us. Each card is a live attack on the Sepolia account; the scoreboard counts what got through.");
-await hold(5000);
-async function attack(title: string, intro: string, want: RegExp, after: string, signs = true) {
-  const art = site.locator("article.attack", { hasText: title });
-  await art.scrollIntoViewIfNeeded();
+// ---- 1:15 every other way to lie, run by the server on Sepolia (the live demo; no phone needed) ----
+await site.goto(`${SITE}/demo`);
+await show(site, "The live demo page: every other way to lie. No wallet, no keys in the browser. Each case runs on Sepolia when you press Run.");
+await hold(4000);
+async function suiteCase(title: string, intro: string, want: RegExp, after: string) {
+  const li = site.locator("li.lp-case", { hasText: title });
+  await li.getByRole("button", { name: "Run" }).waitFor({ timeout: 120_000 });
+  await li.scrollIntoViewIfNeeded();
   await caption(site, intro);
   await hold(2500);
-  await art.getByRole("button", { name: "Run live" }).click();
-  const sheet = site.locator(".sheet");
-  if (signs) {
-    await sign(sheet);
-    await outcome(sheet, want, title, after);
-  }
-  return sheet;
+  await li.getByRole("button", { name: "Run" }).click();
+  await li.getByRole("button", { name: "Run again" }).waitFor({ timeout: 300_000 });
+  await li.locator(".lp-run").scrollIntoViewIfNeeded();
+  const text = (await li.innerText()).replace(/\s+/g, " ");
+  const pass = want.test(text);
+  results.push({ beat: title, pass, text: text.slice(-200) });
+  console.log(`${pass ? "PASS" : "FAIL"} ${title}`);
+  await caption(site, pass ? after : `UNEXPECTED (${title})`);
+  await hold(7000);
 }
-await attack("Approval left standing", "The contract tells the truth, then does more: a true sentence, but the approval would outlive the transaction.", /AssertionFailed/, "Mined, and the batch reverted with AssertionFailed: the chain checked the effect, not the description. Only the fee was paid.");
-await site.locator(".sheet").getByRole("button", { name: "Close" }).click();
-await attack("Swap the recipient", "Swap the recipient: the owners approve paying verbatim-demo.eth, the calldata pays the attacker.", /TreeMismatch/, "Refused in validation: TreeMismatch. It never reached a block.");
-await site.locator(".sheet").getByRole("button", { name: "Close" }).click();
-await attack("Unknown router command", "A Uniswap router command no descriptor explains.", /PolicyRefused/, "Refused: the device can't explain it, so the account won't run it.");
-await site.locator(".sheet").getByRole("button", { name: "Close" }).click();
-
-// A signature that would last for hours: the phone refuses by its own clock.
-const far = await attack("Future-dated expiry", "A signature that stays valid for six hours: durable authority over the account.", /./, "", false);
-await far.getByRole("button", { name: "Copy request" }).waitFor({ timeout: 90_000 });
-await far.getByRole("button", { name: "Copy request" }).click();
-const farReq = await site.evaluate(() => navigator.clipboard.readText());
-await phone.getByPlaceholder("Scan the request").fill(farReq);
-await phone.getByRole("button", { name: "Review" }).click();
-await badge();
-const refused = await phone.locator(".err").innerText({ timeout: 10_000 }).catch(() => "");
-results.push({ beat: "phone refuses a future-dated sentence", pass: /valid/.test(refused), text: refused });
-console.log(`${/valid/.test(refused) ? "PASS" : "FAIL"} phone refuses future expiry: ${refused}`);
-await caption(site, "The phone refuses it by its own clock. Signed anyway, the account's policy reverts it with TtlTooLong.");
-await hold(7000);
-await far.getByRole("button", { name: "Close" }).click();
-await site.evaluate(() => window.scrollTo(0, 0));
+await suiteCase("Leave an approval standing", "The contract tells the truth, then does more: a true sentence, but the approval would outlive the transaction.", /AssertionFailed/, "Mined, and the batch reverted with AssertionFailed: the chain checked the effect, not the description. Only the fee was paid.");
+await suiteCase("Swap the recipient", "Swap the recipient: the owners approve paying verbatim-demo.eth, the calldata pays the attacker.", /TreeMismatch/, "Refused in validation: TreeMismatch. It never reached a block.");
+await suiteCase("Use an unknown router command", "A Uniswap router command no descriptor explains.", /PolicyRefused/, "Refused: the device can't explain it, so the account won't run it.");
+await suiteCase("Date the expiry far ahead", "A signature that stays valid for hours: durable authority over the account. The device refuses it; signed anyway, the account reverts it.", /TtlTooLong/, "Mined, and reverted with TtlTooLong: the policy caps how long a signature may live.");
 await caption(site, "Every lie about the sentence dies before the mempool. Every lie about effects reverts. $0 stolen.");
 await hold(7000);
 
@@ -238,7 +223,7 @@ await titleCard(
 await titleCard(`<div style="font:600 30px/1.45 system-ui">No stake and no global state on the stateless path. ENS is the trust root. URRender is a Uniswap renderer anyone can use.</div>`, 6000);
 
 // ---- at the table: /suites, no wallet needed ----
-await site.goto(`${SITE}/suites`);
+await site.goto(`${SITE}/demo`);
 await show(site, "At the table: the suites. No wallet, no keys in the browser. Press Run and it happens on Sepolia.");
 const unattested = site.locator("li.lp-case", { hasText: "Call an unattested contract" });
 await unattested.getByRole("button", { name: "Run" }).waitFor({ timeout: 120_000 });

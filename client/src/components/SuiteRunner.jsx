@@ -1,15 +1,15 @@
-// The public demo. Every case is run by the server for real, on Sepolia, and this page only shows what comes back: there is no
-// sample data and no fallback result, so when the server is unreachable nothing here can run.
+// The live cases, run by the server for real on Sepolia. This component only shows what comes back: there is no sample data and no
+// fallback result, so when the server is unreachable nothing here can run. `topic` picks which cases a page shows: the Uniswap page
+// runs the ones about swaps and the router, the demo page runs the rest.
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Pill } from "../components/Badge";
-import { SentenceDiff } from "../components/SentenceDiff";
-import { Footer } from "../landing/Footer";
-import { HexField } from "../landing/HexField";
-import { ROUTES } from "../components/Layout";
-import { LandingNav } from "../landing/LandingNav";
-import "../landing/landing.css";
+import { Pill } from "./Badge";
+import { SentenceDiff } from "./SentenceDiff";
 import { apiGet, apiPost } from "../lib/api";
+
+/** The cases that are about Uniswap: swaps, the router's commands, and the skim hook. Everything else is general. */
+const UNISWAP_CASES = new Set(["honest-swap", "tampered-swap", "ordinary-wallet", "skim-true", "allow-revert", "unknown-command"]);
+export const topicOf = (caseId) => (UNISWAP_CASES.has(caseId) ? "uniswap" : "general");
 
 const POLL_MS = 1500;
 const MAX_POLL_FAILURES = 5;
@@ -196,7 +196,7 @@ function Case({ c, state, info, onRun }) {
   );
 }
 
-export default function Suites() {
+export function SuiteRunner({ topic, onTx, facts = false }) {
   const [info, setInfo] = useState(null);
   const [loadError, setLoadError] = useState(null);
   const [state, setState] = useState({});
@@ -214,12 +214,11 @@ export default function Suites() {
 
   useEffect(() => {
     alive.current = true;
-    if (!hash) window.scrollTo({ top: 0, behavior: "instant" });
     refresh();
     return () => {
       alive.current = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   const loaded = Boolean(info);
@@ -253,6 +252,8 @@ export default function Suites() {
         }
       }
     }
+    const k = run.outcome?.kind;
+    onTx?.({ label: run.title, kind: k, txHash: run.txHash ?? undefined, userOpHash: run.userOpHash, block: run.block ?? undefined, gas: run.gasUsed ?? undefined, error: k === "rejected" || k === "reverted" ? run.outcome.name ?? undefined : undefined });
     refresh();
   };
 
@@ -260,108 +261,72 @@ export default function Suites() {
     for (const c of s.cases) await runCase(c.id);
   };
 
+  // Only this page's cases, and only the suites that still have one.
+  const suites = (info?.suites ?? []).map((s) => ({ ...s, cases: s.cases.filter((c) => topicOf(c.id) === topic) })).filter((s) => s.cases.length);
+
   return (
-    <div className="lp">
-      <a className="lp-skip" href="#main">
-        Skip to content
-      </a>
-      <HexField />
-      <LandingNav base="/" pages={ROUTES} />
-      <main id="main">
-        <section className="lp-section lp-suites-head">
-          <p className="lp-eyebrow">Live demo</p>
-          <h1>
-            Pick a suite.
-            <br />
-            Watch it happen.
-          </h1>
-          <p className="lp-copy">Every case below runs on Sepolia when you press Run, against the deployed account and Uniswap’s official contracts. Nothing is simulated or replayed, and you don’t need a wallet.</p>
-          {loadError && !info ? (
-            <p className="lp-run-error">
-              The demo server is not reachable: {loadError}. Nothing here can run without it, because nothing here is simulated. <Link to="/proofs">Earlier recorded runs →</Link>
-            </p>
-          ) : null}
-          {!info && !loadError ? <p className="lp-caret-line">Reaching the demo server. It can take up to a minute to wake</p> : null}
-          {info ? (
-            <dl className="lp-facts">
-              <div>
-                <dt>Network</dt>
-                <dd>{info.network}</dd>
-              </div>
-              <div>
-                <dt>Account</dt>
-                <dd>
-                  <a href={`${info.explorer}/address/${info.account}`} target="_blank" rel="noreferrer">
-                    {short(info.account, 6)} ↗
-                  </a>
-                </dd>
-              </div>
-              <div>
-                <dt>Funds for gas</dt>
-                <dd>{info.funds ? `${Number(info.funds.accountEth).toFixed(4)} Sepolia ETH` : "Could not read"}</dd>
-              </div>
-              <div>
-                <dt>In line now</dt>
-                <dd>{info.queued}</dd>
-              </div>
-            </dl>
-          ) : null}
-          {info && !info.ready ? <p className="lp-run-error">Runs are off: {info.why}.</p> : null}
-          <div className="lp-notes">
-            <p>
-              <b>Who signs.</b> You have no owner keys, so the demo server signs as two of the account’s three owners. It only signs the fixed cases on this page, on a testnet account. In real use nobody’s server signs: the owners read the sentence and sign on an offline device.
-            </p>
-            <p>
-              <b>Why some have no transaction.</b> A refused operation never reaches a block, so there is no transaction to link. You get the bundler’s answer, the account’s own revert, and the balances and nonce before and after. Anything that reaches a block links to Etherscan.
-            </p>
+    <div className="suite-runner">
+      {loadError && !info ? (
+        <p className="lp-run-error">
+          The demo server is not reachable: {loadError}. Nothing here can run without it, because nothing here is simulated. <Link to="/proofs">Earlier recorded runs →</Link>
+        </p>
+      ) : null}
+      {!info && !loadError ? <p className="lp-caret-line">Reaching the demo server. It can take up to a minute to wake</p> : null}
+      {info && facts ? (
+        <dl className="lp-facts">
+          <div>
+            <dt>Network</dt>
+            <dd>{info.network}</dd>
           </div>
-        </section>
-        {info?.suites.map((s) => (
-          <section className="lp-section lp-suite" id={s.id} key={s.id} aria-labelledby={`${s.id}-title`}>
-            <div className="lp-suite-head">
-              <div>
-                <h2 id={`${s.id}-title`}>{s.title}</h2>
-                <p className="lp-copy">{s.summary}</p>
-              </div>
-              {s.cases.length > 1 ? (
-                <button type="button" className="lp-btn lp-btn-primary" disabled={!info.ready || s.cases.some((c) => state[c.id]?.run && state[c.id].run.status !== "done")} onClick={() => runSuite(s)}>
-                  Run this suite
-                </button>
-              ) : null}
+          <div>
+            <dt>Account</dt>
+            <dd>
+              <a href={`${info.explorer}/address/${info.account}`} target="_blank" rel="noreferrer">
+                {short(info.account, 6)} ↗
+              </a>
+            </dd>
+          </div>
+          <div>
+            <dt>Funds for gas</dt>
+            <dd>{info.funds ? `${Number(info.funds.accountEth).toFixed(4)} Sepolia ETH` : "Could not read"}</dd>
+          </div>
+          <div>
+            <dt>In line now</dt>
+            <dd>{info.queued}</dd>
+          </div>
+        </dl>
+      ) : null}
+      {info && !info.ready ? <p className="lp-run-error">Runs are off: {info.why}.</p> : null}
+      {facts ? (
+        <div className="lp-notes">
+          <p>
+            <b>Who signs.</b> You have no owner keys, so the demo server signs as two of the account’s three owners. It only signs the fixed cases on this page, on a testnet account. In real use nobody’s server signs anything.
+          </p>
+          <p>
+            <b>Why some have no transaction.</b> A refused operation never reaches a block, so there is no transaction to link. You get the bundler’s answer, the account’s own revert, and the balances before and after.
+          </p>
+        </div>
+      ) : null}
+      {suites.map((s) => (
+        <section className="lp-section lp-suite" id={s.id} key={s.id} aria-labelledby={`${topic}-${s.id}-title`}>
+          <div className="lp-suite-head">
+            <div>
+              <h3 id={`${topic}-${s.id}-title`}>{s.title}</h3>
+              <p className="lp-copy">{s.summary}</p>
             </div>
-            <ol className="lp-cases">
-              {s.cases.map((c) => (
-                <Case key={c.id} c={c} state={state[c.id]} info={info} onRun={runCase} />
-              ))}
-            </ol>
-          </section>
-        ))}
-        {info?.recent.length ? (
-          <section className="lp-section" aria-labelledby="recent-title">
-            <h2 id="recent-title">Recent runs</h2>
-            <p className="lp-copy">From anyone on this server since it last started.</p>
-            <ul className="lp-recent">
-              {info.recent.map((r) => (
-                <li key={r.id}>
-                  <span>{r.title}</span>
-                  <span>
-                    {r.kind}
-                    {r.name ? ` · ${r.name}` : ""}
-                  </span>
-                  {r.txUrl ? (
-                    <a href={r.txUrl} target="_blank" rel="noreferrer">
-                      Transaction ↗
-                    </a>
-                  ) : (
-                    <span className="lp-unchanged">no transaction</span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </section>
-        ) : null}
-      </main>
-      <Footer />
+            {s.cases.length > 1 ? (
+              <button type="button" className="lp-btn lp-btn-primary" disabled={!info.ready || s.cases.some((c) => state[c.id]?.run && state[c.id].run.status !== "done")} onClick={() => runSuite(s)}>
+                Run these {s.cases.length}
+              </button>
+            ) : null}
+          </div>
+          <ol className="lp-cases">
+            {s.cases.map((c) => (
+              <Case key={c.id} c={c} state={state[c.id]} info={info} onRun={runCase} />
+            ))}
+          </ol>
+        </section>
+      ))}
     </div>
   );
 }

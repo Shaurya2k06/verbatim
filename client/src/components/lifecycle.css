@@ -156,3 +156,11 @@
   max-width: 960px;
   margin-top: 8px;
 }
+
+/* The two views of the history and proofs page */
+.viewtabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 24px;
+}

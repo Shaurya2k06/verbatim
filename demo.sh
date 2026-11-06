@@ -109,7 +109,7 @@ fi
 # ── 6 ───────────────────────────────────────────────────────────────────────────────────────────────────────────────
 if want hosted; then
   stage "6 · The hosted site and server" "$SITE and $API: pages load, the new build is live, and a real case runs on Sepolia through the server"
-  for p in / /suites /demo /attack "/proofs?id=B-A1"; do
+  for p in / /demo /uniswap /ens /proofs "/proofs?id=B-A1" "/proofs?view=history"; do
     c=$(http "$SITE$p"); [ "$c" = 200 ] && pass "GET $p" "HTTP $c" || fail "GET $p" "HTTP $c"
   done
   JS=$(curl -s -m 30 "$SITE/" | grep -oE '/assets/index-[^"]+\.js' | head -1)
