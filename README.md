@@ -165,14 +165,14 @@ cd ../gas-report && pnpm report     # regenerate docs/GAS.md and docs/PROOFS.md
 
 | What | Where |
 |---|---|
-| Router dispatch, fails closed on anything unknown | [`URRender.sol:71`](contracts/src/uniswap/URRender.sol#L71) |
-| `V4_SWAP` strict decoding | [`URRender.sol:164`](contracts/src/uniswap/URRender.sol#L164) |
-| `SWAP_EXACT_IN_SINGLE`, `SETTLE_ALL`, `TAKE_ALL`, hook risk | [`URRender.sol:196`](contracts/src/uniswap/URRender.sol#L196), risk nodes at [`:235`](contracts/src/uniswap/URRender.sol#L235) and [`:241`](contracts/src/uniswap/URRender.sol#L241) |
-| Swap effect assertions, including Permit2 | [`URRender.sol:258`](contracts/src/uniswap/URRender.sol#L258) |
-| `WRAP_ETH`, `SWEEP`, `V3_SWAP_EXACT_IN` | [`:265`](contracts/src/uniswap/URRender.sol#L265), [`:292`](contracts/src/uniswap/URRender.sol#L292), [`:316`](contracts/src/uniswap/URRender.sol#L316) |
+| Router dispatch, fails closed on anything unknown | [`URRender.sol:73`](contracts/src/uniswap/URRender.sol#L73) |
+| `V4_SWAP` strict decoding | [`URRender.sol:166`](contracts/src/uniswap/URRender.sol#L166) |
+| `SWAP_EXACT_IN_SINGLE`, `SETTLE_ALL`, `TAKE_ALL`, hook risk | [`URRender.sol:200`](contracts/src/uniswap/URRender.sol#L200), multi-hop at [`:278`](contracts/src/uniswap/URRender.sol#L278), risk nodes at [`:238`](contracts/src/uniswap/URRender.sol#L238) and [`:246`](contracts/src/uniswap/URRender.sol#L246) |
+| Swap effect assertions, including Permit2 | [`URRender.sol:264`](contracts/src/uniswap/URRender.sol#L264) |
+| `WRAP_ETH`, `SWEEP`, `V3_SWAP_EXACT_IN` | [`:324`](contracts/src/uniswap/URRender.sol#L324), [`:351`](contracts/src/uniswap/URRender.sol#L351), [`:375`](contracts/src/uniswap/URRender.sol#L375) |
 | Hook flag constants | [`HookFlags.sol:7-9`](contracts/src/uniswap/HookFlags.sol#L7-L9), tested against upstream in [`URRender.t.sol`](contracts/test/URRender.t.sol) |
-| Where the renderer dispatches to it | [`DisplayVM.sol:189`](contracts/src/lib/DisplayVM.sol#L189) |
-| Permit2 allowance reads in assertions | [`AssertionKit.sol:53`](contracts/src/lib/AssertionKit.sol#L53) |
+| Where the renderer dispatches to it | [`DisplayVM.sol:188`](contracts/src/lib/DisplayVM.sol#L188) |
+| Permit2 allowance reads in assertions | [`AssertionKit.sol:32`](contracts/src/lib/AssertionKit.sol#L32) |
 | The evil hook | [`SkimHook.sol:38`](contracts/src/demo/SkimHook.sol#L38) |
 | Pool creation and liquidity through PositionManager | [`seed-uniswap.ts:66`](tools/scripts/seed-uniswap.ts#L66) |
 

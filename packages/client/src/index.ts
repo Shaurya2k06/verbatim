@@ -1,6 +1,7 @@
 // Turns a batch of calls into a signable sentence and a frame transaction. All of this is untrusted: the chain
 // re-renders, and any lie here is a rejection there.
 import { concat, encodeAbiParameters, encodeFunctionData, hashTypedData, hexToBytes, keccak256, parseAbi, toHex, type Address, type Hex, type PublicClient } from "viem";
+import { getUserOperationHash } from "viem/account-abstraction";
 import { Mode, Scope, frame, newTx, type FrameTx } from "@verbatim/frames-sdk";
 import { packStr, render, type RenderIn, type RenderOut, type Trust } from "@verbatim/displayvm-ts";
 import { SPEC, itemSize, rdBe, rdU8, toAddr } from "@verbatim/urrender";
@@ -462,6 +463,69 @@ export function withStatelessSignatures(p: PreparedStateless, ownerSigs: OwnerSi
   const owners = [...ownerSigs].sort((x, y) => (BigInt(x.signer) < BigInt(y.signer) ? -1 : 1));
   const d = snapshotDigest(BigInt(p.snapshot.chainId), p.snapshot.root, BigInt(p.snapshot.issuedAt), BigInt(p.snapshot.expiry));
   return { ...p.tx, signatures: [...owners.map((s) => SIG_ENTRY(s.signer, p.digest, s.sig)), ...p.snapshot.signatures.map((s) => SIG_ENTRY(s.signer, d, s.sig))] };
+}
+
+const SIG_4337 = { type: "tuple", components: [{ name: "treeHash", type: "bytes32" }, { name: "specHash", type: "bytes32" }, { name: "expiry", type: "uint64" }, { name: "root", type: "bytes32" }, { name: "issuedAt", type: "uint64" }, { name: "snapExpiry", type: "uint64" }, { name: "ownerSigs", type: "bytes" }, { name: "attestorSigs", type: "bytes" }, { name: "attestors", type: "address[]" }, { name: "hints", type: "address[]" }, { name: "proofs", type: "bytes" }] } as const;
+const EXECUTE_USER_OP: Hex = "0x8dd7712f"; // executeUserOp(PackedUserOperation,bytes32)
+export const PATH_ERC4337 = 3;
+export const ENTRY_POINT_V07: Address = "0x0000000071727De22E5E9d8BAf0edAc6f37da032";
+const EP_NONCE = parseAbi(["function getNonce(address sender, uint192 key) view returns (uint256)"]);
+
+export interface UserOpGas {
+  callGasLimit: bigint;
+  verificationGasLimit: bigint;
+  preVerificationGas: bigint;
+}
+
+export const USER_OP_GAS: UserOpGas = { callGasLimit: 1_500_000n, verificationGasLimit: 300_000n, preVerificationGas: 500_000n };
+
+export interface PreparedUserOp {
+  account: Address;
+  chainId: bigint;
+  tree: Hex;
+  spec: Hex;
+  treeHash: Hex;
+  specHash: Hex;
+  risk: number;
+  hints: Address[];
+  expiry: bigint;
+  proofs: Hex;
+  /** The userOpHash: this path's txCommit. */
+  hash: Hex;
+  digest: Hex;
+  digestTypedData: ReturnType<typeof typedData>;
+  /** Everything but the signature, as a bundler's JSON wants it. */
+  op: Record<string, unknown>;
+  snapshot: PublishedSnapshot;
+}
+
+/** The production leg (§11): renders with the twin and proves from the snapshot. Sign `digestTypedData`, then call `userOpWithSignatures`. */
+export async function prepareUserOp(a: { client: PublicClient; account: Address; calls: Call[]; snapshot: PublishedSnapshot; router: { permit2: Address; weth: Address; publisher: Hex }; fees: { maxFeePerGas: bigint; maxPriorityFeePerGas: bigint }; expiry: bigint; gas?: UserOpGas; override?: { tree: Hex; spec: Hex } }): Promise<PreparedUserOp> {
+  const gas = a.gas ?? USER_OP_GAS;
+  const chainId = BigInt(await a.client.getChainId());
+  const trust = new SnapshotTrust(a.client, a.snapshot, a.router);
+  const policyVersion = Number(await a.client.readContract({ address: a.account, abi: ACCOUNT_ABI, functionName: "policyVersion" } as never));
+  const base = { chainId, account: a.account, expiry: a.expiry, snapshotRoot: a.snapshot.root, policyVersion, path: PATH_ERC4337, feeAsset: ZERO_ADDRESS, maxFee: (gas.verificationGasLimit + gas.callGasLimit + gas.preVerificationGas) * a.fees.maxFeePerGas, body: encodeBody(a.calls, "0x") };
+  const { out, hints } = await renderWithChain(base, trust as never, a.client);
+  const tree = a.override?.tree ?? out.tree;
+  const spec = a.override?.spec ?? out.spec;
+  const treeHash = keccak256(tree);
+  const specHash = keccak256(spec);
+  const proofs = encodeProofs(treeOf(a.snapshot), [...trust.used.values()]);
+  const nonce = (await a.client.readContract({ address: ENTRY_POINT_V07, abi: EP_NONCE, functionName: "getNonce", args: [a.account, 0n] } as never)) as bigint;
+  const callData = concat([EXECUTE_USER_OP, encodeBody(a.calls, spec)]);
+  const userOperation = { sender: a.account, nonce, callData, callGasLimit: gas.callGasLimit, verificationGasLimit: gas.verificationGasLimit, preVerificationGas: gas.preVerificationGas, maxFeePerGas: a.fees.maxFeePerGas, maxPriorityFeePerGas: a.fees.maxPriorityFeePerGas, signature: "0x" as Hex };
+  const hash = getUserOperationHash({ chainId: Number(chainId), entryPointAddress: ENTRY_POINT_V07, entryPointVersion: "0.7", userOperation });
+  const td = typedData(chainId, a.account, treeHash, specHash, a.expiry, a.snapshot.root, PATH_ERC4337, hash);
+  const q = (n: bigint): Hex => `0x${n.toString(16)}`;
+  const op = { sender: a.account, nonce: q(nonce), callData, callGasLimit: q(gas.callGasLimit), verificationGasLimit: q(gas.verificationGasLimit), preVerificationGas: q(gas.preVerificationGas), maxFeePerGas: q(a.fees.maxFeePerGas), maxPriorityFeePerGas: q(a.fees.maxPriorityFeePerGas) };
+  return { account: a.account, chainId, tree, spec, treeHash, specHash, risk: out.risk, hints, expiry: a.expiry, proofs, hash, digest: hashTypedData(td as never), digestTypedData: td, op, snapshot: a.snapshot };
+}
+
+export function userOpWithSignatures(p: PreparedUserOp, sigs: OwnerSig[]): Record<string, unknown> {
+  const owners = [...sigs].sort((x, y) => (BigInt(x.signer) < BigInt(y.signer) ? -1 : 1));
+  const signature = encodeAbiParameters([SIG_4337], [{ treeHash: p.treeHash, specHash: p.specHash, expiry: p.expiry, root: p.snapshot.root, issuedAt: BigInt(p.snapshot.issuedAt), snapExpiry: BigInt(p.snapshot.expiry), ownerSigs: concat(owners.map((s) => s.sig)), attestorSigs: concat(p.snapshot.signatures.map((s) => s.sig)), attestors: p.snapshot.attestors, hints: p.hints, proofs: p.proofs }]);
+  return { ...p.op, signature };
 }
 
 export { toHex };

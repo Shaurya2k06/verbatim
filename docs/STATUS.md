@@ -9,7 +9,7 @@ Every [SPEC] item in `context.md`, marked **done**, **partial** or **missing**. 
 | G0 probes | **Done** | `G0a`-`G0f` in `PROOFS.md` |
 | G1 paymaster upgrade | **Code done, live proofs pending** | 160 Foundry tests, 10k fuzz. **The public devnet stopped at block 408262.** `tools/scripts/wait-devnet.sh` reruns everything when it moves. Until then the devnet rows in `proofs.json` are from older builds, and some show failures from a masked-revert bug since fixed |
 | G2 stateless path | **Code done, live proofs pending** | Tests for B1-B11 pass. `stateless.ts` has the live cases. Same blocker. Coverage so far: the descriptors in `descriptors/`, proved for transfer, approve, swap and wrap |
-| G3 Uniswap | **Partial** | Side-by-side live on official Sepolia contracts (`B-A2-eoa`, `B-A2b`). v4 multi-hop renders in both twins; not measured live. Hook X-ray built. Real interface: see below. Upstream PR not opened |
+| G3 Uniswap | **Partial** | Side-by-side live on official Sepolia contracts (`B-A2-eoa`, `B-A2b`). v4 multi-hop renders in both twins; not measured live. Hook X-ray built. WalletConnect wallet works over the real relay (`WC`). Real interface: see below. Upstream PR drafted in `docs/UPSTREAM.md`, not opened: the repo is private, so it would link to nothing |
 | G4 production | **Sepolia done; mainnet needs funds** | `VerbatimAccount4337` live through Pimlico and Alchemy. `deploy-l2.ts`, the oracle and terms are written. Not deployed to an L2, and no funds at risk |
 | G5 ENS anchor | **Done on Sepolia, no hosted demo link** | `B13`, `B-ens-revoked`, `A8`. `apps/ens-demo` runs locally; a live link needs hosting |
 | G6 measurement and standards | **Partial** | Four findings and both ERC drafts written, not posted. `SNAPSHOT.md` done. The N=50 invalidation bench needs the devnet. FrameReader and the patch tool are packaged, not published |
@@ -40,7 +40,7 @@ All five probes passed on the live devnet, and the stateless design is feasible 
 | (e) Both prefixes with a leading expiry frame | Both mined. `[expiry_verify, self_verify]` is also valid for the canonical mempool |
 | (f, added) Expired transaction | Refused by the mempool: "validation frame 0: reverted" |
 
-**A failed expiry frame does not by itself stop a transaction.** With its gas limit below the 3,000 entry charge, frame 0 has status 0 and the node still mined the transaction. So a host could otherwise strip expiry. The account now reads frame 0's status in its layout lock (`BadLayout(8)`), proved live as `A7b`. Another finding to file.
+**A failed expiry frame does not by itself stop a transaction.** With its gas limit below the 3,000 entry charge, frame 0 has status 0 and the node still mined the transaction. So a host could otherwise strip expiry. The account now requires frame 0's gas limit to cover the verifier (`BadLayout(8)`), tested in Foundry; the live `A7b` is pending the devnet. Reading the frame's status instead masked every revert reason: see `DECISIONS.md`, D-A19.
 
 ## Known conflicts in the design
 

@@ -64,3 +64,37 @@ app.append(
   ),
 );
 refreshBalances();
+
+// WalletConnect, on the production leg. Needs VITE_WALLET_CONNECT_PROJECT_ID and VITE_BUNDLER_URL.
+const wcEnv = (import.meta as any).env ?? {};
+if (wcEnv.VITE_WALLET_CONNECT_PROJECT_ID) {
+  const uriBox = el("input", { placeholder: "wc: pairing link from the dapp" }) as HTMLInputElement;
+  const wcLog = el("div", { class: "mono" });
+  const wcFlow = el("div");
+  const log = (l: string) => wcLog.append(el("div", {}, l));
+  const start = async () => {
+    const [{ startWallet }, sepolia, snapshot] = await Promise.all([import("./walletconnect"), import("../../../deployments/sepolia.json"), import("../../../deployments/snapshot-sepolia.json")]);
+    return startWallet({
+      projectId: wcEnv.VITE_WALLET_CONNECT_PROJECT_ID,
+      rpc: wcEnv.VITE_SEPOLIA_RPC_URL ?? "https://ethereum-sepolia-rpc.publicnode.com",
+      bundler: wcEnv.VITE_BUNDLER_URL,
+      account: sepolia.default.account as Address,
+      snapshot: snapshot.default as never,
+      permit2: sepolia.default.uniswap.permit2 as Address,
+      weth: "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14",
+      log,
+      sign: (p) => new Promise((resolve) => {
+        wcFlow.replaceChildren(el("div", { class: "panel" }, el("h2", {}, "The dapp asks for this"), sentence(p.tree)), signingPanel({ tree: p.tree, txCommit: p.hash }, 2, (sigs) => {
+          wcFlow.replaceChildren();
+          resolve(sigs as never);
+        }));
+      }),
+    });
+  };
+  let wallet: Awaited<ReturnType<typeof start>> | null = null;
+  app.append(el("div", { class: "panel", id: "walletconnect" }, el("h2", {}, "WalletConnect (Sepolia)"), uriBox, el("div", { class: "row" }, el("button", { onclick: async () => {
+    wallet ??= await start();
+    await wallet.pair(uriBox.value.trim());
+    log("pairing");
+  } }, "Connect")), wcLog, wcFlow));
+}
