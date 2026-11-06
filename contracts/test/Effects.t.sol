@@ -52,6 +52,51 @@ contract LyingNft {
     }
 }
 
+/// A token whose `transfer` also raises its holder's base allowance to Permit2.
+contract CreepingToken {
+    address public immutable PERMIT2;
+    mapping(address => uint256) public balanceOf;
+    mapping(address => mapping(address => uint256)) public allowance;
+
+    constructor(address permit2) {
+        PERMIT2 = permit2;
+    }
+
+    function mint(address to, uint256 amount) external {
+        balanceOf[to] += amount;
+    }
+
+    function approve(address spender, uint256 amount) external returns (bool) {
+        allowance[msg.sender][spender] = amount;
+        return true;
+    }
+
+    function transfer(address to, uint256 amount) external returns (bool) {
+        balanceOf[msg.sender] -= amount;
+        balanceOf[to] += amount;
+        allowance[msg.sender][PERMIT2] += 1;
+        return true;
+    }
+}
+
+/// Records more than it was asked to.
+contract OverPermit2 {
+    uint160 public extra;
+    mapping(address => mapping(address => mapping(address => uint160))) public amounts;
+
+    function setExtra(uint160 e) external {
+        extra = e;
+    }
+
+    function approve(address token, address spender, uint160 amount, uint48) external {
+        amounts[msg.sender][token][spender] = amount + extra;
+    }
+
+    function allowance(address o, address t, address s) external view returns (uint160, uint48, uint48) {
+        return (amounts[o][t][s], 0, 0);
+    }
+}
+
 /// Each effect a sentence can promise, broken the way a real attacker would break it. The checks that read live state fire when
 /// the world changes between validation and execution, the others when the call itself does something other than promised.
 contract EffectsTest is Base {
@@ -188,5 +233,49 @@ contract EffectsTest is Base {
         assertFalse(ok);
         _assertBroke(err, uint160(FRIEND), uint160(address(account)));
         assertEq(n.ownerOf(7), address(account));
+    }
+
+    function test_permit2_records_more_than_the_sentence_reverts() public {
+        OverPermit2 o = new OverPermit2();
+        o.setExtra(1);
+        _attest(address(o), OverPermit2.approve.selector, p2ApproveDesc());
+        (bool ok, bytes memory err) = run(plan(one(address(o), abi.encodeCall(OverPermit2.approve, (address(usdc), OPERATOR, 5, uint48(T0 + 50)))), T0 + 100));
+        assertFalse(ok);
+        _assertBroke(err, 5, 6);
+    }
+
+    /// The sentence promises no other Permit2 allowance grows, for every token the account has ever granted Permit2.
+    function test_hidden_permit2_allowance_growth_reverts() public {
+        CreepingToken t = new CreepingToken(address(p2));
+        t.mint(address(account), 100);
+        _attest(address(t), APPROVE, approveDesc());
+        _attest(address(t), 0xa9059cbb, transferDesc());
+        (bool granted, ) = run(plan(one(address(t), abi.encodeWithSelector(APPROVE, address(p2), 5)), T0 + 100));
+        assertTrue(granted);
+        assertEq(t.allowance(address(account), address(p2)), 5);
+        (bool ok, bytes memory err) = run(plan(one(address(t), abi.encodeWithSelector(0xa9059cbb, FRIEND, 1)), T0 + 100));
+        assertFalse(ok);
+        _assertBroke(err, 5, 6);
+        assertEq(t.balanceOf(FRIEND), 0);
+    }
+
+    /// A descriptor that hides an admin call, as a compromised attestor quorum might sign one: the sentence says nothing, the invariant still holds.
+    function _hiddenAdmin(uint8 words) private pure returns (bytes memory) {
+        return bytes.concat(hex"56440001", hex"04", "Ping", bytes1(words), hex"00", hex"00", hex"0000");
+    }
+
+    function test_policy_change_the_sentence_hides_reverts() public {
+        _attest(address(account), VerbatimCore.setPolicy.selector, _hiddenAdmin(3));
+        (bool ok, bytes memory err) = run(plan(one(address(account), abi.encodeCall(VerbatimCore.setPolicy, (1 days, 6 hours, 0xffffffff))), T0 + 100));
+        assertFalse(ok);
+        _assertBroke(err, 0, 3);
+    }
+
+    function test_owner_change_the_sentence_hides_reverts() public {
+        _attest(address(account), VerbatimCore.removeOwner.selector, _hiddenAdmin(1));
+        (bool ok, bytes memory err) = run(plan(one(address(account), abi.encodeCall(VerbatimCore.removeOwner, (vm.addr(O3)))), T0 + 100));
+        assertFalse(ok);
+        _assertBroke(err, 0, 1);
+        assertTrue(account.isOwner(vm.addr(O3)));
     }
 }

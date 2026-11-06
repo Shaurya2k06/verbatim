@@ -77,7 +77,7 @@ All on live networks; every row links to a transaction or a named revert in **[c
 | B13 attestor no longer listed in ENS | Refused at execution: `AttestorNotListed` |
 | B14, I12 an approval left standing | `AssertionFailed`: `APPROVALS_CLEARED` |
 
-Tests: 172 Foundry tests, including a stateful invariant suite and the attacks above, plus the TypeScript packages. I8 (the renderers are byte-identical) is a differential fuzzer: 10,000 random cases per CI run, zero mismatches. Coverage: **1,898 of 3,035 functions in the ERC-7730 registry compile, across 65 protocols** ([contracts/docs/REGISTRY.md](contracts/docs/REGISTRY.md), failures listed with reasons). Effects are written and tested for ERC-20, WETH, Permit2, the Universal Router, an ERC-4626 vault and an Aave-style pool. Static analysis and threat model: [SECURITY.md](contracts/SECURITY.md).
+Tests: 176 Foundry tests, including a stateful invariant suite and the attacks above, plus the TypeScript packages. I8 (the renderers are byte-identical) is a differential fuzzer: 10,000 random cases per CI run, zero mismatches. Coverage: **1,898 of 3,035 functions in the ERC-7730 registry compile, across 65 protocols** ([contracts/docs/REGISTRY.md](contracts/docs/REGISTRY.md), failures listed with reasons). Effects are written and tested for ERC-20, WETH, Permit2, the Universal Router, an ERC-4626 vault and an Aave-style pool. Static analysis and threat model: [SECURITY.md](contracts/SECURITY.md).
 
 ## Architecture
 
