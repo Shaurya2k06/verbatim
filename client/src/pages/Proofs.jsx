@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { explainRevert } from "@verbatim/app-kit/errors";
 import { Evidence, Pill } from "../components/Badge";
 import { Failed, Loading } from "../components/States";
@@ -144,7 +144,9 @@ export default function Proofs() {
   return (
     <>
       <h1>Proof ledger</h1>
-      <p className="lede">Every claim, checkable. Each row is what a live network returned when the proof scripts ran.</p>
+      <p className="lede">
+        Every claim, checkable. Each row is what a live network returned when the proof scripts ran. Earlier runs of each row are in <Link to="/history">the test history</Link>.
+      </p>
       <div className="counters">
         <div className="counter">
           <div className="big">{finalMet}</div>

@@ -1,0 +1,369 @@
+/* The app pages, on the landing page's theme. landing.css sets the tokens, fonts, nav and footer under .lp; this file maps
+   the app's own classes (index.css) onto that look, scoped to .lp-app so the landing page and the live demo are untouched. */
+
+/* Page index: every app page, under the nav */
+.lp-pages {
+  position: relative;
+  z-index: 2;
+  border-bottom: 1px solid var(--line);
+  background: rgba(8, 9, 13, 0.82);
+}
+.lp-pages-track {
+  display: flex;
+  gap: 4px;
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 8px var(--gutter);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.lp-pages-track::-webkit-scrollbar {
+  display: none;
+}
+.lp-pages a {
+  flex: none;
+  padding: 4px 8px;
+  border-radius: 2px;
+  color: var(--mute);
+  font-size: 13px;
+  line-height: 20px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    color 300ms var(--ease),
+    background-color 300ms var(--ease);
+}
+.lp-pages a:hover {
+  color: var(--ink);
+}
+.lp-pages a.active {
+  background: var(--ink);
+  color: var(--bg);
+}
+
+.lp-app-status {
+  position: relative;
+  z-index: 1;
+  border-bottom: 1px solid var(--line);
+  background: rgba(8, 9, 13, 0.82);
+}
+.lp-app-status .statusbar {
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 8px var(--gutter);
+  font-size: 12px;
+}
+.lp-app-status .banner {
+  padding: 8px var(--gutter);
+  text-align: center;
+}
+
+/* The reading column */
+.lp-app main.lp-page {
+  max-width: var(--max);
+  min-height: 60vh;
+  margin: 0 auto;
+  padding: 64px var(--gutter) 96px;
+  font-size: 15px;
+  line-height: 24px;
+}
+.lp-app main p {
+  margin: 0 0 12px;
+}
+
+/* Type */
+.lp-app main h1 {
+  margin: 0 0 24px;
+  font-size: 48px;
+  line-height: 48px;
+}
+.lp-app main h1::before {
+  content: "> ";
+  color: var(--ok);
+}
+.lp-app main h2 {
+  margin: 0 0 16px;
+  font: 600 16px / 24px var(--mono);
+  letter-spacing: 0;
+  text-transform: none;
+}
+.lp-app main h2.section {
+  margin: 64px 0 24px;
+  font: 400 30px / 36px var(--head);
+}
+.lp-app main h3 {
+  margin: 16px 0 8px;
+}
+.lp-app .lede {
+  max-width: 44em;
+  margin-bottom: 48px !important;
+  color: var(--mute);
+  font-size: 16px;
+  line-height: 28px;
+}
+.lp-app .label {
+  margin: 16px 0 4px;
+  color: var(--ok);
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.lp-app .muted,
+.lp-app .mono {
+  color: var(--mute);
+}
+.lp-app .small {
+  font-size: 13px;
+  line-height: 20px;
+}
+.lp-app main a:hover {
+  color: var(--ok);
+}
+.lp-app .mono {
+  font-size: 0.9em;
+}
+
+/* Surfaces: the landing page's cards and windows */
+.lp-app .panel,
+.lp-app .counter,
+.lp-app .attack,
+.lp-app .proof,
+.lp-app .proofref,
+.lp-app .scoreboard > div {
+  border: 0;
+  border-radius: 12px;
+  background: var(--panel);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.lp-app .panel {
+  margin-bottom: 16px;
+  padding: 24px;
+}
+.lp-app .grid2,
+.lp-app .grid4,
+.lp-app .counters,
+.lp-app .attacks,
+.lp-app .findings {
+  gap: 16px;
+}
+.lp-app .box {
+  transition: box-shadow 300ms var(--ease);
+}
+.lp-app .box:hover,
+.lp-app .counter.link:hover,
+.lp-app .proof.open {
+  box-shadow: inset 0 0 0 1px rgba(233, 236, 243, 0.32);
+}
+.lp-app .counter .big,
+.lp-app .big {
+  font: 400 36px / 40px var(--head);
+  letter-spacing: 0;
+}
+.lp-app .scoreboard > div.zero {
+  background: var(--okbg);
+  box-shadow: none;
+}
+.lp-app .scoreboard > div.warn {
+  background: var(--riskbg);
+  box-shadow: none;
+}
+.lp-app .callout {
+  border: 0;
+  border-left: 2px solid var(--warn);
+  border-radius: 2px;
+  background: var(--warnbg);
+  font-size: 14px;
+  line-height: 24px;
+}
+.lp-app .ok,
+.lp-app .bad,
+.lp-app .claim {
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 24px;
+}
+.lp-app .inset,
+.lp-app .diffcol,
+.lp-app .signing,
+.lp-app .frame,
+.lp-app pre.mono-block {
+  background: var(--soft);
+}
+.lp-app .frame.hot {
+  background: var(--infobg);
+}
+.lp-app .sentence {
+  min-height: 280px;
+  font: 12px / 20px var(--mono);
+}
+.lp-app .sentence.compact {
+  min-height: 0;
+}
+.lp-app .sheet,
+.lp-app .sheet-head {
+  background: var(--bg);
+}
+.lp-app .sheet {
+  z-index: 35;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 -40px 100px -30px rgba(0, 0, 0, 0.9);
+}
+
+/* Controls: terminal options */
+.lp-app main button:not([class*="lp-"]):not(.proof-head),
+.lp-app main .button,
+.lp-app .sheet button {
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px rgba(233, 236, 243, 0.32);
+  color: var(--ink);
+  font: 600 13px / 20px var(--mono);
+  transition:
+    background-color 300ms var(--ease),
+    box-shadow 300ms var(--ease);
+}
+.lp-app main button:not([class*="lp-"]):not(.proof-head):not(:disabled):hover,
+.lp-app main .button:hover,
+.lp-app .sheet button:not(:disabled):hover {
+  background: rgba(233, 236, 243, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(233, 236, 243, 0.7);
+}
+.lp-app main .primary,
+.lp-app .sheet .primary,
+.lp-app .tabs button.on {
+  background: var(--ink) !important;
+  box-shadow: none !important;
+  color: var(--bg) !important;
+}
+.lp-app main .primary:not(:disabled):hover,
+.lp-app .sheet .primary:not(:disabled):hover {
+  background: #fff !important;
+  box-shadow: 0 0 32px -4px rgba(255, 255, 255, 0.45) !important;
+}
+.lp-app main .primary::before {
+  content: "[";
+  margin-right: 6px;
+  opacity: 0.5;
+}
+.lp-app main .primary::after {
+  content: "]";
+  margin-left: 6px;
+  opacity: 0.5;
+}
+.lp-app .chip {
+  font-weight: 500;
+  font-size: 12px;
+}
+.lp-app .proof-head {
+  color: var(--ink);
+  font-family: var(--mono);
+}
+.lp-app input,
+.lp-app select,
+.lp-app textarea {
+  border: 0;
+  border-radius: 2px;
+  background: var(--bg);
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--ink);
+  font-family: var(--mono);
+  transition: box-shadow 300ms var(--ease);
+}
+.lp-app input:focus,
+.lp-app select:focus,
+.lp-app textarea:focus {
+  box-shadow: inset 0 0 0 1px rgba(233, 236, 243, 0.5);
+}
+.lp-app .switch input {
+  box-shadow: none;
+  accent-color: var(--ok);
+}
+.lp-app .field span,
+.lp-app .filter {
+  color: var(--mute);
+  font-size: 12px;
+}
+
+/* Lists and tables */
+.lp-app table.plain th {
+  color: var(--mute);
+  font-weight: 500;
+  font-size: 12px;
+}
+.lp-app .timeline li.past {
+  border-color: var(--ok);
+}
+
+/* Rendered documents keep their own scale under the landing type */
+.lp-app .md h1 {
+  font-size: 30px;
+  line-height: 36px;
+}
+.lp-app .md h1::before {
+  content: none;
+}
+.lp-app .md h2 {
+  margin: 32px 0 12px;
+  font: 400 24px / 32px var(--head);
+}
+.lp-app .md h3 {
+  margin: 24px 0 8px;
+}
+.lp-app .md p,
+.lp-app .md li {
+  color: var(--mute);
+}
+.lp-app .md strong,
+.lp-app .md a {
+  color: var(--ink);
+}
+.lp-app .md pre,
+.lp-app .md code {
+  background: var(--soft);
+}
+
+@media (max-width: 1100px) {
+  .lp-app main h1 {
+    font-size: 40px;
+    line-height: 44px;
+  }
+}
+@media (max-width: 600px) {
+  .lp-app main.lp-page {
+    padding-top: 40px;
+  }
+  .lp-app main h1 {
+    font-size: 32px;
+    line-height: 36px;
+  }
+  .lp-app main h2.section {
+    font-size: 24px;
+    line-height: 32px;
+  }
+  .lp-app .panel {
+    padding: 16px;
+  }
+  .lp-app .lede {
+    margin-bottom: 32px !important;
+  }
+}
+
+/* Test history */
+.lp-app .counter .big.small-big {
+  font-size: 24px;
+  line-height: 40px;
+}
+.lp-app .filter input[type="search"] {
+  padding: 7px 8px;
+  font-size: 14px;
+}
+.lp-app .detail .kv {
+  margin-top: 4px;
+}
+.lp-app .detail details {
+  margin: 8px 0 4px;
+}

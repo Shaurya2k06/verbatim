@@ -1,7 +1,11 @@
-import { Component, useEffect, useState } from "react";
+import { Component, useEffect } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { DevnetBanner, StatusBar } from "./StatusBar";
-import { useData } from "../lib/data";
+import { Footer } from "../landing/Footer";
+import { HexField } from "../landing/HexField";
+import { LandingNav } from "../landing/LandingNav";
+import "../landing/landing.css";
+import "../landing/app.css";
 
 export const ROUTES = [
   ["/suites", "Live demo"],
@@ -14,6 +18,7 @@ export const ROUTES = [
   ["/trust", "Trust"],
   ["/mempool", "Mempool"],
   ["/proofs", "Proofs"],
+  ["/history", "History"],
   ["/standards", "Standards"],
 ];
 
@@ -39,51 +44,39 @@ export class PageBoundary extends Component {
 export const REPO = "https://github.com/shaurya2k06/verbatim";
 
 export function Layout() {
-  const [open, setOpen] = useState(false);
   const loc = useLocation();
-  const manifest = useData("manifest.json");
   useEffect(() => {
     window.scrollTo(0, 0);
+    // On a phone the page index scrolls sideways; keep the current page in view.
+    const on = document.querySelector(".lp-pages a.active");
+    if (on) on.parentElement.scrollLeft = on.offsetLeft - (on.parentElement.clientWidth - on.offsetWidth) / 2;
   }, [loc.pathname]);
   return (
-    <>
-      <StatusBar />
-      <header className="top">
-        <nav className="nav">
-          <NavLink to="/" className="brand" end>
-            Verbatim
-          </NavLink>
-          <button className="menu" aria-expanded={open} aria-controls="nav-links" onClick={() => setOpen(!open)}>
-            {open ? "Close" : "Menu"}
-          </button>
-          <div id="nav-links" className={`links${open ? " open" : ""}`}>
-            {ROUTES.map(([to, label]) => (
-              <NavLink key={to} to={to} onClick={() => setOpen(false)}>
-                {label}
-              </NavLink>
-            ))}
-          </div>
-        </nav>
+    <div className="lp lp-app">
+      <a className="lp-skip" href="#main">
+        Skip to content
+      </a>
+      <HexField />
+      <LandingNav base="/" />
+      <nav className="lp-pages" aria-label="Pages">
+        <div className="lp-pages-track">
+          {ROUTES.map(([to, label]) => (
+            <NavLink key={to} to={to}>
+              {label}
+            </NavLink>
+          ))}
+        </div>
+      </nav>
+      <div className="lp-app-status">
+        <StatusBar />
         <DevnetBanner />
-      </header>
-      <main>
+      </div>
+      <main id="main" className="lp-page">
         <PageBoundary path={loc.pathname}>
           <Outlet />
         </PageBoundary>
       </main>
-      <footer className="foot">
-        <a href={REPO}>Repository</a>
-        <a href={`${REPO}/tree/main/docs/erc`}>ERC drafts</a>
-        <a href={`${REPO}/blob/main/docs/FINDINGS.md`}>Findings</a>
-        <a href={`${REPO}/blob/main/LICENSE`}>MIT license</a>
-        <a href={`${REPO}/graphs/contributors`}>Team</a>
-        {manifest.data ? (
-          <span className="mono">
-            evidence as of {manifest.data.commit}
-            {manifest.data.dirty ? "+modified" : ""}
-          </span>
-        ) : null}
-      </footer>
-    </>
+      <Footer />
+    </div>
   );
 }

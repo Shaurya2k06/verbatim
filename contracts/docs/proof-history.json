@@ -1,0 +1,5306 @@
+[
+ {
+  "id": "HONEST",
+  "title": "Honest 4-frame transfer",
+  "expected": "admitted by the public alt mempool and mined; batch succeeds",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0x5dcc5a88e70a2d98b5c0ff81f9d6d93549b609a6de42a4b9c80f54d4e3065d29",
+  "block": 1131,
+  "frameGas": [
+   {
+    "execution": 3051,
+    "state": 0
+   },
+   {
+    "execution": 16285,
+    "state": 0
+   },
+   {
+    "execution": 60493,
+    "state": 0
+   },
+   {
+    "execution": 160872,
+    "state": 97920
+   }
+  ],
+  "extra": {
+   "payer": "0x004ecc066292c1fe27109f96c3fd1413053e5d73",
+   "delivered": "1000000"
+  },
+  "at": "2026-11-06T08:22:03.112Z",
+  "recordedIn": [
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:52:20+05:30"
+ },
+ {
+  "id": "CANONICAL-UNSTAKED",
+  "title": "Unstaked renderer: the public sidecar refuses it",
+  "expected": "unstaked payer",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "unstaked payer accessed payer slot 0xadd0900d34a78c11d07412746b9a913dcbf6086c9018d7555053fb3ea7afe2ab",
+  "at": "2026-11-06T08:06:44.981Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "BENCH-N50",
+  "title": "50 pending transactions, 50 senders: a trust update, then rotating the snapshot",
+  "expected": "refresh stops 0 on both; rotation stops all N on the paymaster path, 0 on the stateless path",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0xb109b44ea8534136bf48859896dd97bd7e0e15d141af043ffb81626244bf1e55",
+  "message": "refresh: 0 paymaster, 0 stateless. Rotation: 50 paymaster, 0 stateless. SnapshotMismatch",
+  "at": "2026-11-06T07:56:25.147Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "A2b",
+  "title": "User signs the true SkimHook sentence",
+  "expected": "policy rejects",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 2: reverted with data 0xa42253ed0000000000000000000000000000000000000000000000000000000000000038 => PolicyRefused(0x38)",
+  "extra": {
+   "deviceRiskLines": [
+    "! NO MINIMUM OUTPUT",
+    "! HOOK CAN TAKE YOUR OUTPUT",
+    "! UNVERIFIED HOOK"
+   ]
+  },
+  "at": "2026-11-06T07:39:04.580Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "A2",
+  "title": "minOut=0 via SkimHook under an honest sentence",
+  "expected": "mempool reject: the render differs from what was signed",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 2: reverted with data 0xaf0de3f366af615096ffdfb189e6d8537754a38376b17f0356c5b00ec22473c7cad63536d76c0d53f60c09409a9866d65edbc60150fb121ddb9f721db45c0fa8a630c3a6 => SpecHashMismatch(0x66af615096ffdfb189e6d8537754a38376b17f0356c5b00ec22473c7cad63536, 0xd76c0d53f60c09409a9866d65edbc60150fb121ddb9f721db45c0fa8a630c3a6)",
+  "at": "2026-11-06T07:38:55.914Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "A2-eoa",
+  "title": "Same evil route on an ordinary wallet",
+  "expected": "the skim works: this is what Verbatim prevents",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0xa4e112dd02ba81d51ff231f42017cd086fd29daf6c16ab42b66b4016807045e1",
+  "block": 696,
+  "extra": {
+   "victimReceivedRaw": "28955",
+   "hookTookRaw": "2866485"
+  },
+  "at": "2026-11-06T07:38:35.673Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "WRAP",
+  "title": "WRAP_ETH through the real Universal Router",
+  "expected": "admitted, mined, exact WETH delta",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0x25c7c73f13a5769f10d1bd1a19d3db269d5fb5988f9a54c3ddaf7f9aecd1bb1e",
+  "block": 693,
+  "frameGas": [
+   {
+    "execution": 3051,
+    "state": 0
+   },
+   {
+    "execution": 16409,
+    "state": 0
+   },
+   {
+    "execution": 53824,
+    "state": 0
+   },
+   {
+    "execution": 181124,
+    "state": 97920
+   }
+  ],
+  "message": "",
+  "at": "2026-11-06T07:38:15.119Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "SWAP",
+  "title": "Honest v4 swap through the real Universal Router",
+  "expected": "admitted, mined, min out respected",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0xcad426d4e55e69e875dc9b68ebbd65273ca23d5699e8de82a930855b9c5761d3",
+  "block": 688,
+  "frameGas": [
+   {
+    "execution": 3051,
+    "state": 0
+   },
+   {
+    "execution": 16719,
+    "state": 0
+   },
+   {
+    "execution": 65218,
+    "state": 0
+   },
+   {
+    "execution": 240545,
+    "state": 97920
+   }
+  ],
+  "message": "",
+  "extra": {
+   "receivedRaw": "2834201",
+   "paidRaw": "1000000000000000"
+  },
+  "at": "2026-11-06T07:37:44.022Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "B11-A7b",
+  "title": "Stateless: expiry frame starved of gas",
+  "expected": "refused",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 0: ran out of gas (the frame's gas limit 2000 cannot cover its entry charge of 3000 gas)",
+  "at": "2026-11-06T07:37:11.713Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "B11-A7",
+  "title": "Stateless: stale signature",
+  "expected": "the expiry frame refuses it",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 0: reverted",
+  "at": "2026-11-06T07:37:07.377Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "B11-A3",
+  "title": "Stateless: signing for one layout, sending another",
+  "expected": "refused, by the mempool's shape rule or the account's layout lock",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "frame transaction validation prefix not recognized",
+  "at": "2026-11-06T07:36:53.106Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "B6",
+  "title": "Padding the signature list",
+  "expected": "refused",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation prefix execution gas sum 88800 + signature-verification cost 14000 = 102800 exceeds MAX_VERIFY_GAS 100000",
+  "at": "2026-11-06T07:36:42.225Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "B5",
+  "title": "A TOKEN leaf presented as a DESC",
+  "expected": "refused, not believed",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0x669a6fec313822324cc9980a09fbe5a9a280cac39d3dcf2a5307fb5acb93c4a5602291a8c8c4a073e85bc9913005835d3b621dc03637993751ccec9f1062bd6546105989 => TreeMismatch(0x313822324cc9980a09fbe5a9a280cac39d3dcf2a5307fb5acb93c4a5602291a8, 0xc8c4a073e85bc9913005835d3b621dc03637993751ccec9f1062bd6546105989)",
+  "at": "2026-11-06T07:36:30.993Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "B3",
+  "title": "Attestors signed this snapshot for another chain",
+  "expected": "refused: wrong D_snapshot",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "Invalid frame transaction signature",
+  "at": "2026-11-06T07:36:20.063Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "S-A2b",
+  "title": "Stateless: the true SkimHook sentence",
+  "expected": "refused; with room to name it, the reason is PolicyRefused",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted",
+  "at": "2026-11-06T07:36:09.077Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "S-A2",
+  "title": "Stateless: minOut=0 through SkimHook under an honest sentence",
+  "expected": "refused: rendering the hook does not fit the cap, and with room the reason is TreeMismatch",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted",
+  "at": "2026-11-06T07:35:57.824Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "G0f",
+  "title": "A transaction past its expiry",
+  "expected": "refused by the mempool",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 0: reverted",
+  "at": "2026-11-06T07:35:47.788Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "G0c",
+  "title": "Signature gas counts toward the 100k cap",
+  "expected": "limits + signatures = 100,000 admitted; 100,001 refused",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "txHash": "0xa1807c2fab2508e91ecf4dc49bdb3f19284723b92506b6ac66ba02c6c39083f9",
+  "message": "validation prefix execution gas sum 88801 + signature-verification cost 11200 = 100001 exceeds MAX_VERIFY_GAS 100000",
+  "at": "2026-11-06T07:35:44.599Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "G0e2",
+  "title": "[expiry_verify, only_verify, pay] prefix with a staked paymaster",
+  "expected": "admitted and mined",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0x14cca02fa17087cc1407efcaad5580ec50692d23c9c64bd376eb4cf3799d5430",
+  "message": "{\"shape\":\"OnlyVerifyPay\",\"canonical\":false,\"violation\":\"StorageReadNonSender\"}",
+  "at": "2026-11-06T07:35:30.912Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "G0e1",
+  "title": "[expiry_verify, self_verify] prefix",
+  "expected": "admitted and mined",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0x33619e58194af2d6a125f1053fc96bfbb4041e59c1e09030c6b1191b772084e8",
+  "message": "{\"shape\":\"SelfVerify\",\"canonical\":true,\"violation\":null}",
+  "at": "2026-11-06T07:35:12.803Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "G0d",
+  "title": "EXTCODEHASH of a contract that is no entity, in an unstaked sender's VERIFY",
+  "expected": "admitted and mined",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0x33619e58194af2d6a125f1053fc96bfbb4041e59c1e09030c6b1191b772084e8",
+  "message": "{\"shape\":\"SelfVerify\",\"canonical\":true,\"violation\":null}",
+  "at": "2026-11-06T07:35:12.802Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "G0b",
+  "title": "Two explicit msgs in four SECP256K1 entries, read in a SIGPARAM loop",
+  "expected": "admitted and mined",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0x33619e58194af2d6a125f1053fc96bfbb4041e59c1e09030c6b1191b772084e8",
+  "message": "{\"shape\":\"SelfVerify\",\"canonical\":true,\"violation\":null}",
+  "at": "2026-11-06T07:35:12.801Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "G0a",
+  "title": "Expiry verifier deployed",
+  "expected": "code at the verifier address",
+  "pass": true,
+  "outcome": "mined",
+  "message": "Spec address 0x81413f0cF12e9b6a49B1D0439E081c577D57FfFf: no code. Devnet address 0x0000000000000000000000000000000000008141: 0x60083614600a575f5ffd5b5f3560c01c4211601657005b5f5ffd, 8-byte data, reverts past the timestamp. Spec address differs from the deployed one: finding.",
+  "at": "2026-11-06T07:35:03.600Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "B-UI-verbatim",
+  "title": "The exact calldata that page produced, handed to Verbatim",
+  "expected": "the device shows the risks; PolicyRefused",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "! NO MINIMUM OUTPUT | ! HOOK CAN TAKE YOUR OUTPUT | ! UNVERIFIED HOOK || PolicyRefused(56)",
+  "at": "2026-11-06T07:34:16.712Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "B-UI-eoa",
+  "title": "Uniswap's real interface, compromised at build: an ordinary wallet signs what the page sends",
+  "expected": "the page keeps the honest quote; the swap goes through the skim hook",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0x3a4d1b7c07a7a7b059efe045b977f0f5f478f941d6e4dc8f8262a02dae1fb968",
+  "message": "the page quoted 26.1892 USDC; the victim got 25749 dUSDC raw, the hook 2549055",
+  "extra": {
+   "quotedUsdc": "26.1892",
+   "victimGot": "25749",
+   "hookTook": "2549055",
+   "stubbed": "token metadata only; the quote came from the real Trading API"
+  },
+  "at": "2026-11-06T07:34:15.439Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "B12",
+  "title": "Same signed content under a different nonce key",
+  "expected": "refused. A sequence belongs to its key and a key costs 20k more validation gas, so this stops before the account's Replayed guard, which Foundry proves",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "Invalid Transaction: Nonce mismatch: expected 0, got 16",
+  "at": "2026-11-06T07:30:41.265Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "I13",
+  "title": "One digest executes at most once",
+  "expected": "consumed after landing",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0x3a30024ffe97e3337677ca8fd10ea27663d2b1bcabad552d98b2bbfa86c6cc52",
+  "block": 616,
+  "message": "consumed true. The batch itself reverted, because B10 revoked this descriptor earlier in the run",
+  "at": "2026-11-06T07:30:40.188Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "A18",
+  "title": "Return bomb: a call reverts with 500 KB",
+  "expected": "batch reverts, fee stays paid",
+  "pass": true,
+  "outcome": "reverted-in-batch",
+  "txHash": "0xdcf8bdee6fa137552943c0d2a8778792e55bd5e04a6962413d966865496e5293",
+  "block": 561,
+  "message": "0x5c0dee5d0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000001",
+  "frameGas": [
+   {
+    "execution": 3051,
+    "state": 0
+   },
+   {
+    "execution": 16236,
+    "state": 0
+   },
+   {
+    "execution": 45179,
+    "state": 0
+   },
+   {
+    "execution": 624963,
+    "state": 97920
+   }
+  ],
+  "at": "2026-11-06T07:25:02.686Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "A1",
+  "title": "Swap the recipient",
+  "expected": "mempool reject: the render differs from what was signed",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 2: reverted with data 0xaf0de3f303ad505e608ef67049b9a9c03ac760e23b3d5cf37ba73f276df530a3341672234b8545a3f027550dc6ada3eb2104f8cb7f362ebba6edfe325f7a4023385916b5 => SpecHashMismatch(0x03ad505e608ef67049b9a9c03ac760e23b3d5cf37ba73f276df530a334167223, 0x4b8545a3f027550dc6ada3eb2104f8cb7f362ebba6edfe325f7a4023385916b5)",
+  "at": "2026-11-06T07:24:36.109Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "S-B12",
+  "title": "Stateless: the same signed content again",
+  "expected": "refused",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "Invalid Transaction: Nonce mismatch: expected 14, got 13",
+  "at": "2026-11-06T07:17:10.723Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "B10",
+  "title": "A leaf revoked while the transaction is pending",
+  "expected": "still admitted; execution refuses: LeafRevoked",
+  "pass": true,
+  "outcome": "reverted-in-batch",
+  "txHash": "0x7648e94253addbd850f0b46c7ace8b34fc1e4140467035addcbea75ac94c3d08",
+  "block": 471,
+  "message": "0x4aca842222e61d4357e953a3535e959bd22823a48244de605af1154ee837d3d793325c25 => LeafRevoked(0x22e61d4357e953a3535e959bd22823a48244de605af1154ee837d3d793325c25)",
+  "frameGas": [
+   {
+    "execution": 3051,
+    "state": 0
+   },
+   {
+    "execution": 76234,
+    "state": 0
+   },
+   {
+    "execution": 47434,
+    "state": 97920
+   }
+  ],
+  "at": "2026-11-06T07:16:02.785Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "B9",
+  "title": "A far-future snapshot expiry",
+  "expected": "refused: over maxSnapshotTtl",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0x7c025f3600000000000000000000000000000000000000000000000000000000000062700000000000000000000000000000000000000000000000000000000000005460 => SnapshotTtlTooLong(0x6270, 0x5460)",
+  "at": "2026-11-06T07:15:15.128Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "B7",
+  "title": "Leaving the TOKEN proof out",
+  "expected": "refused",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0x669a6fec7158554bc6bc806c362943fc650b2166aa627c683890a50dc01105f727044327cf33bc8a70fa8b6b70af21b9946d44e90f2dc7ec78be304e37aca0191050cca2 => TreeMismatch(0x7158554bc6bc806c362943fc650b2166aa627c683890a50dc01105f727044327, 0xcf33bc8a70fa8b6b70af21b9946d44e90f2dc7ec78be304e37aca0191050cca2)",
+  "at": "2026-11-06T07:15:04.272Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "B1",
+  "title": "NFT drainer through an unattested collection",
+  "expected": "rendered blind, policy refuses",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0xa42253ed0000000000000000000000000000000000000000000000000000000000000003 => PolicyRefused(0x3)",
+  "at": "2026-11-06T07:14:18.271Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "S-A1",
+  "title": "Stateless: recipient swapped under an honest sentence",
+  "expected": "mempool reject: TreeMismatch",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0x669a6fec5287c64249142de7b4b8884f1b9587ba515936b837c1c600f3e8ebeac41a64a79bd68a03d2feeba68a0bc286179e18b98b1960ada1629160150b9209281f18c5 => TreeMismatch(0x5287c64249142de7b4b8884f1b9587ba515936b837c1c600f3e8ebeac41a64a7, 0x9bd68a03d2feeba68a0bc286179e18b98b1960ada1629160150b9209281f18c5)",
+  "at": "2026-11-06T07:13:44.519Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "S-WRAP",
+  "title": "Stateless path: WRAP_ETH through the real Universal Router",
+  "expected": "mined",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0x8e1c146efbdc79924eaf46905f02e9a08a640e5a379f37a7c19948544e1e5c21",
+  "block": 446,
+  "frameGas": [
+   {
+    "execution": 3051,
+    "state": 0
+   },
+   {
+    "execution": 70245,
+    "state": 0
+   },
+   {
+    "execution": 153148,
+    "state": 97920
+   }
+  ],
+  "message": "",
+  "at": "2026-11-06T07:13:31.430Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "S-SWAP",
+  "title": "Stateless path: v4 swap through the real Universal Router",
+  "expected": "mined, minimum output respected",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0x88a36457e90407457523b6448a548e08ffe252398c211f4b6cb48ebdd88c54f9",
+  "block": 441,
+  "frameGas": [
+   {
+    "execution": 3051,
+    "state": 0
+   },
+   {
+    "execution": 82291,
+    "state": 0
+   },
+   {
+    "execution": 216965,
+    "state": 97920
+   }
+  ],
+  "message": "",
+  "at": "2026-11-06T07:13:03.189Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "S-HONEST",
+  "title": "Stateless path: honest transfer, no paymaster, no stake",
+  "expected": "admitted by the public alt mempool and mined",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0x6c02ab0e64d431bb3fb06765fd69657652ee65ca75b2935195c636b389f8c538",
+  "block": 436,
+  "frameGas": [
+   {
+    "execution": 3051,
+    "state": 0
+   },
+   {
+    "execution": 76234,
+    "state": 0
+   },
+   {
+    "execution": 136664,
+    "state": 97920
+   }
+  ],
+  "at": "2026-11-06T07:12:33.486Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "A15",
+  "title": "Revoking one descriptor stops only the transactions that use it",
+  "expected": "an unrelated refresh invalidates nothing; the revocation invalidates 1 of 5",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "0xa42253ed0000000000000000000000000000000000000000000000000000000000000003 => PolicyRefused(0x3)",
+  "extra": {
+   "before": [
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   "afterUnrelatedRefresh": [
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   "afterRevocation": [
+    false,
+    true,
+    true,
+    true,
+    true
+   ],
+   "unrelatedRefreshTx": "0xe994b9a9837c40ed5bb19494e5d81207a2bcf07500bf47673d81d0b8e4d0dc1b",
+   "revokeTx": "0xc2e07012ddd8d5ea21da7e19c73aa63c4142fb602144206d004e1fb4429127f9"
+  },
+  "at": "2026-11-06T07:09:55.259Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "F7",
+  "title": "Fee failure runs nothing",
+  "expected": "the execute frame fails; no protected call executes",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0x4c4af86d715dcfe8c6b60a3784782372da5ea2e3642e6c2d16eee5868dff0e6e",
+  "block": 399,
+  "frameGas": [
+   {
+    "execution": 3051,
+    "state": 0
+   },
+   {
+    "execution": 16285,
+    "state": 0
+   },
+   {
+    "execution": 60481,
+    "state": 0
+   },
+   {
+    "execution": 21252,
+    "state": 0
+   }
+  ],
+  "extra": {
+   "statuses": [
+    "0x1",
+    "0x1",
+    "0x1",
+    "0x0"
+   ]
+  },
+  "at": "2026-11-06T07:08:49.063Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "A17b",
+  "title": "Unknown v4 action (SWAP_EXACT_OUT)",
+  "expected": "BLIND, then refusal",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 2: reverted with data 0xa42253ed0000000000000000000000000000000000000000000000000000000000000002 => PolicyRefused(0x2)",
+  "at": "2026-11-06T07:07:38.312Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "A17",
+  "title": "Unknown router command (PERMIT2_PERMIT)",
+  "expected": "BLIND, then refusal",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 2: reverted with data 0xa42253ed0000000000000000000000000000000000000000000000000000000000000002 => PolicyRefused(0x2)",
+  "at": "2026-11-06T07:07:29.513Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "A16",
+  "title": "Router command with the allow-revert flag",
+  "expected": "UR_ALLOW_REVERT in the sentence, then policy refusal",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 2: reverted with data 0xa42253ed0000000000000000000000000000000000000000000000000000000000000200 => PolicyRefused(0x200)",
+  "at": "2026-11-06T07:07:15.591Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "B14",
+  "title": "An approval left standing after the batch",
+  "expected": "APPROVALS_CLEARED fails, batch reverts, fee kept",
+  "pass": true,
+  "outcome": "reverted-in-batch",
+  "txHash": "0x9020ee53bd74b5dbf280c053c8fbdfa3a315f7a53f8a6ebd2d6b048713db4a74",
+  "block": 381,
+  "message": "0x7ad2804b000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005 => AssertionFailed(0x5, 0x0, 0x5)",
+  "frameGas": [
+   {
+    "execution": 3051,
+    "state": 0
+   },
+   {
+    "execution": 16294,
+    "state": 0
+   },
+   {
+    "execution": 64043,
+    "state": 0
+   },
+   {
+    "execution": 144387,
+    "state": 97920
+   }
+  ],
+  "at": "2026-11-06T07:07:01.292Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "A14",
+  "title": "Two transactions, one fee ticket",
+  "expected": "the second is rejected: tickets are per nonce",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 2: reverted with data 0x4f0ca253000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000006954c2840 => NoTicket(0x2, 0x6954c2840)",
+  "at": "2026-11-06T07:05:55.780Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "A13",
+  "title": "Future-dated expiry",
+  "expected": "the device refuses; signed anyway, the policy cap reverts the batch",
+  "pass": true,
+  "outcome": "reverted-in-batch",
+  "txHash": "0xc89bca98c99904ec334887547a11a180a3ebff217926b6982fd1067b53ef86aa",
+  "block": 362,
+  "message": "0x11453ecf0000000000000000000000000000000000000000000000000000000000000dc2000000000000000000000000000000000000000000000000000000000000012c => TtlTooLong(0xdc2, 0x12c)",
+  "frameGas": [
+   {
+    "execution": 3051,
+    "state": 0
+   },
+   {
+    "execution": 16285,
+    "state": 0
+   },
+   {
+    "execution": 60493,
+    "state": 0
+   },
+   {
+    "execution": 75080,
+    "state": 97920
+   }
+  ],
+  "extra": {
+   "device": "this signature would stay valid for 3592 seconds, and the limit is 600"
+  },
+  "at": "2026-11-06T07:05:08.840Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "A12",
+  "title": "Gas griefing: a call burns all its gas",
+  "expected": "reserve keeps it safe",
+  "pass": true,
+  "outcome": "reverted-in-batch",
+  "txHash": "0x386920726524fa8a16cbd1171b4638ff00c0caaf4e095692d7a5e606f870d8f9",
+  "block": 348,
+  "message": "0x5c0dee5d000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000 => CallFailed(0x0, 0x) [0x]",
+  "frameGas": [
+   {
+    "execution": 3051,
+    "state": 0
+   },
+   {
+    "execution": 16224,
+    "state": 0
+   },
+   {
+    "execution": 45124,
+    "state": 0
+   },
+   {
+    "execution": 975917,
+    "state": 97920
+   }
+  ],
+  "at": "2026-11-06T07:03:43.597Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "A11",
+  "title": "Reentrancy into executeVerified",
+  "expected": "reverts",
+  "pass": true,
+  "outcome": "reverted-in-batch",
+  "txHash": "0xd7ee13c361764f0b3b31ef5f290c2e11aab3044b8a80da6ae0cbd53db5a8bfdb",
+  "block": 321,
+  "message": "0x5c0dee5d00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000006408c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001a7265656e747279206661696c65642061732064657369676e656400000000000000000000000000000000000000000000000000000000000000000000 => CallFailed(0x0, 0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001a7265656e747279206661696c65642061732064657369676e6564000000000000) [0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001a7265656e747279206661696c65642061732064657369676e6564000000000000 => Error(reentry failed as designed)]",
+  "frameGas": [
+   {
+    "execution": 3051,
+    "state": 0
+   },
+   {
+    "execution": 16421,
+    "state": 0
+   },
+   {
+    "execution": 51934,
+    "state": 0
+   },
+   {
+    "execution": 102977,
+    "state": 97920
+   }
+  ],
+  "at": "2026-11-06T07:01:01.699Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "A10",
+  "title": "7702-delegated sender",
+  "expected": "rejected",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0x3144dd7b000000000000000000000000000000000000000000000000000000000000000a => BadLayout(0xa)",
+  "at": "2026-11-06T07:00:23.230Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "A9",
+  "title": "No fee ticket for this nonce",
+  "expected": "frame 1 rejects",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 2: reverted with data 0x4f0ca253000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000006958316c0 => NoTicket(0x1, 0x6958316c0)",
+  "at": "2026-11-06T06:59:52.047Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "A7b",
+  "title": "Expiry frame starved of gas",
+  "expected": "BadLayout: the account reads frame 0's status",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 0: ran out of gas (the frame's gas limit 2000 cannot cover its entry charge of 3000 gas)",
+  "at": "2026-11-06T06:59:39.723Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "A7",
+  "title": "Stale pre-signed transaction past its expiry",
+  "expected": "the expiry frame refuses it at the mempool",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 0: reverted",
+  "at": "2026-11-06T06:59:31.830Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "A6",
+  "title": "EvilVault keeps the ETH and credits no shares",
+  "expected": "assertion revert, fee kept",
+  "pass": true,
+  "outcome": "reverted-in-batch",
+  "txHash": "0x4221e7bcda8eaf9573b112e6bf9791d5435ad00c732d2f6ffedfaf98ce252314",
+  "block": 302,
+  "message": "0x7ad2804b0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000e8d4a510000000000000000000000000000000000000000000000000000000000000000000 => AssertionFailed(0x1, 0xe8d4a51000, 0x0)",
+  "frameGas": [
+   {
+    "execution": 3051,
+    "state": 0
+   },
+   {
+    "execution": 16298,
+    "state": 0
+   },
+   {
+    "execution": 54220,
+    "state": 0
+   },
+   {
+    "execution": 136429,
+    "state": 97920
+   }
+  ],
+  "at": "2026-11-06T06:59:08.382Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "A5",
+  "title": "Poisoned descriptor (unattested code)",
+  "expected": "UNVERIFIED_CONTRACT, policy reject",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 2: reverted with data 0xa42253ed0000000000000000000000000000000000000000000000000000000000000003 => PolicyRefused(0x3)",
+  "at": "2026-11-06T06:58:49.682Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "A4b",
+  "title": "Weak spec bytes under honest hash",
+  "expected": "frame 1 hash mismatch",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 2: reverted with data 0xaf0de3f34b8545a3f027550dc6ada3eb2104f8cb7f362ebba6edfe325f7a4023385916b57b19dae0a9f2f2b95891267d59f3ad2f752d9c1d4bdb6be61dc2d3be3df4ffcf => SpecHashMismatch(0x4b8545a3f027550dc6ada3eb2104f8cb7f362ebba6edfe325f7a4023385916b5, 0x7b19dae0a9f2f2b95891267d59f3ad2f752d9c1d4bdb6be61dc2d3be3df4ffcf)",
+  "at": "2026-11-06T06:58:37.623Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "A4",
+  "title": "Signed weaker spec hash",
+  "expected": "frame 1 hash mismatch",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 2: reverted with data 0xaf0de3f34b8545a3f027550dc6ada3eb2104f8cb7f362ebba6edfe325f7a4023385916b57b19dae0a9f2f2b95891267d59f3ad2f752d9c1d4bdb6be61dc2d3be3df4ffcf => SpecHashMismatch(0x4b8545a3f027550dc6ada3eb2104f8cb7f362ebba6edfe325f7a4023385916b5, 0x7b19dae0a9f2f2b95891267d59f3ad2f752d9c1d4bdb6be61dc2d3be3df4ffcf)",
+  "at": "2026-11-06T06:58:37.061Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "A3b",
+  "title": "Swap in a permissive paymaster",
+  "expected": "frame 0 rejects (BadLayout)",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0x3144dd7b0000000000000000000000000000000000000000000000000000000000000004 => BadLayout(0x4)",
+  "at": "2026-11-06T06:58:20.214Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "A3",
+  "title": "Drop the renderer frame (self-pay layout)",
+  "expected": "frame 0 rejects with BadLayout",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0x3144dd7b0000000000000000000000000000000000000000000000000000000000000000 => BadLayout(0x0)",
+  "at": "2026-11-06T06:58:19.646Z",
+  "recordedIn": [
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "HONEST",
+  "title": "Honest 4-frame transfer",
+  "expected": "admitted by the public alt mempool and mined; batch succeeds",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0xc55c00f7442a3804054ea2c498e88d305f0b1e348a5159b7c23417c84a87cf54",
+  "block": 289,
+  "frameGas": [
+   {
+    "execution": 3051,
+    "state": 0
+   },
+   {
+    "execution": 16285,
+    "state": 0
+   },
+   {
+    "execution": 60493,
+    "state": 0
+   },
+   {
+    "execution": 160872,
+    "state": 391680
+   }
+  ],
+  "extra": {
+   "payer": "0x004ecc066292c1fe27109f96c3fd1413053e5d73",
+   "delivered": "1000000"
+  },
+  "at": "2026-11-06T06:57:50.742Z",
+  "recordedIn": [
+   "28a23c1"
+  ],
+  "firstRecorded": "2026-11-06T13:45:04+05:30"
+ },
+ {
+  "id": "WC",
+  "title": "A dapp pairs over WalletConnect's relay; honest swap lands; the evil route shows its risks and is refused",
+  "expected": "lands; refused by PolicyRefused, with the account unmoved",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0x8ad5bcfa9b5fc681b8f6e17b0615f238a4ef8110646ada19c966a35dd9bce75c",
+  "extra": {
+   "chain": "sepolia",
+   "rerun": "cd contracts/scripts/e2e && pnpm walletconnect",
+   "evilRoute": "PolicyRefused(56), asked of the exact operation the wallet signed"
+  },
+  "at": "2026-11-06T05:23:36.861Z",
+  "recordedIn": [
+   "2a9f503",
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T10:54:43+05:30"
+ },
+ {
+  "id": "B-multihop",
+  "title": "A two-hop v4 swap through the account",
+  "expected": "the sentence names the route, the swap lands, the output meets the signed minimum",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0x50b3d64920b75ab479cd79f5dd66f6cffa1e6ae40c00363ce9f8c284e18e840d",
+  "message": "received 888635262729794, minimum 844203499593304, 2 hops",
+  "extra": {
+   "actualGasUsed": "1436542",
+   "txGasUsed": "929953",
+   "sentence": [
+    "You lose exactly 0.001 ETH",
+    "You receive at least 0.000844203499593304 dWETH",
+    "The code at 0x3a9d48ab9751398bbfa63ad67599bb04e4bdf98b is what was attested",
+    "No other tracked holding decreases",
+    "No other Permit2 allowance grows",
+    "Owners and policy stay the same",
+    "No approval outlives this transaction",
+    "Fee cap: 0.0027830000069 ETH",
+    "Uniswap swap (by Uniswap) at 0x3a9d48ab9751398bbfa63ad67599bb04e4bdf98b",
+    "Sends 0.001 ETH",
+    "Deadline: timestamp 1793945890",
+    "Uniswap v4 swap",
+    "You pay: 0.001 ETH",
+    "Minimum received: 0.000844203499593304 dWETH",
+    "Through: 0 dUSDC",
+    "Pool fee: 3000",
+    "Pool fee: 3000",
+    "Valid until 2026-11-06 05:22:00 UTC",
+    "Policy version 1, path ERC-4337",
+    "Snapshot 0x01d06dd453d388b3be12eae66001c30119daa0564b8bf38a43d4d35b5f014342"
+   ]
+  },
+  "at": "2026-11-06T05:18:26.025Z",
+  "recordedIn": [
+   "2a9f503",
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T10:54:43+05:30"
+ },
+ {
+  "id": "B-A2b",
+  "title": "The same route, signed on the true sentence",
+  "expected": "the device shows the risks; PolicyRefused",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "! NO MINIMUM OUTPUT | ! HOOK CAN TAKE YOUR OUTPUT | ! UNVERIFIED HOOK || PolicyRefused; bundler: Internal error from bundler (trace id: cb49997c7878977884f2026f67a35b36)",
+  "at": "2026-11-06T05:17:40.614Z",
+  "recordedIn": [
+   "2a9f503",
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T10:54:43+05:30"
+ },
+ {
+  "id": "B-A2-eoa",
+  "title": "The evil route on an ordinary wallet, Sepolia",
+  "expected": "the skim works: this is what Verbatim prevents",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0xa479af0e2970cb6d8ab10345ce69f080df92c61ede8f937d49a38417638ed791",
+  "extra": {
+   "victimGot": "27246",
+   "hookTook": "2697292"
+  },
+  "at": "2026-11-06T05:17:37.742Z",
+  "recordedIn": [
+   "2a9f503",
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T10:54:43+05:30"
+ },
+ {
+  "id": "WC",
+  "title": "A dapp pairs over WalletConnect's relay; honest swap lands; the evil route shows its risks and is refused",
+  "expected": "lands; refused",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0x67810e38daf222d4b84500847a495a6595d77c28d1cfe2934e4aa09cb3b8498c",
+  "extra": {
+   "chain": "sepolia",
+   "rerun": "cd contracts/scripts/e2e && pnpm walletconnect",
+   "evilRoute": "bundler reported a generic internal error; the cause is PolicyRefused(56), read from the account by contracts/scripts/live/why-evil.ts"
+  },
+  "at": "2026-11-06T00:39:00.089336Z",
+  "recordedIn": [
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc"
+  ],
+  "firstRecorded": "2026-11-06T06:09:00+05:30"
+ },
+ {
+  "id": "B-honest-pimlico",
+  "title": "Honest transfer on Sepolia via Pimlico, recipient shown by ENS name",
+  "expected": "bundler accepts; lands; delivered; name in the sentence",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0xd5bef0e32ce8ee7239bac08ae676329dae13b1a1b33de0eedf1429705e2e1bae",
+  "extra": {
+   "actualGasUsed": "1532214",
+   "bundler": "pimlico",
+   "sentence": "You lose exactly 1 dUSDC\nThe code at 0x7e068face3fc4a6826d182b1ec0e80d7d8979e0f is what was attested\n0x3ac4caf4b6727fdb58a7784630e4689a4331c616 is not a contract\nThe name shown for 0x3ac4caf4b6727fdb58a7784630e4689a4331c616 still resolves to it\nNo other tracked holding decreases\nNo other Permit2 allowance grows\nOwners and policy stay the same\nNo approval outlives this transaction\n! OUTPUT GOES TO ANOTHER ADDRESS\nFee cap: 0.0027830000023 ETH\nSend tokens (by verbatim-demo.eth) at 0x7e068face3fc4a6826d182b1ec0e80d7d8979e0f\nTo: verbatim-demo.eth (0x3ac4caf4b6727fdb58a7784630e4689a4331c616)\nAmount: 1 dUSDC\nValid until 2026-11-06 00:32:36 UTC\nPolicy version 1, path ERC-4337\nSnapshot 0x01d06dd453d388b3be12eae66001c30119daa0564b8bf38a43d4d35b5f014342"
+  },
+  "at": "2026-11-06T00:28:52.270Z",
+  "recordedIn": [
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc",
+   "2a9f503",
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T06:09:00+05:30"
+ },
+ {
+  "id": "A8",
+  "title": "Lookalike ENS name",
+  "expected": "not in the snapshot, so hex is shown; the exclusivity proof refuses it",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "Execution reverted with reason: +Ă\r\u0010\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0010\u0000\u0000\u0011\u0010\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0010\u0000\u0000\u0011.\n\nRaw Call Arguments:\n  to:    0x1f01041520e365f55be272af88e9053894cfc573\n  data:  0x257d67a | To: 0x000000000000000000000000000000000000bad1",
+  "at": "2026-11-06T00:20:15.658Z",
+  "recordedIn": [
+   "4081ea2",
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc",
+   "2a9f503",
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T05:50:46+05:30"
+ },
+ {
+  "id": "B-ens-revoked",
+  "title": "A leaf revoked by ENS record while the operation is pending",
+  "expected": "admitted; refused at execution: LeafRevokedInEns",
+  "pass": true,
+  "outcome": "reverted-in-batch",
+  "txHash": "0x03675f840b417f1c6a2efac2cb8fb246155bb40603575dc12c685dde468aad9a",
+  "message": "LeafRevokedInEns(0x855303e467745419d6be80bbb9f5d7c68f7286761e53355bcdffd7fd2506fdd1)",
+  "at": "2026-11-06T00:19:28.593Z",
+  "recordedIn": [
+   "4081ea2",
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc",
+   "2a9f503",
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T05:50:46+05:30"
+ },
+ {
+  "id": "B13",
+  "title": "An attestor missing from the ENS anchor",
+  "expected": "admitted; refused at execution: AttestorNotListed",
+  "pass": true,
+  "outcome": "reverted-in-batch",
+  "txHash": "0x4e0614b79956b1a43976a58c5b9950fdfadb0857948a7c9d88348bebb6af6758",
+  "message": "AttestorNotListed(0x062D072F2Cd4E28659cdD434aD985dc5696d522C)",
+  "at": "2026-11-06T00:18:40.597Z",
+  "recordedIn": [
+   "4081ea2",
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc",
+   "2a9f503",
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T05:50:46+05:30"
+ },
+ {
+  "id": "B-A2b",
+  "title": "The same route, signed on the true sentence",
+  "expected": "the device shows the risks; PolicyRefused",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "! NO MINIMUM OUTPUT | ! HOOK CAN TAKE YOUR OUTPUT | ! UNVERIFIED HOOK || PolicyRefused(56), read from the account by contracts/scripts/live/why-evil.ts; the bundler reports only: Internal error from bundler",
+  "at": "2026-11-06T00:18:17.935Z",
+  "recordedIn": [
+   "4081ea2",
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc"
+  ],
+  "firstRecorded": "2026-11-06T05:50:46+05:30"
+ },
+ {
+  "id": "B-A2-eoa",
+  "title": "The evil route on an ordinary wallet, Sepolia",
+  "expected": "the skim works: this is what Verbatim prevents",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0x6c8e256473585839e32a6f9deef46501cf935759e665fdec4ee1b7e0b89fb10b",
+  "extra": {
+   "victimGot": "28723",
+   "hookTook": "2843568"
+  },
+  "at": "2026-11-06T00:18:15.558Z",
+  "recordedIn": [
+   "4081ea2",
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc"
+  ],
+  "firstRecorded": "2026-11-06T05:50:46+05:30"
+ },
+ {
+  "id": "B-A1",
+  "title": "Swapped recipient under an honest sentence, on Sepolia",
+  "expected": "bundler rejects; the account's reason is TreeMismatch",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "Internal error from bundler (trace id: 159b94dedeecf1740556199cd4b2c61e) | Error: TreeMismatch(bytes32 expected, bytes32 actual)",
+  "at": "2026-11-06T00:18:04.121Z",
+  "recordedIn": [
+   "4081ea2",
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc",
+   "2a9f503",
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T05:50:46+05:30"
+ },
+ {
+  "id": "B-swap",
+  "title": "v4 swap through Uniswap's official Sepolia Universal Router and PoolManager",
+  "expected": "lands; minimum output respected",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0x57c7b706e64d9f8a4445b5e42a78bc9682b43f5c47f25f5639600d0ef5c7b47c",
+  "message": "",
+  "extra": {
+   "actualGasUsed": "1267022",
+   "got": "2891504",
+   "bundler": "pimlico"
+  },
+  "at": "2026-11-06T00:17:56.896Z",
+  "recordedIn": [
+   "4081ea2",
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc",
+   "2a9f503",
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T05:50:46+05:30"
+ },
+ {
+  "id": "B-honest-alchemy",
+  "title": "Honest transfer on Sepolia via Alchemy",
+  "expected": "bundler accepts; lands; delivered",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0x540608c614d999cfb63fd496e405454928dcc6b889bcf1f029d6bc929a3694f9",
+  "extra": {
+   "actualGasUsed": "1521133",
+   "bundler": "alchemy"
+  },
+  "at": "2026-11-06T00:17:41.665Z",
+  "recordedIn": [
+   "4081ea2",
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc",
+   "2a9f503",
+   "28a23c1",
+   "4840847"
+  ],
+  "firstRecorded": "2026-11-06T05:50:46+05:30"
+ },
+ {
+  "id": "B-honest-pimlico",
+  "title": "Honest transfer on Sepolia via Pimlico, recipient shown by ENS name",
+  "expected": "bundler accepts; lands; delivered; name in the sentence",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0x3c3255f8831b7ebf2776280a44778380ca22769d6f4688969d73fa2c8d72335c",
+  "extra": {
+   "actualGasUsed": "1630134",
+   "bundler": "pimlico",
+   "sentence": "You lose exactly 1 dUSDC\nThe code at 0x7e068face3fc4a6826d182b1ec0e80d7d8979e0f is what was attested\n0x3ac4caf4b6727fdb58a7784630e4689a4331c616 is not a contract\nThe name shown for 0x3ac4caf4b6727fdb58a7784630e4689a4331c616 still resolves to it\nNo other tracked holding decreases\nNo other Permit2 allowance grows\nOwners and policy stay the same\nNo approval outlives this transaction\n! OUTPUT GOES TO ANOTHER ADDRESS\nFee cap: 0.0027830000046 ETH\nSend tokens (by verbatim-demo.eth) at 0x7e068face3fc4a6826d182b1ec0e80d7d8979e0f\nTo: verbatim-demo.eth (0x3ac4caf4b6727fdb58a7784630e4689a4331c616)\nAmount: 1 dUSDC\nValid until 2026-11-06 00:21:12 UTC\nPolicy version 1, path ERC-4337\nSnapshot 0x01d06dd453d388b3be12eae66001c30119daa0564b8bf38a43d4d35b5f014342"
+  },
+  "at": "2026-11-06T00:17:29.170Z",
+  "recordedIn": [
+   "4081ea2"
+  ],
+  "firstRecorded": "2026-11-06T05:50:46+05:30"
+ },
+ {
+  "id": "B-A2b",
+  "title": "The same route, signed on the true sentence",
+  "expected": "the device shows the risks; refused",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "! NO MINIMUM OUTPUT | ! HOOK CAN TAKE YOUR OUTPUT | ! UNVERIFIED HOOK || Internal error from bundler (trace id: 9752e61b84104681bcb00d5ff96e1d83)",
+  "at": "2026-11-05T23:37:30.041Z",
+  "recordedIn": [
+   "f891d01"
+  ],
+  "firstRecorded": "2026-11-06T05:11:19+05:30"
+ },
+ {
+  "id": "B-A2-eoa",
+  "title": "The evil route on an ordinary wallet, Sepolia",
+  "expected": "the skim works: this is what Verbatim prevents",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0x2e4d20458e11e4afe41c14ff5bb8928a96ce2e3f0dcac6b08813ca73e891edea",
+  "extra": {
+   "victimGot": "29508",
+   "hookTook": "2921208"
+  },
+  "at": "2026-11-05T23:37:27.730Z",
+  "recordedIn": [
+   "f891d01"
+  ],
+  "firstRecorded": "2026-11-06T05:11:19+05:30"
+ },
+ {
+  "id": "B-ens-revoked",
+  "title": "A leaf revoked by ENS record while the operation is pending",
+  "expected": "admitted; refused at execution: LeafRevokedInEns",
+  "pass": true,
+  "outcome": "reverted-in-batch",
+  "txHash": "0xace999157d8832fcafddff539746fb4b4ce7575059423bcfdf30a87228c1fa4d",
+  "message": "LeafRevokedInEns(0x855303e467745419d6be80bbb9f5d7c68f7286761e53355bcdffd7fd2506fdd1)",
+  "at": "2026-11-05T23:35:05.296Z",
+  "recordedIn": [
+   "8c32ebe",
+   "f891d01"
+  ],
+  "firstRecorded": "2026-11-06T05:05:19+05:30"
+ },
+ {
+  "id": "B13",
+  "title": "An attestor missing from the ENS anchor",
+  "expected": "admitted; refused at execution: AttestorNotListed",
+  "pass": true,
+  "outcome": "reverted-in-batch",
+  "txHash": "0x64e6ed6043b7343d5b9f2089aa3420ae61cae86900998efc56f8fdef08596695",
+  "message": "AttestorNotListed(0x062D072F2Cd4E28659cdD434aD985dc5696d522C)",
+  "at": "2026-11-05T23:34:17.145Z",
+  "recordedIn": [
+   "8c32ebe",
+   "f891d01"
+  ],
+  "firstRecorded": "2026-11-06T05:05:19+05:30"
+ },
+ {
+  "id": "B-swap",
+  "title": "v4 swap through Uniswap's official Sepolia Universal Router and PoolManager",
+  "expected": "lands; minimum output respected",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0x56feaa563d4baa2797348b7e26e235eff8b62221047ce7cb1ba39e8fe7a78b72",
+  "message": "",
+  "extra": {
+   "actualGasUsed": "1266317",
+   "got": "2930711",
+   "bundler": "pimlico"
+  },
+  "at": "2026-11-05T23:33:51.130Z",
+  "recordedIn": [
+   "8c32ebe",
+   "f891d01"
+  ],
+  "firstRecorded": "2026-11-06T05:05:19+05:30"
+ },
+ {
+  "id": "B-honest-alchemy",
+  "title": "Honest transfer on Sepolia via Alchemy",
+  "expected": "bundler accepts; lands; delivered",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0x22a3081ba2dbfc8c9fc968815f0a962b0c575a8f82a8e943aeb6bb470847a9dd",
+  "extra": {
+   "actualGasUsed": "1521133",
+   "bundler": "alchemy"
+  },
+  "at": "2026-11-05T23:33:27.520Z",
+  "recordedIn": [
+   "8c32ebe",
+   "f891d01"
+  ],
+  "firstRecorded": "2026-11-06T05:05:19+05:30"
+ },
+ {
+  "id": "A8",
+  "title": "Lookalike ENS name",
+  "expected": "not in the snapshot, so hex is shown; the exclusivity proof refuses it",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "Execution reverted with reason: +Ă\r\u0010\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0010\u0000\u0000\u0011\u0010\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0010\u0000\u0000\u0011.\n\nRaw Call Arguments:\n  to:    0x982d1e4b68c603009ce8b383eeda08653ab04ea7\n  data:  0x257d67a | To: 0x000000000000000000000000000000000000bad1",
+  "at": "2026-11-05T23:32:50.202Z",
+  "recordedIn": [
+   "8c32ebe",
+   "f891d01"
+  ],
+  "firstRecorded": "2026-11-06T05:05:19+05:30"
+ },
+ {
+  "id": "B-A1",
+  "title": "Swapped recipient under an honest sentence, on Sepolia",
+  "expected": "bundler rejects; the account's reason is TreeMismatch",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "Internal error from bundler (trace id: d893853b498b10666d3e75f894c44b60) | Error: TreeMismatch(bytes32 expected, bytes32 actual)",
+  "at": "2026-11-05T23:30:57.605Z",
+  "recordedIn": [
+   "8c32ebe",
+   "f891d01"
+  ],
+  "firstRecorded": "2026-11-06T05:05:19+05:30"
+ },
+ {
+  "id": "B_ALCHEMY",
+  "title": "B_ALCHEMY",
+  "expected": "",
+  "pass": false,
+  "outcome": "not-run",
+  "message": "Verification gas limit efficiency too low. Required: 0.4, Actual: 0.18277",
+  "at": "2026-11-05T23:30:35.373Z",
+  "recordedIn": [
+   "8c32ebe",
+   "f891d01",
+   "4081ea2",
+   "18b8118"
+  ],
+  "firstRecorded": "2026-11-06T05:05:19+05:30"
+ },
+ {
+  "id": "B-honest-pimlico",
+  "title": "Honest transfer on Sepolia via Pimlico, recipient shown by ENS name",
+  "expected": "bundler accepts; lands; delivered; name in the sentence",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0xf3e40dad61ee2774ad8f0c0128b53cdfc4f63a3d7816b0fe61a19e885ece3739",
+  "extra": {
+   "actualGasUsed": "1630134",
+   "bundler": "pimlico",
+   "sentence": "You lose exactly 1 dUSDC\nThe code at 0x7e068face3fc4a6826d182b1ec0e80d7d8979e0f is what was attested\n0x3ac4caf4b6727fdb58a7784630e4689a4331c616 is not a contract\nThe name shown for 0x3ac4caf4b6727fdb58a7784630e4689a4331c616 still resolves to it\nNo other tracked holding decreases\nNo other Permit2 allowance grows\nOwners and policy stay the same\nNo approval outlives this transaction\n! OUTPUT GOES TO ANOTHER ADDRESS\nFee cap: 0.0032670000081 ETH\nSend tokens (by verbatim-demo.eth) at 0x7e068face3fc4a6826d182b1ec0e80d7d8979e0f\nTo: verbatim-demo.eth (0x3ac4caf4b6727fdb58a7784630e4689a4331c616)\nAmount: 1 dUSDC\nValid until 2026-11-05 23:34:12 UTC\nPolicy version 1, path ERC-4337\nSnapshot 0x01d06dd453d388b3be12eae66001c30119daa0564b8bf38a43d4d35b5f014342"
+  },
+  "at": "2026-11-05T23:30:28.523Z",
+  "recordedIn": [
+   "8c32ebe",
+   "f891d01"
+  ],
+  "firstRecorded": "2026-11-06T05:05:19+05:30"
+ },
+ {
+  "id": "A8",
+  "title": "Lookalike ENS name",
+  "expected": "not in the snapshot, so hex is shown; the exclusivity proof refuses it",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "Execution reverted with reason: +Ă\r\u0010\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0010\u0000\u0000\u0011\u0010\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0010\u0000\u0000\u0011.\n\nRaw Call Arguments:\n  to:    0x318c1ba633e2411dd422a5f2e0752d885f22acd7\n  data:  0x257d67a | To: 0x000000000000000000000000000000000000bad1",
+  "at": "2026-11-05T23:26:17.087Z",
+  "recordedIn": [
+   "2993133"
+  ],
+  "firstRecorded": "2026-11-06T04:56:21+05:30"
+ },
+ {
+  "id": "B_ENS_REVOKED",
+  "title": "B_ENS_REVOKED",
+  "expected": "",
+  "pass": false,
+  "outcome": "not-run",
+  "message": "Internal error from bundler (trace id: 3db57cbc6bb9f7f305e68ca7f6c9f931)",
+  "at": "2026-11-05T23:25:52.129Z",
+  "recordedIn": [
+   "2993133",
+   "8c32ebe",
+   "f891d01",
+   "4081ea2",
+   "18b8118"
+  ],
+  "firstRecorded": "2026-11-06T04:56:21+05:30"
+ },
+ {
+  "id": "B13",
+  "title": "B13",
+  "expected": "",
+  "pass": false,
+  "outcome": "not-run",
+  "message": "Internal error from bundler (trace id: 49fe3d870faec858e0c02d4d633ce718)",
+  "at": "2026-11-05T23:24:52.271Z",
+  "recordedIn": [
+   "2993133"
+  ],
+  "firstRecorded": "2026-11-06T04:56:21+05:30"
+ },
+ {
+  "id": "B-A1",
+  "title": "Swapped recipient under an honest sentence, on Sepolia",
+  "expected": "bundler rejects; TreeMismatch",
+  "pass": false,
+  "outcome": "rejected-at-mempool",
+  "message": "\"Internal error from bundler (trace id: 491648dd2debd2ead895477803b957ed)\"",
+  "at": "2026-11-05T23:24:25.993Z",
+  "recordedIn": [
+   "2993133"
+  ],
+  "firstRecorded": "2026-11-06T04:56:21+05:30"
+ },
+ {
+  "id": "B-swap",
+  "title": "v4 swap through Uniswap's official Sepolia Universal Router and PoolManager",
+  "expected": "lands; minimum output respected",
+  "pass": false,
+  "outcome": "mined",
+  "txHash": "0x871509a0e030c18759cd190a03c26c157455dce5cbc26ac6aba3de25b6e54a97",
+  "extra": {
+   "actualGasUsed": "1248235",
+   "got": "0",
+   "bundler": "pimlico"
+  },
+  "at": "2026-11-05T23:24:17.458Z",
+  "recordedIn": [
+   "2993133"
+  ],
+  "firstRecorded": "2026-11-06T04:56:21+05:30"
+ },
+ {
+  "id": "B_ALCHEMY",
+  "title": "B_ALCHEMY",
+  "expected": "",
+  "pass": false,
+  "outcome": "not-run",
+  "message": "ALCHEMY_BUNDLER_URL missing",
+  "at": "2026-11-05T23:23:49.051Z",
+  "recordedIn": [
+   "2993133"
+  ],
+  "firstRecorded": "2026-11-06T04:56:21+05:30"
+ },
+ {
+  "id": "B-honest-pimlico",
+  "title": "Honest transfer on Sepolia via Pimlico, recipient shown by ENS name",
+  "expected": "bundler accepts; lands; delivered; name in the sentence",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0xb441ba48211c3c275acc8c5cf8c2800a201581168ab7f0743adf3c4ce590c9a7",
+  "extra": {
+   "actualGasUsed": "1625112",
+   "bundler": "pimlico",
+   "sentence": "You lose exactly 1 dUSDC\nThe code at 0x7e068face3fc4a6826d182b1ec0e80d7d8979e0f is what was attested\n0x3ac4caf4b6727fdb58a7784630e4689a4331c616 is not a contract\nThe name shown for 0x3ac4caf4b6727fdb58a7784630e4689a4331c616 still resolves to it\nNo other tracked holding decreases\nNo other Permit2 allowance grows\nOwners and policy stay the same\nNo approval outlives this transaction\n! OUTPUT GOES TO ANOTHER ADDRESS\nFee cap: 0.0032670000081 ETH\nSend tokens (by verbatim-demo.eth) at 0x7e068face3fc4a6826d182b1ec0e80d7d8979e0f\nTo: verbatim-demo.eth (0x3ac4caf4b6727fdb58a7784630e4689a4331c616)\nAmount: 1 dUSDC\nValid until 2026-11-05 23:27:24 UTC\nPolicy version 1, path ERC-4337\nSnapshot 0x01d06dd453d388b3be12eae66001c30119daa0564b8bf38a43d4d35b5f014342"
+  },
+  "at": "2026-11-05T23:23:37.602Z",
+  "recordedIn": [
+   "2993133"
+  ],
+  "firstRecorded": "2026-11-06T04:56:21+05:30"
+ },
+ {
+  "id": "F7",
+  "title": "Fee failure runs nothing",
+  "expected": "the execute frame fails; no protected call executes",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0xfac98fb7261d75f7bfadd1ffb532fb8c09bc65ae3f2c76421db47f79b78a79e6",
+  "block": 408167,
+  "frameGas": [
+   {
+    "execution": 3051,
+    "state": 0
+   },
+   {
+    "execution": 16112,
+    "state": 0
+   },
+   {
+    "execution": 60470,
+    "state": 0
+   },
+   {
+    "execution": 20932,
+    "state": 0
+   }
+  ],
+  "extra": {
+   "statuses": [
+    "0x1",
+    "0x1",
+    "0x1",
+    "0x0"
+   ]
+  },
+  "at": "2026-11-05T22:49:19.196Z",
+  "recordedIn": [
+   "8938f06",
+   "2993133",
+   "8c32ebe",
+   "f891d01",
+   "4081ea2",
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc",
+   "2a9f503"
+  ],
+  "firstRecorded": "2026-11-06T04:33:55+05:30"
+ },
+ {
+  "id": "A17b",
+  "title": "Unknown v4 action (SWAP_EXACT_IN)",
+  "expected": "BLIND, then refusal",
+  "pass": false,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0x9fb70902 => FrameReadFailed()",
+  "at": "2026-11-05T22:48:07.850Z",
+  "recordedIn": [
+   "8938f06",
+   "2993133",
+   "8c32ebe",
+   "f891d01",
+   "4081ea2",
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc",
+   "2a9f503"
+  ],
+  "firstRecorded": "2026-11-06T04:33:55+05:30"
+ },
+ {
+  "id": "A17",
+  "title": "Unknown router command (PERMIT2_PERMIT)",
+  "expected": "BLIND, then refusal",
+  "pass": false,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0x9fb70902 => FrameReadFailed()",
+  "at": "2026-11-05T22:47:59.619Z",
+  "recordedIn": [
+   "8938f06",
+   "2993133",
+   "8c32ebe",
+   "f891d01",
+   "4081ea2",
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc",
+   "2a9f503"
+  ],
+  "firstRecorded": "2026-11-06T04:33:55+05:30"
+ },
+ {
+  "id": "A16",
+  "title": "Router command with the allow-revert flag",
+  "expected": "UR_ALLOW_REVERT in the sentence, then policy refusal",
+  "pass": false,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0x9fb70902 => FrameReadFailed()",
+  "at": "2026-11-05T22:47:46.076Z",
+  "recordedIn": [
+   "8938f06",
+   "2993133",
+   "8c32ebe",
+   "f891d01",
+   "4081ea2",
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc",
+   "2a9f503"
+  ],
+  "firstRecorded": "2026-11-06T04:33:55+05:30"
+ },
+ {
+  "id": "B12",
+  "title": "Same signed content under a different nonce key",
+  "expected": "the second is refused: Replayed",
+  "pass": false,
+  "outcome": "not-run",
+  "message": "the first, keyed transaction was refused: validation frame 1: reverted with data 0x9fb70902 => FrameReadFailed()",
+  "at": "2026-11-05T22:47:30.021Z",
+  "recordedIn": [
+   "8938f06",
+   "2993133",
+   "8c32ebe",
+   "f891d01",
+   "4081ea2",
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc",
+   "2a9f503"
+  ],
+  "firstRecorded": "2026-11-06T04:33:55+05:30"
+ },
+ {
+  "id": "A14",
+  "title": "Two transactions, one fee ticket",
+  "expected": "the second is rejected: tickets are per nonce",
+  "pass": false,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0x9fb70902 => FrameReadFailed()",
+  "at": "2026-11-05T22:47:11.703Z",
+  "recordedIn": [
+   "8938f06",
+   "2993133",
+   "8c32ebe",
+   "f891d01",
+   "4081ea2",
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc",
+   "2a9f503"
+  ],
+  "firstRecorded": "2026-11-06T04:33:55+05:30"
+ },
+ {
+  "id": "A9",
+  "title": "No fee ticket for this nonce",
+  "expected": "frame 1 rejects",
+  "pass": false,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0x9fb70902 => FrameReadFailed()",
+  "at": "2026-11-05T22:46:22.525Z",
+  "recordedIn": [
+   "8938f06",
+   "2993133",
+   "8c32ebe",
+   "f891d01",
+   "4081ea2",
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc",
+   "2a9f503"
+  ],
+  "firstRecorded": "2026-11-06T04:33:55+05:30"
+ },
+ {
+  "id": "A7b",
+  "title": "Expiry frame starved of gas",
+  "expected": "BadLayout: the account reads frame 0's status",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 0: ran out of gas (the frame's gas limit 2000 cannot cover its entry charge of 3000 gas)",
+  "at": "2026-11-05T22:46:10.924Z",
+  "recordedIn": [
+   "8938f06",
+   "2993133",
+   "8c32ebe",
+   "f891d01",
+   "4081ea2",
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc",
+   "2a9f503"
+  ],
+  "firstRecorded": "2026-11-06T04:33:55+05:30"
+ },
+ {
+  "id": "A7",
+  "title": "Stale pre-signed transaction past its expiry",
+  "expected": "the expiry frame refuses it at the mempool",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 0: reverted",
+  "at": "2026-11-05T22:46:03.199Z",
+  "recordedIn": [
+   "8938f06",
+   "2993133",
+   "8c32ebe",
+   "f891d01",
+   "4081ea2",
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc",
+   "2a9f503"
+  ],
+  "firstRecorded": "2026-11-06T04:33:55+05:30"
+ },
+ {
+  "id": "A6",
+  "title": "EvilVault hidden pull",
+  "expected": "assertion revert, fee kept",
+  "pass": false,
+  "outcome": "not-run",
+  "message": "validation frame 1: reverted with data 0x9fb70902 => FrameReadFailed()",
+  "at": "2026-11-05T22:45:32.914Z",
+  "recordedIn": [
+   "8938f06",
+   "2993133",
+   "8c32ebe",
+   "f891d01",
+   "4081ea2",
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc",
+   "2a9f503"
+  ],
+  "firstRecorded": "2026-11-06T04:33:55+05:30"
+ },
+ {
+  "id": "B14",
+  "title": "An approval left standing after the batch",
+  "expected": "APPROVALS_CLEARED fails, batch reverts, fee kept",
+  "pass": true,
+  "outcome": "reverted-in-batch",
+  "txHash": "0x046e60552f28aacfbde946df8a97a975380dce781781148c1610b9b6403246ea",
+  "block": 408120,
+  "message": "0x7ad2804b000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005 => AssertionFailed(0x5, 0x0, 0x5)",
+  "frameGas": [
+   {
+    "execution": 3051,
+    "state": 0
+   },
+   {
+    "execution": 16121,
+    "state": 0
+   },
+   {
+    "execution": 64032,
+    "state": 0
+   },
+   {
+    "execution": 143641,
+    "state": 97920
+   }
+  ],
+  "at": "2026-11-05T22:44:35.797Z",
+  "recordedIn": [
+   "8938f06",
+   "2993133",
+   "8c32ebe",
+   "f891d01",
+   "4081ea2",
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc",
+   "2a9f503"
+  ],
+  "firstRecorded": "2026-11-06T04:33:55+05:30"
+ },
+ {
+  "id": "A13",
+  "title": "Future-dated expiry",
+  "expected": "the device refuses; signed anyway, the policy cap reverts the batch",
+  "pass": true,
+  "outcome": "reverted-in-batch",
+  "txHash": "0xd0d65b138e74183022ebf1a8c1f2187a82d52363e795e01162614a71168afb9e",
+  "block": 408107,
+  "message": "0x11453ecf0000000000000000000000000000000000000000000000000000000000000dfe000000000000000000000000000000000000000000000000000000000000012c => TtlTooLong(0xdfe, 0x12c)",
+  "frameGas": [
+   {
+    "execution": 3051,
+    "state": 0
+   },
+   {
+    "execution": 16112,
+    "state": 0
+   },
+   {
+    "execution": 60482,
+    "state": 0
+   },
+   {
+    "execution": 74689,
+    "state": 97920
+   }
+  ],
+  "extra": {
+   "device": "this signature would stay valid for 3596 seconds, and the limit is 600"
+  },
+  "at": "2026-11-05T22:43:18.145Z",
+  "recordedIn": [
+   "8938f06",
+   "2993133",
+   "8c32ebe",
+   "f891d01",
+   "4081ea2",
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc",
+   "2a9f503"
+  ],
+  "firstRecorded": "2026-11-06T04:33:55+05:30"
+ },
+ {
+  "id": "A12",
+  "title": "Gas griefing: a call burns all its gas",
+  "expected": "reserve keeps it safe",
+  "pass": true,
+  "outcome": "reverted-in-batch",
+  "txHash": "0x34a28447d379a0c9fcb9751d14ee00e25193c58534cd27a57b7a2273d0040ae5",
+  "block": 408102,
+  "message": "0x5c0dee5d000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000 => CallFailed(0x0, 0x) [0x]",
+  "frameGas": [
+   {
+    "execution": 3051,
+    "state": 0
+   },
+   {
+    "execution": 16051,
+    "state": 0
+   },
+   {
+    "execution": 45113,
+    "state": 0
+   },
+   {
+    "execution": 975903,
+    "state": 97920
+   }
+  ],
+  "at": "2026-11-05T22:42:49.758Z",
+  "recordedIn": [
+   "8938f06",
+   "2993133",
+   "8c32ebe",
+   "f891d01",
+   "4081ea2",
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc",
+   "2a9f503"
+  ],
+  "firstRecorded": "2026-11-06T04:33:55+05:30"
+ },
+ {
+  "id": "A18",
+  "title": "Return bomb: a call reverts with 500 KB",
+  "expected": "batch reverts, fee stays paid",
+  "pass": true,
+  "outcome": "reverted-in-batch",
+  "txHash": "0x347fcc1b07dfdbd5558393f730c26bd0dc364cecaeef8c037e5ed822da6cb682",
+  "block": 408097,
+  "message": "0x5c0dee5d0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000001",
+  "frameGas": [
+   {
+    "execution": 3051,
+    "state": 0
+   },
+   {
+    "execution": 16063,
+    "state": 0
+   },
+   {
+    "execution": 45168,
+    "state": 0
+   },
+   {
+    "execution": 624177,
+    "state": 97920
+   }
+  ],
+  "at": "2026-11-05T22:42:18.164Z",
+  "recordedIn": [
+   "8938f06",
+   "2993133",
+   "8c32ebe",
+   "f891d01",
+   "4081ea2",
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc",
+   "2a9f503"
+  ],
+  "firstRecorded": "2026-11-06T04:33:55+05:30"
+ },
+ {
+  "id": "A11",
+  "title": "Reentrancy into executeVerified",
+  "expected": "reverts",
+  "pass": true,
+  "outcome": "reverted-in-batch",
+  "txHash": "0x55077d80b6fecfdfdd7b2979aca11421555df260a23c4105f50694f8864a3fc3",
+  "block": 408092,
+  "message": "0x5c0dee5d00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000006408c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001a7265656e747279206661696c65642061732064657369676e656400000000000000000000000000000000000000000000000000000000000000000000 => CallFailed(0x0, 0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001a7265656e747279206661696c65642061732064657369676e6564000000000000) [0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001a7265656e747279206661696c65642061732064657369676e6564000000000000 => Error(reentry failed as designed)]",
+  "frameGas": [
+   {
+    "execution": 3051,
+    "state": 0
+   },
+   {
+    "execution": 16248,
+    "state": 0
+   },
+   {
+    "execution": 51922,
+    "state": 0
+   },
+   {
+    "execution": 102171,
+    "state": 97920
+   }
+  ],
+  "at": "2026-11-05T22:41:48.250Z",
+  "recordedIn": [
+   "8938f06",
+   "2993133",
+   "8c32ebe",
+   "f891d01",
+   "4081ea2",
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc",
+   "2a9f503"
+  ],
+  "firstRecorded": "2026-11-06T04:33:55+05:30"
+ },
+ {
+  "id": "A10",
+  "title": "7702-delegated sender",
+  "expected": "rejected",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0x9fb70902 => FrameReadFailed()",
+  "at": "2026-11-05T22:41:20.484Z",
+  "recordedIn": [
+   "8938f06",
+   "2993133",
+   "8c32ebe",
+   "f891d01",
+   "4081ea2",
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc",
+   "2a9f503"
+  ],
+  "firstRecorded": "2026-11-06T04:33:55+05:30"
+ },
+ {
+  "id": "A5",
+  "title": "Poisoned descriptor (unattested code)",
+  "expected": "UNVERIFIED_CONTRACT, policy reject",
+  "pass": false,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0x9fb70902 => FrameReadFailed()",
+  "at": "2026-11-05T22:39:46.305Z",
+  "recordedIn": [
+   "8938f06",
+   "2993133",
+   "8c32ebe",
+   "f891d01",
+   "4081ea2",
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc",
+   "2a9f503"
+  ],
+  "firstRecorded": "2026-11-06T04:33:55+05:30"
+ },
+ {
+  "id": "A4b",
+  "title": "Weak spec bytes under honest hash",
+  "expected": "frame 1 hash mismatch",
+  "pass": false,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0x9fb70902 => FrameReadFailed()",
+  "at": "2026-11-05T22:39:34.196Z",
+  "recordedIn": [
+   "8938f06",
+   "2993133",
+   "8c32ebe",
+   "f891d01",
+   "4081ea2",
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc",
+   "2a9f503"
+  ],
+  "firstRecorded": "2026-11-06T04:33:55+05:30"
+ },
+ {
+  "id": "A4",
+  "title": "Signed weaker spec hash",
+  "expected": "frame 1 hash mismatch",
+  "pass": false,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0x9fb70902 => FrameReadFailed()",
+  "at": "2026-11-05T22:39:33.653Z",
+  "recordedIn": [
+   "8938f06",
+   "2993133",
+   "8c32ebe",
+   "f891d01",
+   "4081ea2",
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc",
+   "2a9f503"
+  ],
+  "firstRecorded": "2026-11-06T04:33:55+05:30"
+ },
+ {
+  "id": "A3b",
+  "title": "Swap in a permissive paymaster",
+  "expected": "frame 0 rejects (BadLayout)",
+  "pass": false,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0x9fb70902 => FrameReadFailed()",
+  "at": "2026-11-05T22:39:17.884Z",
+  "recordedIn": [
+   "8938f06",
+   "2993133",
+   "8c32ebe",
+   "f891d01",
+   "4081ea2",
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc",
+   "2a9f503"
+  ],
+  "firstRecorded": "2026-11-06T04:33:55+05:30"
+ },
+ {
+  "id": "A3",
+  "title": "Drop the renderer frame (self-pay layout)",
+  "expected": "frame 0 rejects with BadLayout",
+  "pass": false,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0x9fb70902 => FrameReadFailed()",
+  "at": "2026-11-05T22:39:17.372Z",
+  "recordedIn": [
+   "8938f06",
+   "2993133",
+   "8c32ebe",
+   "f891d01",
+   "4081ea2",
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc",
+   "2a9f503"
+  ],
+  "firstRecorded": "2026-11-06T04:33:55+05:30"
+ },
+ {
+  "id": "A1",
+  "title": "Swap the recipient",
+  "expected": "mempool reject (tree mismatch)",
+  "pass": false,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0x9fb70902 => FrameReadFailed()",
+  "at": "2026-11-05T22:39:04.966Z",
+  "recordedIn": [
+   "8938f06",
+   "2993133",
+   "8c32ebe",
+   "f891d01",
+   "4081ea2",
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc",
+   "2a9f503"
+  ],
+  "firstRecorded": "2026-11-06T04:33:55+05:30"
+ },
+ {
+  "id": "HONEST",
+  "title": "Honest 4-frame transfer",
+  "expected": "admitted by the public alt mempool and mined; batch succeeds",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0x945579461601b42b28ba638df1d06a5026757394180f5d34b517adda9ba7a602",
+  "block": 408062,
+  "frameGas": [
+   {
+    "execution": 3051,
+    "state": 0
+   },
+   {
+    "execution": 16112,
+    "state": 0
+   },
+   {
+    "execution": 60482,
+    "state": 0
+   },
+   {
+    "execution": 160115,
+    "state": 391680
+   }
+  ],
+  "extra": {
+   "payer": "0x2d7cf6fa67fe307a9a81ecaf3e4e734e8d622286",
+   "delivered": "1000000"
+  },
+  "at": "2026-11-05T22:38:48.639Z",
+  "recordedIn": [
+   "8938f06",
+   "2993133",
+   "8c32ebe",
+   "f891d01",
+   "4081ea2",
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc",
+   "2a9f503"
+  ],
+  "firstRecorded": "2026-11-06T04:33:55+05:30"
+ },
+ {
+  "id": "G0f",
+  "title": "A transaction past its expiry",
+  "expected": "refused by the mempool",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 0: reverted",
+  "at": "2026-11-05T21:39:22.446Z",
+  "recordedIn": [
+   "8938f06",
+   "2993133",
+   "8c32ebe",
+   "f891d01",
+   "4081ea2",
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc",
+   "2a9f503"
+  ],
+  "firstRecorded": "2026-11-06T04:33:55+05:30"
+ },
+ {
+  "id": "G0c",
+  "title": "Signature gas counts toward the 100k cap",
+  "expected": "limits + signatures = 100,000 admitted; 100,001 refused",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "txHash": "0x2cab86f1e0d2cf5dae1f5f63fb3b4371c7704ca6e9e8c558f963871f25fefa17",
+  "message": "validation prefix execution gas sum 88801 + signature-verification cost 11200 = 100001 exceeds MAX_VERIFY_GAS 100000",
+  "at": "2026-11-05T21:39:18.934Z",
+  "recordedIn": [
+   "8938f06",
+   "2993133",
+   "8c32ebe",
+   "f891d01",
+   "4081ea2",
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc",
+   "2a9f503"
+  ],
+  "firstRecorded": "2026-11-06T04:33:55+05:30"
+ },
+ {
+  "id": "G0e2",
+  "title": "[expiry_verify, only_verify, pay] prefix with a staked paymaster",
+  "expected": "admitted and mined",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0xa93d227098bd7354d64149229576bfe63dc8de9c1b17eee5ade47db121d7a2b6",
+  "message": "{\"shape\":\"OnlyVerifyPay\",\"canonical\":false,\"violation\":\"StorageReadNonSender\"}",
+  "at": "2026-11-05T21:38:59.733Z",
+  "recordedIn": [
+   "8938f06",
+   "2993133",
+   "8c32ebe",
+   "f891d01",
+   "4081ea2",
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc",
+   "2a9f503"
+  ],
+  "firstRecorded": "2026-11-06T04:33:55+05:30"
+ },
+ {
+  "id": "G0e1",
+  "title": "[expiry_verify, self_verify] prefix",
+  "expected": "admitted and mined",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0x43f68a93c88ea744527af3cd29be8e1c1cc07b0549ea5fb68853cf505b94bc70",
+  "message": "{\"shape\":\"SelfVerify\",\"canonical\":true,\"violation\":null}",
+  "at": "2026-11-05T21:38:47.816Z",
+  "recordedIn": [
+   "8938f06",
+   "2993133",
+   "8c32ebe",
+   "f891d01",
+   "4081ea2",
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc",
+   "2a9f503"
+  ],
+  "firstRecorded": "2026-11-06T04:33:55+05:30"
+ },
+ {
+  "id": "G0d",
+  "title": "EXTCODEHASH of a contract that is no entity, in an unstaked sender's VERIFY",
+  "expected": "admitted and mined",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0x43f68a93c88ea744527af3cd29be8e1c1cc07b0549ea5fb68853cf505b94bc70",
+  "message": "{\"shape\":\"SelfVerify\",\"canonical\":true,\"violation\":null}",
+  "at": "2026-11-05T21:38:47.815Z",
+  "recordedIn": [
+   "8938f06",
+   "2993133",
+   "8c32ebe",
+   "f891d01",
+   "4081ea2",
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc",
+   "2a9f503"
+  ],
+  "firstRecorded": "2026-11-06T04:33:55+05:30"
+ },
+ {
+  "id": "G0b",
+  "title": "Two explicit msgs in four SECP256K1 entries, read in a SIGPARAM loop",
+  "expected": "admitted and mined",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0x43f68a93c88ea744527af3cd29be8e1c1cc07b0549ea5fb68853cf505b94bc70",
+  "message": "{\"shape\":\"SelfVerify\",\"canonical\":true,\"violation\":null}",
+  "at": "2026-11-05T21:38:47.814Z",
+  "recordedIn": [
+   "8938f06",
+   "2993133",
+   "8c32ebe",
+   "f891d01",
+   "4081ea2",
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc",
+   "2a9f503"
+  ],
+  "firstRecorded": "2026-11-06T04:33:55+05:30"
+ },
+ {
+  "id": "G0a",
+  "title": "Expiry verifier deployed",
+  "expected": "code at the verifier address",
+  "pass": true,
+  "outcome": "mined",
+  "message": "Spec address 0x81413f0cF12e9b6a49B1D0439E081c577D57FfFf: no code. Devnet address 0x0000000000000000000000000000000000008141: 0x60083614600a575f5ffd5b5f3560c01c4211601657005b5f5ffd, 8-byte data, reverts past the timestamp. Spec address differs from the deployed one: finding.",
+  "at": "2026-11-05T21:38:20.342Z",
+  "recordedIn": [
+   "8938f06",
+   "2993133",
+   "8c32ebe",
+   "f891d01",
+   "4081ea2",
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc",
+   "2a9f503"
+  ],
+  "firstRecorded": "2026-11-06T04:33:55+05:30"
+ },
+ {
+  "id": "CANONICAL-UNSTAKED",
+  "title": "Unstaked renderer: the public sidecar refuses it",
+  "expected": "unstaked payer",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "unstaked payer accessed payer slot 0xfe14b27715673b991bd7915a08d56171b500abd7973c04ea2a64086efe7b46b5",
+  "at": "2026-11-05T21:27:25.024Z",
+  "recordedIn": [
+   "cdc75f1",
+   "8938f06",
+   "2993133",
+   "8c32ebe",
+   "f891d01",
+   "4081ea2",
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc",
+   "2a9f503"
+  ],
+  "firstRecorded": "2026-11-06T03:05:08+05:30"
+ },
+ {
+  "id": "A8",
+  "title": "Lookalike ENS name",
+  "expected": "name not in the cache, so hex is shown; the exclusivity check fails at refresh",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "0x45bdaf820530a4cbd0086fc7728614d14cf73974e1e0e17089000b956b98a659ed979f5e => WrongResolverCode(0x0530a4cbd0086fc7728614d14cf73974e1e0e17089000b956b98a659ed979f5e)",
+  "extra": {
+   "deviceLine": "To: 0x000000000000000000000000000000000000bad1",
+   "lookalike": "verbatim-dem0.eth",
+   "sameCodeChecker": "0xf47fa7a5ef1f0c38d88b9076e872316a8b3968fd",
+   "sameCodeResult": "01110000000000000000000000010000011 => RootRolesHeld(0x1000000000000000000000001000001110000000000000000000000010000011)"
+  },
+  "at": "2026-11-05T21:17:03.763Z",
+  "recordedIn": [
+   "cdc75f1",
+   "8938f06"
+  ],
+  "firstRecorded": "2026-11-06T03:05:08+05:30"
+ },
+ {
+  "id": "B-A1",
+  "title": "Swapped recipient under an honest sentence, on Sepolia",
+  "expected": "bundler rejects; paymaster reverts TreeMismatch",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "0x669a6fec678e50e16a445bc39dec6c1481f580fe89d462728b78fe162d53d51246af5275c8b9f444c95c503822d355b130fde6a7f33201a2037b9764c70941f27d1c7cdc => TreeMismatch(0x678e50e16a445bc39dec6c1481f580fe89d462728b78fe162d53d51246af5275, 0xc8b9f444c95c503822d355b130fde6a7f33201a2037b9764c70941f27d1c7cdc)",
+  "extra": {
+   "bundler": "Internal error from bundler (trace id: 55a6c6e157516f009b11d533b08c66f9)"
+  },
+  "at": "2026-11-05T21:15:56.754Z",
+  "recordedIn": [
+   "cdc75f1",
+   "8938f06"
+  ],
+  "firstRecorded": "2026-11-06T03:05:08+05:30"
+ },
+ {
+  "id": "B-swap",
+  "title": "v4 swap through Uniswap's official Sepolia Universal Router and PoolManager",
+  "expected": "bundler accepts; lands; min out respected",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0x9723873a218547940dd2992d71b3e09364406ae8fffb77ab1bff3253a713b035",
+  "block": 12072081,
+  "extra": {
+   "receivedRaw": "2996598319",
+   "actualGasUsed": "1172189"
+  },
+  "at": "2026-11-05T21:15:52.745Z",
+  "recordedIn": [
+   "cdc75f1",
+   "8938f06"
+  ],
+  "firstRecorded": "2026-11-06T03:05:08+05:30"
+ },
+ {
+  "id": "B-honest-alchemy",
+  "title": "Honest transfer on Sepolia via Alchemy",
+  "expected": "bundler accepts; lands; delivered",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0xc30b42437771a2fb31532bf43515faed1033c9f9bf9a2130b98572491d26c52c",
+  "block": 12072080,
+  "extra": {
+   "actualGasUsed": "1107411",
+   "bundler": "alchemy"
+  },
+  "at": "2026-11-05T21:15:37.464Z",
+  "recordedIn": [
+   "cdc75f1",
+   "8938f06",
+   "2993133"
+  ],
+  "firstRecorded": "2026-11-06T03:05:08+05:30"
+ },
+ {
+  "id": "B-honest-pimlico",
+  "title": "Honest transfer on Sepolia via Pimlico, recipient shown by ENS name",
+  "expected": "bundler accepts; lands; delivered",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0x49256aa47f5000f839301ffa7a6add588725f345e6d6d7142c32d7c4db54d2da",
+  "block": 12072079,
+  "extra": {
+   "actualGasUsed": "1107411",
+   "bundler": "pimlico"
+  },
+  "at": "2026-11-05T21:15:27.793Z",
+  "recordedIn": [
+   "cdc75f1",
+   "8938f06"
+  ],
+  "firstRecorded": "2026-11-06T03:05:08+05:30"
+ },
+ {
+  "id": "A2b",
+  "title": "User signs the true SkimHook sentence",
+  "expected": "policy rejects",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0xa42253ed0000000000000000000000000000000000000000000000000000000000000038 => PolicyRefused(0x38)",
+  "extra": {
+   "deviceRiskLines": [
+    "! NO MINIMUM OUTPUT",
+    "! HOOK CAN TAKE YOUR OUTPUT",
+    "! UNVERIFIED HOOK"
+   ]
+  },
+  "at": "2026-11-05T21:02:46.489Z",
+  "recordedIn": [
+   "beb9e97",
+   "cdc75f1",
+   "8938f06",
+   "2993133",
+   "8c32ebe",
+   "f891d01",
+   "4081ea2",
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc",
+   "2a9f503"
+  ],
+  "firstRecorded": "2026-11-06T02:33:02+05:30"
+ },
+ {
+  "id": "A2",
+  "title": "minOut=0 via SkimHook under an honest sentence",
+  "expected": "mempool reject (tree mismatch)",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0x669a6fec3b98ee55a7213ace57c714198b7e3928682e2185cd4eed02cd49f920281d4c45f410820caa42e9dafb6bb42ecb5e31c832afb02ccc1d44bb4a8b318cfb37b3cd => TreeMismatch(0x3b98ee55a7213ace57c714198b7e3928682e2185cd4eed02cd49f920281d4c45, 0xf410820caa42e9dafb6bb42ecb5e31c832afb02ccc1d44bb4a8b318cfb37b3cd)",
+  "at": "2026-11-05T21:02:38.648Z",
+  "recordedIn": [
+   "beb9e97",
+   "cdc75f1",
+   "8938f06",
+   "2993133",
+   "8c32ebe",
+   "f891d01",
+   "4081ea2",
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc",
+   "2a9f503"
+  ],
+  "firstRecorded": "2026-11-06T02:33:02+05:30"
+ },
+ {
+  "id": "A2-eoa",
+  "title": "Same evil route on an ordinary wallet",
+  "expected": "the skim works: this is what Verbatim prevents",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0x9187793b9a8511ed5dab4121d7abe9ba082c68b02aa2d33afdebf37b9b69bfa8",
+  "block": 407099,
+  "extra": {
+   "victimReceivedRaw": "28361251",
+   "hookTookRaw": "2807763804"
+  },
+  "at": "2026-11-05T21:02:19.947Z",
+  "recordedIn": [
+   "beb9e97",
+   "cdc75f1",
+   "8938f06",
+   "2993133",
+   "8c32ebe",
+   "f891d01",
+   "4081ea2",
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc",
+   "2a9f503"
+  ],
+  "firstRecorded": "2026-11-06T02:33:02+05:30"
+ },
+ {
+  "id": "WRAP",
+  "title": "WRAP_ETH through the real Universal Router",
+  "expected": "admitted, mined, exact WETH delta",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0x9f48386b4340f071bc2f64a4b69d920da8f07c34a6b87f716089a18ea6efe908",
+  "block": 407094,
+  "frameGas": [
+   {
+    "execution": 18420,
+    "state": 0
+   },
+   {
+    "execution": 47779,
+    "state": 0
+   },
+   {
+    "execution": 264408,
+    "state": 97920
+   }
+  ],
+  "message": "",
+  "at": "2026-11-05T21:01:47.437Z",
+  "recordedIn": [
+   "beb9e97",
+   "cdc75f1",
+   "8938f06",
+   "2993133",
+   "8c32ebe",
+   "f891d01",
+   "4081ea2",
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc",
+   "2a9f503"
+  ],
+  "firstRecorded": "2026-11-06T02:33:02+05:30"
+ },
+ {
+  "id": "SWAP",
+  "title": "Honest v4 swap through the real Universal Router",
+  "expected": "admitted, mined, min out respected",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0x6aaba4c1fdc9073dbfc73c81cf779f31dac195d1180e7e4e6ccdbf81a15f0e27",
+  "block": 407087,
+  "frameGas": [
+   {
+    "execution": 18860,
+    "state": 0
+   },
+   {
+    "execution": 62725,
+    "state": 0
+   },
+   {
+    "execution": 358960,
+    "state": 97920
+   }
+  ],
+  "message": "",
+  "extra": {
+   "receivedRaw": "2983242441",
+   "paidRaw": "1000000000000000000"
+  },
+  "at": "2026-11-05T21:01:06.520Z",
+  "recordedIn": [
+   "beb9e97",
+   "cdc75f1",
+   "8938f06",
+   "2993133",
+   "8c32ebe",
+   "f891d01",
+   "4081ea2",
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc",
+   "2a9f503"
+  ],
+  "firstRecorded": "2026-11-06T02:33:02+05:30"
+ },
+ {
+  "id": "A15",
+  "title": "Revoking one descriptor stops only the transactions that use it",
+  "expected": "an unrelated refresh invalidates nothing; the revocation invalidates 1 of 5",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "0x669a6fece78a5ca259fb56f2a1d1ab9b2778c3fce41dd3e67e7a423b4fdd5aac7791ef541e67d58e6f4cdabff71f91c6cc932859047b826145a2dbc1a1f4a46d30f21468 => TreeMismatch(0xe78a5ca259fb56f2a1d1ab9b2778c3fce41dd3e67e7a423b4fdd5aac7791ef54, 0x1e67d58e6f4cdabff71f91c6cc932859047b826145a2dbc1a1f4a46d30f21468)",
+  "extra": {
+   "before": [
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   "afterUnrelatedRefresh": [
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   "afterRevocation": [
+    false,
+    true,
+    true,
+    true,
+    true
+   ],
+   "unrelatedRefreshTx": "0xd4309b69196fb30c5531d10b2e4751836b96f006bc577620cc835c466ca3cd6e",
+   "revokeTx": "0x7e666c1bb263a252ada8b27f80e359932293cb0b927650d2a47add47e442fc32"
+  },
+  "at": "2026-11-05T20:59:12.166Z",
+  "recordedIn": [
+   "beb9e97",
+   "cdc75f1",
+   "8938f06",
+   "2993133",
+   "8c32ebe",
+   "f891d01",
+   "4081ea2",
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc",
+   "2a9f503"
+  ],
+  "firstRecorded": "2026-11-06T02:33:02+05:30"
+ },
+ {
+  "id": "F7",
+  "title": "Fee failure runs nothing",
+  "expected": "frame 2 fails; no protected call executes",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0xaafbfccd52a5fed20edaf1be132ad3eb465e40732ba42515363ac87179b63080",
+  "block": 407054,
+  "frameGas": [
+   {
+    "execution": 18264,
+    "state": 0
+   },
+   {
+    "execution": 56638,
+    "state": 0
+   },
+   {
+    "execution": 12750,
+    "state": 0
+   }
+  ],
+  "extra": {
+   "statuses": [
+    "0x1",
+    "0x1",
+    "0x0"
+   ]
+  },
+  "at": "2026-11-05T20:57:48.242Z",
+  "recordedIn": [
+   "beb9e97",
+   "cdc75f1"
+  ],
+  "firstRecorded": "2026-11-06T02:33:02+05:30"
+ },
+ {
+  "id": "A17b",
+  "title": "Unknown v4 action (SWAP_EXACT_IN)",
+  "expected": "BLIND, then refusal",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0xa42253ed0000000000000000000000000000000000000000000000000000000000000002 => PolicyRefused(0x2)",
+  "at": "2026-11-05T20:54:40.642Z",
+  "recordedIn": [
+   "beb9e97",
+   "cdc75f1"
+  ],
+  "firstRecorded": "2026-11-06T02:33:02+05:30"
+ },
+ {
+  "id": "A17",
+  "title": "Unknown router command (PERMIT2_PERMIT)",
+  "expected": "BLIND, then refusal",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0xa42253ed0000000000000000000000000000000000000000000000000000000000000002 => PolicyRefused(0x2)",
+  "at": "2026-11-05T20:54:32.069Z",
+  "recordedIn": [
+   "beb9e97",
+   "cdc75f1"
+  ],
+  "firstRecorded": "2026-11-06T02:33:02+05:30"
+ },
+ {
+  "id": "A16",
+  "title": "Router command with the allow-revert flag",
+  "expected": "UR_ALLOW_REVERT in the sentence, then policy refusal",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0xa42253ed0000000000000000000000000000000000000000000000000000000000000200 => PolicyRefused(0x200)",
+  "at": "2026-11-05T20:54:18.674Z",
+  "recordedIn": [
+   "beb9e97",
+   "cdc75f1"
+  ],
+  "firstRecorded": "2026-11-06T02:33:02+05:30"
+ },
+ {
+  "id": "A14",
+  "title": "Two transactions, one fee ticket",
+  "expected": "the second is rejected: tickets are per nonce",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0x4f0ca25300000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000d02f22b00 => NoTicket(0x2, 0xd02f22b00)",
+  "at": "2026-11-05T20:54:05.098Z",
+  "recordedIn": [
+   "beb9e97",
+   "cdc75f1"
+  ],
+  "firstRecorded": "2026-11-06T02:33:02+05:30"
+ },
+ {
+  "id": "A13",
+  "title": "Future-dated validUntil",
+  "expected": "the device refuses; signed anyway, the policy cap reverts the batch",
+  "pass": true,
+  "outcome": "reverted-in-batch",
+  "txHash": "0x19af57ad97ddca0e2279a1ff3b0c97d042cdd7edae7f54c4831911717460ae53",
+  "block": 407009,
+  "message": "0x11453ecf0000000000000000000000000000000000000000000000000000000000000df8000000000000000000000000000000000000000000000000000000000000012c => TtlTooLong(0xdf8, 0x12c)",
+  "frameGas": [
+   {
+    "execution": 18264,
+    "state": 0
+   },
+   {
+    "execution": 56650,
+    "state": 0
+   },
+   {
+    "execution": 57464,
+    "state": 0
+   }
+  ],
+  "extra": {
+   "device": "this signature would stay valid for 3591 seconds, and the limit is 600"
+  },
+  "at": "2026-11-05T20:53:18.791Z",
+  "recordedIn": [
+   "beb9e97",
+   "cdc75f1"
+  ],
+  "firstRecorded": "2026-11-06T02:33:02+05:30"
+ },
+ {
+  "id": "A12",
+  "title": "Gas griefing: a call burns all its gas",
+  "expected": "reserve keeps it safe",
+  "pass": true,
+  "outcome": "reverted-in-batch",
+  "txHash": "0xfdfc492f755ae81bd25b600da557df75985e70151656f13071968d6ba8aceedb",
+  "block": 407004,
+  "message": "0x5c0dee5d000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000 => CallFailed(0x0, 0x) [0x]",
+  "frameGas": [
+   {
+    "execution": 18186,
+    "state": 0
+   },
+   {
+    "execution": 41270,
+    "state": 0
+   },
+   {
+    "execution": 975879,
+    "state": 0
+   }
+  ],
+  "at": "2026-11-05T20:52:49.288Z",
+  "recordedIn": [
+   "beb9e97",
+   "cdc75f1"
+  ],
+  "firstRecorded": "2026-11-06T02:33:02+05:30"
+ },
+ {
+  "id": "A18",
+  "title": "Return bomb: a call reverts with 500 KB",
+  "expected": "batch reverts, fee stays paid",
+  "pass": true,
+  "outcome": "reverted-in-batch",
+  "txHash": "0xaaa9991453f62cb2589e3a9531b4c5b6cc17a74d51c08aedeebd944884d280bc",
+  "block": 407000,
+  "message": "0x5c0dee5d0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000001",
+  "frameGas": [
+   {
+    "execution": 18202,
+    "state": 0
+   },
+   {
+    "execution": 41309,
+    "state": 0
+   },
+   {
+    "execution": 646742,
+    "state": 0
+   }
+  ],
+  "at": "2026-11-05T20:52:24.160Z",
+  "recordedIn": [
+   "beb9e97",
+   "cdc75f1"
+  ],
+  "firstRecorded": "2026-11-06T02:33:02+05:30"
+ },
+ {
+  "id": "A11",
+  "title": "Reentrancy into executeVerified",
+  "expected": "reverts",
+  "pass": true,
+  "outcome": "reverted-in-batch",
+  "txHash": "0x7cc61d7e4a19d46319101e81b30a8d962acc77445843a14d7218b8b19ada5759",
+  "block": 406997,
+  "message": "0x5c0dee5d00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000006408c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001a7265656e747279206661696c65642061732064657369676e656400000000000000000000000000000000000000000000000000000000000000000000 => CallFailed(0x0, 0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001a7265656e747279206661696c65642061732064657369676e6564000000000000) [0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001a7265656e747279206661696c65642061732064657369676e6564000000000000 => Error(reentry failed as designed)]",
+  "frameGas": [
+   {
+    "execution": 18467,
+    "state": 0
+   },
+   {
+    "execution": 49258,
+    "state": 0
+   },
+   {
+    "execution": 124419,
+    "state": 0
+   }
+  ],
+  "at": "2026-11-05T20:52:06.666Z",
+  "recordedIn": [
+   "beb9e97",
+   "cdc75f1"
+  ],
+  "firstRecorded": "2026-11-06T02:33:02+05:30"
+ },
+ {
+  "id": "A10",
+  "title": "7702-delegated sender",
+  "expected": "rejected",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 0: reverted with data 0xf20030d8 => BadSignatureEntry()",
+  "at": "2026-11-05T20:51:41.522Z",
+  "recordedIn": [
+   "beb9e97",
+   "cdc75f1"
+  ],
+  "firstRecorded": "2026-11-06T02:33:02+05:30"
+ },
+ {
+  "id": "A9",
+  "title": "No fee ticket for this nonce",
+  "expected": "frame 1 rejects",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0x4f0ca25300000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000d02f22b00 => NoTicket(0x1, 0xd02f22b00)",
+  "at": "2026-11-05T20:49:35.614Z",
+  "recordedIn": [
+   "beb9e97",
+   "cdc75f1"
+  ],
+  "firstRecorded": "2026-11-06T02:33:02+05:30"
+ },
+ {
+  "id": "A7",
+  "title": "Stale pre-signed transaction past validUntil",
+  "expected": "revert",
+  "pass": true,
+  "outcome": "reverted-in-batch",
+  "txHash": "0xf938324fe9eefe99b7e1685302147dbbf40306b5de9b0500963bbca329533552",
+  "block": 406970,
+  "message": "0xaa2fd925000000000000000000000000000000000000000000000000000000006aecebd2000000000000000000000000000000000000000000000000000000006aecebbe => Expired(0x6aecebd2, 0x6aecebbe)",
+  "frameGas": [
+   {
+    "execution": 18264,
+    "state": 0
+   },
+   {
+    "execution": 56650,
+    "state": 0
+   },
+   {
+    "execution": 55930,
+    "state": 0
+   }
+  ],
+  "at": "2026-11-05T20:49:23.828Z",
+  "recordedIn": [
+   "beb9e97",
+   "cdc75f1"
+  ],
+  "firstRecorded": "2026-11-06T02:33:02+05:30"
+ },
+ {
+  "id": "A6",
+  "title": "EvilVault hidden WETH pull",
+  "expected": "assertion revert, fee kept",
+  "pass": true,
+  "outcome": "reverted-in-batch",
+  "txHash": "0x1884f7b0ef007a4e10568773886de3ec6361f1ffff13063de2bc9787a8ec46b1",
+  "block": 406964,
+  "message": "0x7ad2804b000000000000000000000000000000000000000000000000000000000000000200000000000000000000000022b9ec43cf81fe4da34db0c0788ce0b0a86cecbe000000000000000000000000000000000000000000000002b5e3af16b1880000 => AssertionFailed(0x2, 0x22b9ec43cf81fe4da34db0c0788ce0b0a86cecbe, 0x2b5e3af16b1880000)",
+  "frameGas": [
+   {
+    "execution": 18248,
+    "state": 0
+   },
+   {
+    "execution": 51962,
+    "state": 0
+   },
+   {
+    "execution": 230237,
+    "state": 0
+   }
+  ],
+  "extra": {
+   "feeKept": "55884000000"
+  },
+  "at": "2026-11-05T20:48:49.735Z",
+  "recordedIn": [
+   "beb9e97",
+   "cdc75f1"
+  ],
+  "firstRecorded": "2026-11-06T02:33:02+05:30"
+ },
+ {
+  "id": "A5",
+  "title": "Poisoned descriptor (unattested code)",
+  "expected": "UNVERIFIED_CONTRACT, policy reject",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0xa42253ed0000000000000000000000000000000000000000000000000000000000000003 => PolicyRefused(0x3)",
+  "at": "2026-11-05T20:47:20.650Z",
+  "recordedIn": [
+   "beb9e97",
+   "cdc75f1"
+  ],
+  "firstRecorded": "2026-11-06T02:33:02+05:30"
+ },
+ {
+  "id": "A4b",
+  "title": "Weak spec bytes under honest hash",
+  "expected": "frame 1 hash mismatch",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0xaf0de3f36bb1ed23be5dae34fe42ad3ef61c4281d4a94bc8dd055d7babc0e7f7a623cd6cd1a553403a03de59143bc198ada523c65836557ae49359f0d0c94b02ee8d1de2 => SpecHashMismatch(0x6bb1ed23be5dae34fe42ad3ef61c4281d4a94bc8dd055d7babc0e7f7a623cd6c, 0xd1a553403a03de59143bc198ada523c65836557ae49359f0d0c94b02ee8d1de2)",
+  "at": "2026-11-05T20:47:09.383Z",
+  "recordedIn": [
+   "beb9e97",
+   "cdc75f1"
+  ],
+  "firstRecorded": "2026-11-06T02:33:02+05:30"
+ },
+ {
+  "id": "A4",
+  "title": "Signed weaker spec hash",
+  "expected": "frame 1 hash mismatch",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0xaf0de3f3d1a553403a03de59143bc198ada523c65836557ae49359f0d0c94b02ee8d1de26bb1ed23be5dae34fe42ad3ef61c4281d4a94bc8dd055d7babc0e7f7a623cd6c => SpecHashMismatch(0xd1a553403a03de59143bc198ada523c65836557ae49359f0d0c94b02ee8d1de2, 0x6bb1ed23be5dae34fe42ad3ef61c4281d4a94bc8dd055d7babc0e7f7a623cd6c)",
+  "at": "2026-11-05T20:47:08.887Z",
+  "recordedIn": [
+   "beb9e97",
+   "cdc75f1"
+  ],
+  "firstRecorded": "2026-11-06T02:33:02+05:30"
+ },
+ {
+  "id": "A3b",
+  "title": "Swap in a permissive paymaster",
+  "expected": "frame 0 rejects (BadLayout)",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 0: reverted with data 0x3144dd7b0000000000000000000000000000000000000000000000000000000000000004 => BadLayout(0x4)",
+  "at": "2026-11-05T20:46:52.474Z",
+  "recordedIn": [
+   "beb9e97",
+   "cdc75f1"
+  ],
+  "firstRecorded": "2026-11-06T02:33:02+05:30"
+ },
+ {
+  "id": "A3",
+  "title": "Drop the renderer frame (self-pay layout)",
+  "expected": "frame 0 rejects with BadLayout",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 0: reverted with data 0x3144dd7b0000000000000000000000000000000000000000000000000000000000000000 => BadLayout(0x0)",
+  "at": "2026-11-05T20:46:51.928Z",
+  "recordedIn": [
+   "beb9e97",
+   "cdc75f1"
+  ],
+  "firstRecorded": "2026-11-06T02:33:02+05:30"
+ },
+ {
+  "id": "A1",
+  "title": "Swap the recipient",
+  "expected": "mempool reject (tree mismatch)",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0x669a6fec4fbaeb3602762f7ee7b5511af98f2226cb9a8e89af5cf7b6e994698dca8de00071471eb15be1fb874f6046bfa09a1ca552d28b5aac962e6cb0b8f60663221572 => TreeMismatch(0x4fbaeb3602762f7ee7b5511af98f2226cb9a8e89af5cf7b6e994698dca8de000, 0x71471eb15be1fb874f6046bfa09a1ca552d28b5aac962e6cb0b8f60663221572)",
+  "at": "2026-11-05T20:46:39.872Z",
+  "recordedIn": [
+   "beb9e97",
+   "cdc75f1"
+  ],
+  "firstRecorded": "2026-11-06T02:33:02+05:30"
+ },
+ {
+  "id": "HONEST",
+  "title": "Honest 3-frame transfer",
+  "expected": "admitted by the public alt mempool and mined; batch succeeds",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0x41bf1e2ec41c3b56a4de327b71967cf759d505b0d4f9678afc0f3c75a4c88956",
+  "block": 406940,
+  "frameGas": [
+   {
+    "execution": 18264,
+    "state": 0
+   },
+   {
+    "execution": 56650,
+    "state": 0
+   },
+   {
+    "execution": 140741,
+    "state": 293760
+   }
+  ],
+  "extra": {
+   "payer": "0x97da098b58c6c1659957dbd493e6cb0a84dbd3a0",
+   "delivered": "1000000"
+  },
+  "at": "2026-11-05T20:46:24.057Z",
+  "recordedIn": [
+   "beb9e97",
+   "cdc75f1"
+  ],
+  "firstRecorded": "2026-11-06T02:33:02+05:30"
+ },
+ {
+  "id": "A17b",
+  "title": "Unknown v4 action (SWAP_EXACT_IN)",
+  "expected": "BLIND, then refusal",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0xa42253ed0000000000000000000000000000000000000000000000000000000000000002 => PolicyRefused(0x2)",
+  "at": "2026-11-05T20:31:38.373Z",
+  "recordedIn": [
+   "c25b516"
+  ],
+  "firstRecorded": "2026-11-06T02:03:33+05:30"
+ },
+ {
+  "id": "A17",
+  "title": "Unknown router command (PERMIT2_PERMIT)",
+  "expected": "BLIND, then refusal",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0xa42253ed0000000000000000000000000000000000000000000000000000000000000002 => PolicyRefused(0x2)",
+  "at": "2026-11-05T20:31:30.992Z",
+  "recordedIn": [
+   "c25b516"
+  ],
+  "firstRecorded": "2026-11-06T02:03:33+05:30"
+ },
+ {
+  "id": "A16",
+  "title": "Router command with the allow-revert flag",
+  "expected": "UR_ALLOW_REVERT in the sentence, then policy refusal",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0xa42253ed0000000000000000000000000000000000000000000000000000000000000200 => PolicyRefused(0x200)",
+  "at": "2026-11-05T20:31:18.434Z",
+  "recordedIn": [
+   "c25b516"
+  ],
+  "firstRecorded": "2026-11-06T02:03:33+05:30"
+ },
+ {
+  "id": "A14",
+  "title": "Two transactions, one fee ticket",
+  "expected": "the second is rejected: tickets are per nonce",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0x4f0ca25300000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000d02f22b00 => NoTicket(0x2, 0xd02f22b00)",
+  "at": "2026-11-05T20:31:05.095Z",
+  "recordedIn": [
+   "c25b516"
+  ],
+  "firstRecorded": "2026-11-06T02:03:33+05:30"
+ },
+ {
+  "id": "A13",
+  "title": "Future-dated validUntil",
+  "expected": "the device refuses; signed anyway, the policy cap reverts the batch",
+  "pass": true,
+  "outcome": "reverted-in-batch",
+  "txHash": "0xa5e2f5e8385562a3669e44788e61722ce21339fffbd2eca274b15bbefa4d1b90",
+  "block": 406780,
+  "message": "0x11453ecf0000000000000000000000000000000000000000000000000000000000000df8000000000000000000000000000000000000000000000000000000000000012c => TtlTooLong(0xdf8, 0x12c)",
+  "frameGas": [
+   {
+    "execution": 18264,
+    "state": 0
+   },
+   {
+    "execution": 56611,
+    "state": 0
+   },
+   {
+    "execution": 57636,
+    "state": 0
+   }
+  ],
+  "extra": {
+   "device": "this signature would stay valid for 3593 seconds, and the limit is 600"
+  },
+  "at": "2026-11-05T20:30:25.522Z",
+  "recordedIn": [
+   "c25b516"
+  ],
+  "firstRecorded": "2026-11-06T02:03:33+05:30"
+ },
+ {
+  "id": "A12",
+  "title": "Gas griefing: a call burns all its gas",
+  "expected": "reserve keeps it safe",
+  "pass": true,
+  "outcome": "reverted-in-batch",
+  "txHash": "0x11f9d95d5ee9855ff189cc8eb27ed1f94cd8c0a2c141b2dcad6d0215d9992999",
+  "block": 406775,
+  "message": "0x5c0dee5d000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000 => CallFailed(0x0, 0x) [0x]",
+  "frameGas": [
+   {
+    "execution": 18186,
+    "state": 0
+   },
+   {
+    "execution": 41258,
+    "state": 0
+   },
+   {
+    "execution": 975701,
+    "state": 0
+   }
+  ],
+  "at": "2026-11-05T20:29:53.315Z",
+  "recordedIn": [
+   "c25b516"
+  ],
+  "firstRecorded": "2026-11-06T02:03:33+05:30"
+ },
+ {
+  "id": "A11",
+  "title": "Reentrancy into executeVerified",
+  "expected": "reverts",
+  "pass": true,
+  "outcome": "reverted-in-batch",
+  "txHash": "0x02a74d89721f2092b354c93d5b42b1c1c72ce8d21fed3b96e68e43fb0ec783a7",
+  "block": 406772,
+  "message": "0x5c0dee5d00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000006408c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001a7265656e747279206661696c65642061732064657369676e656400000000000000000000000000000000000000000000000000000000000000000000 => CallFailed(0x0, 0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001a7265656e747279206661696c65642061732064657369676e6564000000000000) [0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001a7265656e747279206661696c65642061732064657369676e6564000000000000 => Error(reentry failed as designed)]",
+  "frameGas": [
+   {
+    "execution": 18467,
+    "state": 0
+   },
+   {
+    "execution": 49258,
+    "state": 0
+   },
+   {
+    "execution": 124430,
+    "state": 0
+   }
+  ],
+  "at": "2026-11-05T20:29:35.433Z",
+  "recordedIn": [
+   "c25b516"
+  ],
+  "firstRecorded": "2026-11-06T02:03:33+05:30"
+ },
+ {
+  "id": "A10",
+  "title": "7702-delegated sender",
+  "expected": "rejected",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 0: reverted with data 0xf20030d8 => BadSignatureEntry()",
+  "at": "2026-11-05T20:29:16.747Z",
+  "recordedIn": [
+   "c25b516"
+  ],
+  "firstRecorded": "2026-11-06T02:03:33+05:30"
+ },
+ {
+  "id": "A9",
+  "title": "No fee ticket for this nonce",
+  "expected": "frame 1 rejects",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0x4f0ca25300000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000d02f22b00 => NoTicket(0x1, 0xd02f22b00)",
+  "at": "2026-11-05T20:28:46.912Z",
+  "recordedIn": [
+   "c25b516"
+  ],
+  "firstRecorded": "2026-11-06T02:03:33+05:30"
+ },
+ {
+  "id": "A7",
+  "title": "Stale pre-signed transaction past validUntil",
+  "expected": "revert",
+  "pass": true,
+  "outcome": "reverted-in-batch",
+  "txHash": "0x739e7021c9ba4015b875cd47910b8190362ffa5c923ed3bed5b7c9fe85819a9c",
+  "block": 406762,
+  "message": "0xaa2fd925000000000000000000000000000000000000000000000000000000006aece6f2000000000000000000000000000000000000000000000000000000006aece6d8 => Expired(0x6aece6f2, 0x6aece6d8)",
+  "frameGas": [
+   {
+    "execution": 18264,
+    "state": 0
+   },
+   {
+    "execution": 56611,
+    "state": 0
+   },
+   {
+    "execution": 56102,
+    "state": 0
+   }
+  ],
+  "at": "2026-11-05T20:28:35.184Z",
+  "recordedIn": [
+   "c25b516"
+  ],
+  "firstRecorded": "2026-11-06T02:03:33+05:30"
+ },
+ {
+  "id": "A6",
+  "title": "EvilVault hidden WETH pull",
+  "expected": "assertion revert, fee kept",
+  "pass": true,
+  "outcome": "reverted-in-batch",
+  "txHash": "0xd3fff8fd0ab42f8eb19e8a71d9c91d71460a4aedd879b58621662fe9e4be285d",
+  "block": 406755,
+  "message": "0x7ad2804b00000000000000000000000000000000000000000000000000000000000000020000000000000000000000007de0208a1f460a6230c89a0f16bf1fc5cc53cb7e000000000000000000000000000000000000000000000002b5e3af16b1880000 => AssertionFailed(0x2, 0x7de0208a1f460a6230c89a0f16bf1fc5cc53cb7e, 0x2b5e3af16b1880000)",
+  "frameGas": [
+   {
+    "execution": 18248,
+    "state": 0
+   },
+   {
+    "execution": 51917,
+    "state": 0
+   },
+   {
+    "execution": 230055,
+    "state": 0
+   }
+  ],
+  "extra": {
+   "feeKept": "55884000000"
+  },
+  "at": "2026-11-05T20:27:53.955Z",
+  "recordedIn": [
+   "c25b516"
+  ],
+  "firstRecorded": "2026-11-06T02:03:33+05:30"
+ },
+ {
+  "id": "A5",
+  "title": "Poisoned descriptor (unattested code)",
+  "expected": "UNVERIFIED_CONTRACT, policy reject",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0xa42253ed0000000000000000000000000000000000000000000000000000000000000003 => PolicyRefused(0x3)",
+  "at": "2026-11-05T20:26:19.464Z",
+  "recordedIn": [
+   "c25b516"
+  ],
+  "firstRecorded": "2026-11-06T02:03:33+05:30"
+ },
+ {
+  "id": "A4b",
+  "title": "Weak spec bytes under honest hash",
+  "expected": "frame 1 hash mismatch",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0xaf0de3f3a0b219aab5a0c3e67ed6e0bc32763d457ef02243c1462d5730e1f9493289a8a4d1a553403a03de59143bc198ada523c65836557ae49359f0d0c94b02ee8d1de2 => SpecHashMismatch(0xa0b219aab5a0c3e67ed6e0bc32763d457ef02243c1462d5730e1f9493289a8a4, 0xd1a553403a03de59143bc198ada523c65836557ae49359f0d0c94b02ee8d1de2)",
+  "at": "2026-11-05T20:26:08.374Z",
+  "recordedIn": [
+   "c25b516"
+  ],
+  "firstRecorded": "2026-11-06T02:03:33+05:30"
+ },
+ {
+  "id": "A4",
+  "title": "Signed weaker spec hash",
+  "expected": "frame 1 hash mismatch",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0xaf0de3f3d1a553403a03de59143bc198ada523c65836557ae49359f0d0c94b02ee8d1de2a0b219aab5a0c3e67ed6e0bc32763d457ef02243c1462d5730e1f9493289a8a4 => SpecHashMismatch(0xd1a553403a03de59143bc198ada523c65836557ae49359f0d0c94b02ee8d1de2, 0xa0b219aab5a0c3e67ed6e0bc32763d457ef02243c1462d5730e1f9493289a8a4)",
+  "at": "2026-11-05T20:26:07.779Z",
+  "recordedIn": [
+   "c25b516"
+  ],
+  "firstRecorded": "2026-11-06T02:03:33+05:30"
+ },
+ {
+  "id": "A3b",
+  "title": "Swap in a permissive paymaster",
+  "expected": "frame 0 rejects (BadLayout)",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 0: reverted with data 0x3144dd7b0000000000000000000000000000000000000000000000000000000000000004 => BadLayout(0x4)",
+  "at": "2026-11-05T20:25:52.935Z",
+  "recordedIn": [
+   "c25b516"
+  ],
+  "firstRecorded": "2026-11-06T02:03:33+05:30"
+ },
+ {
+  "id": "A3",
+  "title": "Drop the renderer frame (self-pay layout)",
+  "expected": "frame 0 rejects with BadLayout",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 0: reverted with data 0x3144dd7b0000000000000000000000000000000000000000000000000000000000000000 => BadLayout(0x0)",
+  "at": "2026-11-05T20:25:52.362Z",
+  "recordedIn": [
+   "c25b516"
+  ],
+  "firstRecorded": "2026-11-06T02:03:33+05:30"
+ },
+ {
+  "id": "A1",
+  "title": "Swap the recipient",
+  "expected": "mempool reject (tree mismatch)",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0x669a6fec3dd22f8abd690acaf66700c946e6194e1df54e794b48e805cab14d1f88c4d43ec84990c4f394ba905afbbe250999157b4099e38c602b10032aaf3387f5d2848f => TreeMismatch(0x3dd22f8abd690acaf66700c946e6194e1df54e794b48e805cab14d1f88c4d43e, 0xc84990c4f394ba905afbbe250999157b4099e38c602b10032aaf3387f5d2848f)",
+  "at": "2026-11-05T20:25:40.225Z",
+  "recordedIn": [
+   "c25b516"
+  ],
+  "firstRecorded": "2026-11-06T02:03:33+05:30"
+ },
+ {
+  "id": "HONEST",
+  "title": "Honest 3-frame transfer",
+  "expected": "admitted by the public alt mempool and mined; batch succeeds",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0xf222bf12e0ccfdad23f37b32e548e355575e526fef97174f884e5d08dd4b8664",
+  "block": 406730,
+  "frameGas": [
+   {
+    "execution": 18264,
+    "state": 0
+   },
+   {
+    "execution": 56611,
+    "state": 0
+   },
+   {
+    "execution": 140557,
+    "state": 293760
+   }
+  ],
+  "extra": {
+   "payer": "0xef1620187ebbda9ac4d9696f6c7c377d101fdbec",
+   "delivered": "1000000"
+  },
+  "at": "2026-11-05T20:25:24.404Z",
+  "recordedIn": [
+   "c25b516"
+  ],
+  "firstRecorded": "2026-11-06T02:03:33+05:30"
+ },
+ {
+  "id": "A8",
+  "title": "Lookalike ENS name",
+  "expected": "name not in the cache, so hex is shown; the exclusivity check fails at refresh",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "0x45bdaf820530a4cbd0086fc7728614d14cf73974e1e0e17089000b956b98a659ed979f5e => WrongResolverCode(0x0530a4cbd0086fc7728614d14cf73974e1e0e17089000b956b98a659ed979f5e)",
+  "extra": {
+   "deviceLine": "To: 0x000000000000000000000000000000000000bad1",
+   "lookalike": "verbatim-dem0.eth",
+   "sameCodeChecker": "0x728336074b2e46af182887ca1d21baab52db677e",
+   "sameCodeResult": "01110000000000000000000000010000011 => RootRolesHeld(0x1000000000000000000000001000001110000000000000000000000010000011)"
+  },
+  "at": "2026-11-05T19:46:53.648Z",
+  "recordedIn": [
+   "abc0eea",
+   "c25b516",
+   "beb9e97"
+  ],
+  "firstRecorded": "2026-11-06T01:30:09+05:30"
+ },
+ {
+  "id": "B-A1",
+  "title": "Swapped recipient under an honest sentence, on Sepolia",
+  "expected": "bundler rejects; paymaster reverts TreeMismatch",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "0x669a6fec1fe4012d07b5f3c48e3f8dc2a9c64d5ebc96a58286bfcf9c6e221a142e762614b5ba6d37e2762d6eafdd378ddb261eedb572f6f68fa94fdfb4c798f48e905ed2 => TreeMismatch(0x1fe4012d07b5f3c48e3f8dc2a9c64d5ebc96a58286bfcf9c6e221a142e762614, 0xb5ba6d37e2762d6eafdd378ddb261eedb572f6f68fa94fdfb4c798f48e905ed2)",
+  "extra": {
+   "bundler": "Internal error from bundler (trace id: 8211ff3f9944fc07637f34f04294af71)"
+  },
+  "at": "2026-11-05T19:46:32.545Z",
+  "recordedIn": [
+   "abc0eea",
+   "c25b516",
+   "beb9e97"
+  ],
+  "firstRecorded": "2026-11-06T01:30:09+05:30"
+ },
+ {
+  "id": "B-swap",
+  "title": "v4 swap through Uniswap's official Sepolia Universal Router and PoolManager",
+  "expected": "bundler accepts; lands; min out respected",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0x0f70460eb746c1d76c47bcd99784727d0c543a57c6857d73e765a9fd325d21ac",
+  "block": 12071642,
+  "extra": {
+   "receivedRaw": "2316930970",
+   "actualGasUsed": "1178313"
+  },
+  "at": "2026-11-05T19:46:28.406Z",
+  "recordedIn": [
+   "abc0eea",
+   "c25b516",
+   "beb9e97"
+  ],
+  "firstRecorded": "2026-11-06T01:30:09+05:30"
+ },
+ {
+  "id": "B-honest-alchemy",
+  "title": "Honest transfer on Sepolia via Alchemy",
+  "expected": "bundler accepts; lands; delivered",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0x4f1bac38c46053d14e99cdaa52bfcfc681d2f18b762d9d95008db442c9b2873d",
+  "block": 12071641,
+  "extra": {
+   "actualGasUsed": "1113134",
+   "bundler": "alchemy"
+  },
+  "at": "2026-11-05T19:46:17.530Z",
+  "recordedIn": [
+   "abc0eea",
+   "c25b516",
+   "beb9e97"
+  ],
+  "firstRecorded": "2026-11-06T01:30:09+05:30"
+ },
+ {
+  "id": "B-honest-pimlico",
+  "title": "Honest transfer on Sepolia via Pimlico, recipient shown by ENS name",
+  "expected": "bundler accepts; lands; delivered",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0x8f6e2fad41072dbb405c81a9aaffce58d690b7cf876e2ad7de46e74c2106a305",
+  "block": 12071640,
+  "extra": {
+   "actualGasUsed": "1113104",
+   "bundler": "pimlico"
+  },
+  "at": "2026-11-05T19:46:05.737Z",
+  "recordedIn": [
+   "abc0eea",
+   "c25b516",
+   "beb9e97"
+  ],
+  "firstRecorded": "2026-11-06T01:30:09+05:30"
+ },
+ {
+  "id": "A2b",
+  "title": "User signs the true SkimHook sentence",
+  "expected": "policy rejects",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0xa42253ed0000000000000000000000000000000000000000000000000000000000000038 => PolicyRefused(0x38)",
+  "extra": {
+   "deviceRiskLines": [
+    "! NO MINIMUM OUTPUT",
+    "! HOOK CAN TAKE YOUR OUTPUT",
+    "! UNVERIFIED HOOK"
+   ]
+  },
+  "at": "2026-11-05T19:45:46.226Z",
+  "recordedIn": [
+   "abc0eea",
+   "c25b516"
+  ],
+  "firstRecorded": "2026-11-06T01:30:09+05:30"
+ },
+ {
+  "id": "A2",
+  "title": "minOut=0 via SkimHook under an honest sentence",
+  "expected": "mempool reject (tree mismatch)",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0x669a6fec289d0548d73152a54d9e464159463d65ce9ce74b242e6d4f33d60dfe0261f45eb275481ad93b24fdd6400ac3ce883afa68126395cfad1d73f1f01338d41cfd37 => TreeMismatch(0x289d0548d73152a54d9e464159463d65ce9ce74b242e6d4f33d60dfe0261f45e, 0xb275481ad93b24fdd6400ac3ce883afa68126395cfad1d73f1f01338d41cfd37)",
+  "at": "2026-11-05T19:45:37.216Z",
+  "recordedIn": [
+   "abc0eea",
+   "c25b516"
+  ],
+  "firstRecorded": "2026-11-06T01:30:09+05:30"
+ },
+ {
+  "id": "A2-eoa",
+  "title": "Same evil route on an ordinary wallet",
+  "expected": "the skim works: this is what Verbatim prevents",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0xfc0970583fc676c553e6093959fe13e49b19bfc6a424cf837dedb5d11f750fa4",
+  "block": 406329,
+  "extra": {
+   "victimReceivedRaw": "25568739",
+   "hookTookRaw": "2531305096"
+  },
+  "at": "2026-11-05T19:45:17.213Z",
+  "recordedIn": [
+   "abc0eea",
+   "c25b516"
+  ],
+  "firstRecorded": "2026-11-06T01:30:09+05:30"
+ },
+ {
+  "id": "WRAP",
+  "title": "WRAP_ETH through the real Universal Router",
+  "expected": "admitted, mined, exact WETH delta",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0xd0050ff7c89f46f6e78ed332bc2807d493652717a223315276f71a8541c2110a",
+  "block": 406323,
+  "frameGas": [
+   {
+    "execution": 19532,
+    "state": 0
+   },
+   {
+    "execution": 53298,
+    "state": 0
+   },
+   {
+    "execution": 251313,
+    "state": 0
+   }
+  ],
+  "message": "",
+  "at": "2026-11-05T19:44:43.218Z",
+  "recordedIn": [
+   "abc0eea",
+   "c25b516"
+  ],
+  "firstRecorded": "2026-11-06T01:30:09+05:30"
+ },
+ {
+  "id": "SWAP",
+  "title": "Honest v4 swap through the real Universal Router",
+  "expected": "admitted, mined, min out respected",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0xd6b5e9fcc5ccd51a407b28056a3eafe6e5e06392f77ad46248691e23aa4efa8a",
+  "block": 406318,
+  "frameGas": [
+   {
+    "execution": 19972,
+    "state": 0
+   },
+   {
+    "execution": 68249,
+    "state": 0
+   },
+   {
+    "execution": 350474,
+    "state": 0
+   }
+  ],
+  "message": "",
+  "extra": {
+   "receivedRaw": "2109249539",
+   "paidRaw": "1000000000000000000"
+  },
+  "at": "2026-11-05T19:44:11.854Z",
+  "recordedIn": [
+   "abc0eea",
+   "c25b516"
+  ],
+  "firstRecorded": "2026-11-06T01:30:09+05:30"
+ },
+ {
+  "id": "F7",
+  "title": "Fee failure runs nothing",
+  "expected": "frame 2 fails; no protected call executes",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0xfdcc352a4054117e08ba9ae1821c2d1a1d20c83546f09e7871f16cd16a052e74",
+  "block": 406313,
+  "frameGas": [
+   {
+    "execution": 19376,
+    "state": 0
+   },
+   {
+    "execution": 62133,
+    "state": 0
+   },
+   {
+    "execution": 12524,
+    "state": 0
+   }
+  ],
+  "extra": {
+   "statuses": [
+    "0x1",
+    "0x1",
+    "0x0"
+   ]
+  },
+  "at": "2026-11-05T19:43:42.520Z",
+  "recordedIn": [
+   "abc0eea",
+   "c25b516"
+  ],
+  "firstRecorded": "2026-11-06T01:30:09+05:30"
+ },
+ {
+  "id": "A11",
+  "title": "Reentrancy into executeVerified",
+  "expected": "reverts",
+  "pass": true,
+  "outcome": "reverted-in-batch",
+  "txHash": "0xd0b8dace0c80e2e07a6f840495fa432a752aabdcefa09f63d42885791984b02e",
+  "block": 406308,
+  "message": "0x5c0dee5d00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000006408c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001a7265656e747279206661696c65642061732064657369676e656400000000000000000000000000000000000000000000000000000000000000000000 => CallFailed(0x0, 0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001a7265656e747279206661696c65642061732064657369676e6564000000000000) [0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001a7265656e747279206661696c65642061732064657369676e6564000000000000 => Error(reentry failed as designed)]",
+  "frameGas": [
+   {
+    "execution": 19579,
+    "state": 0
+   },
+   {
+    "execution": 54869,
+    "state": 0
+   },
+   {
+    "execution": 137594,
+    "state": 0
+   }
+  ],
+  "at": "2026-11-05T19:43:12.621Z",
+  "recordedIn": [
+   "abc0eea"
+  ],
+  "firstRecorded": "2026-11-06T01:30:09+05:30"
+ },
+ {
+  "id": "A12",
+  "title": "Gas griefing: a call burns all its gas",
+  "expected": "reserve keeps it safe",
+  "pass": true,
+  "outcome": "reverted-in-batch",
+  "txHash": "0x109022a2c5fba0fbb05bde118ac9f380560d7cbb7d9ba6e4facb319d1a145353",
+  "block": 406303,
+  "message": "0x5c0dee5d000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000 => CallFailed(0x0, 0x) [0x]",
+  "frameGas": [
+   {
+    "execution": 19298,
+    "state": 0
+   },
+   {
+    "execution": 46863,
+    "state": 0
+   },
+   {
+    "execution": 975707,
+    "state": 0
+   }
+  ],
+  "at": "2026-11-05T19:42:41.558Z",
+  "recordedIn": [
+   "abc0eea"
+  ],
+  "firstRecorded": "2026-11-06T01:30:09+05:30"
+ },
+ {
+  "id": "A10",
+  "title": "7702-delegated sender",
+  "expected": "rejected",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 0: reverted with data 0xf20030d8 => BadSignatureEntry()",
+  "at": "2026-11-05T19:41:48.931Z",
+  "recordedIn": [
+   "abc0eea"
+  ],
+  "firstRecorded": "2026-11-06T01:30:09+05:30"
+ },
+ {
+  "id": "A9",
+  "title": "Fee griefing with an empty deposit",
+  "expected": "frame 1 rejects",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0x25c3f46e000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000002dccee080 => InsufficientDeposit(0x1, 0x2dccee080)",
+  "at": "2026-11-05T19:41:24.662Z",
+  "recordedIn": [
+   "abc0eea"
+  ],
+  "firstRecorded": "2026-11-06T01:30:09+05:30"
+ },
+ {
+  "id": "A7",
+  "title": "Stale pre-signed transaction past TTL",
+  "expected": "revert",
+  "pass": true,
+  "outcome": "reverted-in-batch",
+  "txHash": "0xb15ad99076eaf41714d52edcf6112b0559c4f10cddf66fb592c7b9765c0548c4",
+  "block": 406288,
+  "message": "0xaa2fd925000000000000000000000000000000000000000000000000000000000006331000000000000000000000000000000000000000000000000000000000000632fd => Expired(0x63310, 0x632fd)",
+  "frameGas": [
+   {
+    "execution": 19376,
+    "state": 0
+   },
+   {
+    "execution": 62213,
+    "state": 0
+   },
+   {
+    "execution": 44785,
+    "state": 0
+   }
+  ],
+  "at": "2026-11-05T19:41:12.568Z",
+  "recordedIn": [
+   "abc0eea"
+  ],
+  "firstRecorded": "2026-11-06T01:30:09+05:30"
+ },
+ {
+  "id": "A6",
+  "title": "EvilVault hidden WETH pull",
+  "expected": "assertion revert, fee kept",
+  "pass": true,
+  "outcome": "reverted-in-batch",
+  "txHash": "0x3b74c9dbae733b83503640f1bcf1f97590afa602ae706638656c2a0c1a662c0d",
+  "block": 406283,
+  "message": "0x7ad2804b0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000f0447975d6fe039a027029891c1b08191fd267c90000000000000000000000000000000000000000000000028c418afbbb5c0000 => AssertionFailed(0x2, 0xf0447975d6fe039a027029891c1b08191fd267c9, 0x28c418afbbb5c0000)",
+  "frameGas": [
+   {
+    "execution": 19360,
+    "state": 0
+   },
+   {
+    "execution": 57519,
+    "state": 0
+   },
+   {
+    "execution": 243219,
+    "state": 0
+   }
+  ],
+  "extra": {
+   "feeKept": "3073620000"
+  },
+  "at": "2026-11-05T19:40:43.474Z",
+  "recordedIn": [
+   "abc0eea"
+  ],
+  "firstRecorded": "2026-11-06T01:30:09+05:30"
+ },
+ {
+  "id": "A5",
+  "title": "Poisoned descriptor (unattested code)",
+  "expected": "UNVERIFIED_CONTRACT, policy reject",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0xa42253ed0000000000000000000000000000000000000000000000000000000000000003 => PolicyRefused(0x3)",
+  "at": "2026-11-05T19:40:05.997Z",
+  "recordedIn": [
+   "abc0eea"
+  ],
+  "firstRecorded": "2026-11-06T01:30:09+05:30"
+ },
+ {
+  "id": "A4b",
+  "title": "Weak spec bytes under honest hash",
+  "expected": "frame 1 hash mismatch",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0xaf0de3f359f5321d9df03f9d974f3765100f5a8330f1458e900156429d62deacfaa2b90fd1a553403a03de59143bc198ada523c65836557ae49359f0d0c94b02ee8d1de2 => SpecHashMismatch(0x59f5321d9df03f9d974f3765100f5a8330f1458e900156429d62deacfaa2b90f, 0xd1a553403a03de59143bc198ada523c65836557ae49359f0d0c94b02ee8d1de2)",
+  "at": "2026-11-05T19:39:54.923Z",
+  "recordedIn": [
+   "abc0eea"
+  ],
+  "firstRecorded": "2026-11-06T01:30:09+05:30"
+ },
+ {
+  "id": "A4",
+  "title": "Signed weaker spec hash",
+  "expected": "frame 1 hash mismatch",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0xaf0de3f3d1a553403a03de59143bc198ada523c65836557ae49359f0d0c94b02ee8d1de259f5321d9df03f9d974f3765100f5a8330f1458e900156429d62deacfaa2b90f => SpecHashMismatch(0xd1a553403a03de59143bc198ada523c65836557ae49359f0d0c94b02ee8d1de2, 0x59f5321d9df03f9d974f3765100f5a8330f1458e900156429d62deacfaa2b90f)",
+  "at": "2026-11-05T19:39:54.651Z",
+  "recordedIn": [
+   "abc0eea"
+  ],
+  "firstRecorded": "2026-11-06T01:30:09+05:30"
+ },
+ {
+  "id": "A3b",
+  "title": "Swap in a permissive paymaster",
+  "expected": "frame 0 rejects (BadLayout)",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 0: reverted with data 0x3144dd7b0000000000000000000000000000000000000000000000000000000000000004 => BadLayout(0x4)",
+  "at": "2026-11-05T19:39:39.443Z",
+  "recordedIn": [
+   "abc0eea"
+  ],
+  "firstRecorded": "2026-11-06T01:30:09+05:30"
+ },
+ {
+  "id": "A3",
+  "title": "Drop the renderer frame (self-pay layout)",
+  "expected": "frame 0 rejects",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 0: reverted with data 0x9fb70902 => FrameReadFailed()",
+  "at": "2026-11-05T19:39:38.908Z",
+  "recordedIn": [
+   "abc0eea"
+  ],
+  "firstRecorded": "2026-11-06T01:30:09+05:30"
+ },
+ {
+  "id": "A1",
+  "title": "Swap the recipient",
+  "expected": "mempool reject (tree mismatch)",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0x669a6fecaea52a8ebf019e94725cdddc3204c4a1707d7f5a402d26bc2e65cd3b11992a08fc2e4739b326b75869dc14096b65c0ecef53ba94c65744fb02581e64dd7be634 => TreeMismatch(0xaea52a8ebf019e94725cdddc3204c4a1707d7f5a402d26bc2e65cd3b11992a08, 0xfc2e4739b326b75869dc14096b65c0ecef53ba94c65744fb02581e64dd7be634)",
+  "at": "2026-11-05T19:39:26.794Z",
+  "recordedIn": [
+   "abc0eea"
+  ],
+  "firstRecorded": "2026-11-06T01:30:09+05:30"
+ },
+ {
+  "id": "HONEST",
+  "title": "Honest 3-frame transfer",
+  "expected": "admitted by the public alt mempool and mined; batch succeeds",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0xded2c9b2c8a7962a2b1d3783e4abb984d43b8a36686f543716ce2d7a859a9938",
+  "block": 406268,
+  "frameGas": [
+   {
+    "execution": 19376,
+    "state": 0
+   },
+   {
+    "execution": 62213,
+    "state": 0
+   },
+   {
+    "execution": 222308,
+    "state": 0
+   }
+  ],
+  "extra": {
+   "payer": "0xee656b20237fbadf51ba251a2512ef1bd2494382",
+   "delivered": "1000000"
+  },
+  "at": "2026-11-05T19:39:11.675Z",
+  "recordedIn": [
+   "abc0eea"
+  ],
+  "firstRecorded": "2026-11-06T01:30:09+05:30"
+ },
+ {
+  "id": "A8",
+  "title": "Lookalike ENS name",
+  "expected": "name not in the cache, so hex is shown; the exclusivity check fails at refresh",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "0x45bdaf820530a4cbd0086fc7728614d14cf73974e1e0e17089000b956b98a659ed979f5e => WrongResolverCode(0x0530a4cbd0086fc7728614d14cf73974e1e0e17089000b956b98a659ed979f5e)",
+  "extra": {
+   "deviceLine": "To: 0x000000000000000000000000000000000000bad1",
+   "lookalike": "verbatim-dem0.eth",
+   "sameCodeChecker": "0x75b6a2862a67099677b57bd1f3123ed050f2f14d",
+   "sameCodeResult": "01110000000000000000000000010000011 => RootRolesHeld(0x1000000000000000000000001000001110000000000000000000000010000011)"
+  },
+  "at": "2026-11-05T19:29:54.302Z",
+  "recordedIn": [
+   "de8f887"
+  ],
+  "firstRecorded": "2026-11-06T01:02:49+05:30"
+ },
+ {
+  "id": "B-A1",
+  "title": "Swapped recipient under an honest sentence, on Sepolia",
+  "expected": "bundler rejects; paymaster reverts TreeMismatch",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "0x669a6fec671701f7b3b55b2ff944e4a395ced4da8e84e66bb4db7beab525f13333b9b0bc8236d6e1bdb3079591c74808048cdf83eb7a84561daaba2f04d1bcfbcb415e56 => TreeMismatch(0x671701f7b3b55b2ff944e4a395ced4da8e84e66bb4db7beab525f13333b9b0bc, 0x8236d6e1bdb3079591c74808048cdf83eb7a84561daaba2f04d1bcfbcb415e56)",
+  "extra": {
+   "bundler": "Internal error from bundler (trace id: 77c21c0b28e2327a3cc76ec705c7ca23)"
+  },
+  "at": "2026-11-05T19:28:40.408Z",
+  "recordedIn": [
+   "de8f887"
+  ],
+  "firstRecorded": "2026-11-06T01:02:49+05:30"
+ },
+ {
+  "id": "B-swap",
+  "title": "v4 swap through Uniswap's official Sepolia Universal Router and PoolManager",
+  "expected": "bundler accepts; lands; min out respected",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0xa2f20f89961206408f5b0832d55fb79f7f9c75ce50c48a1e2494569cb2728052",
+  "block": 12071552,
+  "extra": {
+   "receivedRaw": "2556873834",
+   "actualGasUsed": "1178313"
+  },
+  "at": "2026-11-05T19:28:28.156Z",
+  "recordedIn": [
+   "de8f887"
+  ],
+  "firstRecorded": "2026-11-06T01:02:49+05:30"
+ },
+ {
+  "id": "B-honest-alchemy",
+  "title": "Honest transfer on Sepolia via Alchemy",
+  "expected": "bundler accepts; lands; delivered",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0x3fbd70ec1b765f101fc8227552811bee19f8b7c28fd4a55c2d33a921e13357a1",
+  "block": 12071542,
+  "extra": {
+   "actualGasUsed": "1062488",
+   "bundler": "alchemy"
+  },
+  "at": "2026-11-05T19:26:28.073Z",
+  "recordedIn": [
+   "de8f887"
+  ],
+  "firstRecorded": "2026-11-06T01:02:49+05:30"
+ },
+ {
+  "id": "B-honest-pimlico",
+  "title": "Honest transfer on Sepolia via Pimlico, recipient shown by ENS name",
+  "expected": "bundler accepts; lands; delivered",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0x7b3bfedf761de3b8f865ce9a70fcee7833b104f7b747c7ae1a45082b855d3ac7",
+  "block": 12071538,
+  "extra": {
+   "actualGasUsed": "1062488",
+   "bundler": "pimlico"
+  },
+  "at": "2026-11-05T19:25:43.113Z",
+  "recordedIn": [
+   "de8f887"
+  ],
+  "firstRecorded": "2026-11-06T01:02:49+05:30"
+ },
+ {
+  "id": "INVALIDATION",
+  "title": "Revoking one descriptor stops only the transactions that use it",
+  "expected": "an unrelated refresh invalidates nothing; the revocation invalidates 1 of 5",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "0x669a6fecbd80ee7c195b35421973d7e6c9b128218c9737cf8affc1b09426d86adcc11d0657d81fbdfcf8c945e60bb4e7193a60f93dfe07d60e06d1228e56406ecefc064e => TreeMismatch(0xbd80ee7c195b35421973d7e6c9b128218c9737cf8affc1b09426d86adcc11d06, 0x57d81fbdfcf8c945e60bb4e7193a60f93dfe07d60e06d1228e56406ecefc064e)",
+  "extra": {
+   "before": [
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   "afterUnrelatedRefresh": [
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   "afterRevocation": [
+    false,
+    true,
+    true,
+    true,
+    true
+   ],
+   "unrelatedRefreshTx": "0x50760bdce624db0e4e36bb5901f5d6b321657d5db852786fe19b2db55517a149",
+   "revokeTx": "0xadb2b27985b2e1cbd7cea4e85afa2c72c406eed7b2089f2ad2f59a66b992057f"
+  },
+  "at": "2026-11-05T18:46:53.766Z",
+  "recordedIn": [
+   "93df7d1",
+   "de8f887",
+   "abc0eea",
+   "c25b516",
+   "beb9e97",
+   "cdc75f1",
+   "8938f06",
+   "2993133",
+   "8c32ebe",
+   "f891d01",
+   "4081ea2",
+   "18b8118",
+   "0b5fc1f",
+   "f2e2bab",
+   "c19c4dc",
+   "2a9f503"
+  ],
+  "firstRecorded": "2026-11-06T00:18:33+05:30"
+ },
+ {
+  "id": "A2b",
+  "title": "User signs the true SkimHook sentence",
+  "expected": "policy rejects",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0xa42253ed0000000000000000000000000000000000000000000000000000000000000038 => PolicyRefused(0x38)",
+  "extra": {
+   "deviceRiskLines": [
+    "! NO MINIMUM OUTPUT",
+    "! HOOK CAN TAKE YOUR OUTPUT",
+    "! UNVERIFIED HOOK"
+   ]
+  },
+  "at": "2026-11-05T18:45:31.884Z",
+  "recordedIn": [
+   "93df7d1",
+   "de8f887"
+  ],
+  "firstRecorded": "2026-11-06T00:18:33+05:30"
+ },
+ {
+  "id": "A2",
+  "title": "minOut=0 via SkimHook under an honest sentence",
+  "expected": "mempool reject (tree mismatch)",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0x669a6fec2475df5a8dcdc1001f5c703138495d4e4ed1937997a855fb55c90ceb0d190d17c832fec5cf9e69074e3a969fd3b0db0ce21cc020c8e6579c04a5909882d0b427 => TreeMismatch(0x2475df5a8dcdc1001f5c703138495d4e4ed1937997a855fb55c90ceb0d190d17, 0xc832fec5cf9e69074e3a969fd3b0db0ce21cc020c8e6579c04a5909882d0b427)",
+  "at": "2026-11-05T18:45:23.535Z",
+  "recordedIn": [
+   "93df7d1",
+   "de8f887"
+  ],
+  "firstRecorded": "2026-11-06T00:18:33+05:30"
+ },
+ {
+  "id": "A2-eoa",
+  "title": "Same evil route on an ordinary wallet",
+  "expected": "the skim works: this is what Verbatim prevents",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0xa12b37f5b90918bdca8262b3d7754968a82d6284e0c4a7069f7430fb0549b3a1",
+  "block": 405729,
+  "extra": {
+   "victimReceivedRaw": "28361251",
+   "hookTookRaw": "2807763804"
+  },
+  "at": "2026-11-05T18:45:04.879Z",
+  "recordedIn": [
+   "93df7d1",
+   "de8f887"
+  ],
+  "firstRecorded": "2026-11-06T00:18:33+05:30"
+ },
+ {
+  "id": "WRAP",
+  "title": "WRAP_ETH through the real Universal Router",
+  "expected": "admitted, mined, exact WETH delta",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0x318ea321677a4e94d5b9d7b3339eb27ee635728e155f57082f1074f99473971e",
+  "block": 405723,
+  "frameGas": [
+   {
+    "execution": 19532,
+    "state": 0
+   },
+   {
+    "execution": 53298,
+    "state": 0
+   },
+   {
+    "execution": 251313,
+    "state": 0
+   }
+  ],
+  "message": "",
+  "at": "2026-11-05T18:44:31.084Z",
+  "recordedIn": [
+   "93df7d1",
+   "de8f887"
+  ],
+  "firstRecorded": "2026-11-06T00:18:33+05:30"
+ },
+ {
+  "id": "SWAP",
+  "title": "Honest v4 swap through the real Universal Router",
+  "expected": "admitted, mined, min out respected",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0x2ec2833bb0884839deca6e6d08fc63de3b34e5aa1ee29be666b8cc60a2da598d",
+  "block": 405718,
+  "frameGas": [
+   {
+    "execution": 19972,
+    "state": 0
+   },
+   {
+    "execution": 68249,
+    "state": 0
+   },
+   {
+    "execution": 344729,
+    "state": 0
+   }
+  ],
+  "message": "",
+  "extra": {
+   "receivedRaw": "2836125055",
+   "paidRaw": "1000000000000000000"
+  },
+  "at": "2026-11-05T18:44:01.486Z",
+  "recordedIn": [
+   "93df7d1",
+   "de8f887"
+  ],
+  "firstRecorded": "2026-11-06T00:18:33+05:30"
+ },
+ {
+  "id": "F7",
+  "title": "Fee failure runs nothing",
+  "expected": "frame 2 fails; no protected call executes",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0x48c13cd2a738ca5e0efea2797dcb05aa596b8f8ad8bd826ef1a11e6f11b8a5ad",
+  "block": 405702,
+  "frameGas": [
+   {
+    "execution": 19376,
+    "state": 0
+   },
+   {
+    "execution": 62133,
+    "state": 0
+   },
+   {
+    "execution": 12524,
+    "state": 0
+   }
+  ],
+  "extra": {
+   "statuses": [
+    "0x1",
+    "0x1",
+    "0x0"
+   ]
+  },
+  "at": "2026-11-05T18:42:24.902Z",
+  "recordedIn": [
+   "93df7d1",
+   "de8f887"
+  ],
+  "firstRecorded": "2026-11-06T00:18:33+05:30"
+ },
+ {
+  "id": "A12",
+  "title": "Gas griefing: a call burns all its gas",
+  "expected": "reserve keeps it safe",
+  "pass": true,
+  "outcome": "reverted-in-batch",
+  "txHash": "0xc0fd0fbcfc114315bd8c6f0225cb2dd83e6d9b201dff7ffb8095c6674232cae3",
+  "block": 405692,
+  "message": "0x5c0dee5d000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000 => CallFailed(0x0, 0x) [0x]",
+  "frameGas": [
+   {
+    "execution": 19298,
+    "state": 0
+   },
+   {
+    "execution": 46863,
+    "state": 0
+   },
+   {
+    "execution": 975707,
+    "state": 0
+   }
+  ],
+  "at": "2026-11-05T18:41:24.241Z",
+  "recordedIn": [
+   "93df7d1",
+   "de8f887"
+  ],
+  "firstRecorded": "2026-11-06T00:18:33+05:30"
+ },
+ {
+  "id": "A11",
+  "title": "Reentrancy into executeVerified",
+  "expected": "reverts",
+  "pass": true,
+  "outcome": "reverted-in-batch",
+  "txHash": "0x61ff3c776d11cf8255c16efc8b61bbb5a5b06e4512fb48fc5438e6568a55f965",
+  "block": 405687,
+  "message": "0x5c0dee5d00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000006408c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001a7265656e747279206661696c65642061732064657369676e656400000000000000000000000000000000000000000000000000000000000000000000 => CallFailed(0x0, 0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001a7265656e747279206661696c65642061732064657369676e6564000000000000) [0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001a7265656e747279206661696c65642061732064657369676e6564000000000000 => Error(reentry failed as designed)]",
+  "frameGas": [
+   {
+    "execution": 19579,
+    "state": 0
+   },
+   {
+    "execution": 54869,
+    "state": 0
+   },
+   {
+    "execution": 111715,
+    "state": 0
+   }
+  ],
+  "at": "2026-11-05T18:40:54.958Z",
+  "recordedIn": [
+   "93df7d1",
+   "de8f887"
+  ],
+  "firstRecorded": "2026-11-06T00:18:33+05:30"
+ },
+ {
+  "id": "A10",
+  "title": "7702-delegated sender",
+  "expected": "rejected",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 0: reverted with data 0xf20030d8 => BadSignatureEntry()",
+  "at": "2026-11-05T18:40:28.945Z",
+  "recordedIn": [
+   "93df7d1",
+   "de8f887"
+  ],
+  "firstRecorded": "2026-11-06T00:18:33+05:30"
+ },
+ {
+  "id": "A9",
+  "title": "Fee griefing with an empty deposit",
+  "expected": "frame 1 rejects",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0x25c3f46e000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000002dccee080 => InsufficientDeposit(0x1, 0x2dccee080)",
+  "at": "2026-11-05T18:40:05.347Z",
+  "recordedIn": [
+   "93df7d1",
+   "de8f887"
+  ],
+  "firstRecorded": "2026-11-06T00:18:33+05:30"
+ },
+ {
+  "id": "A7",
+  "title": "Stale pre-signed transaction past TTL",
+  "expected": "revert",
+  "pass": true,
+  "outcome": "reverted-in-batch",
+  "txHash": "0xb9714def8bfb6abc74a098060b8b90f4c8ee13bf7d922ba916515dcec8032a29",
+  "block": 405677,
+  "message": "0xaa2fd92500000000000000000000000000000000000000000000000000000000000630ad000000000000000000000000000000000000000000000000000000000006309b => Expired(0x630ad, 0x6309b)",
+  "frameGas": [
+   {
+    "execution": 19376,
+    "state": 0
+   },
+   {
+    "execution": 62213,
+    "state": 0
+   },
+   {
+    "execution": 44785,
+    "state": 0
+   }
+  ],
+  "at": "2026-11-05T18:39:53.594Z",
+  "recordedIn": [
+   "93df7d1",
+   "de8f887"
+  ],
+  "firstRecorded": "2026-11-06T00:18:33+05:30"
+ },
+ {
+  "id": "A6",
+  "title": "EvilVault hidden WETH pull",
+  "expected": "assertion revert, fee kept",
+  "pass": true,
+  "outcome": "reverted-in-batch",
+  "txHash": "0xa8eca04145d2ab31eb99a18e34621fd221b2f8217511f9b0715d2bd7a4f79dbe",
+  "block": 405673,
+  "message": "0x7ad2804b0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000f0447975d6fe039a027029891c1b08191fd267c9000000000000000000000000000000000000000000000002b5e3af16b1880000 => AssertionFailed(0x2, 0xf0447975d6fe039a027029891c1b08191fd267c9, 0x2b5e3af16b1880000)",
+  "frameGas": [
+   {
+    "execution": 19360,
+    "state": 0
+   },
+   {
+    "execution": 57519,
+    "state": 0
+   },
+   {
+    "execution": 217340,
+    "state": 0
+   }
+  ],
+  "extra": {
+   "feeKept": "3073620000"
+  },
+  "at": "2026-11-05T18:39:31.165Z",
+  "recordedIn": [
+   "93df7d1",
+   "de8f887"
+  ],
+  "firstRecorded": "2026-11-06T00:18:33+05:30"
+ },
+ {
+  "id": "A5",
+  "title": "Poisoned descriptor (unattested code)",
+  "expected": "UNVERIFIED_CONTRACT, policy reject",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0xa42253ed0000000000000000000000000000000000000000000000000000000000000003 => PolicyRefused(0x3)",
+  "at": "2026-11-05T18:37:58.890Z",
+  "recordedIn": [
+   "93df7d1",
+   "de8f887"
+  ],
+  "firstRecorded": "2026-11-06T00:18:33+05:30"
+ },
+ {
+  "id": "A4b",
+  "title": "Weak spec bytes under honest hash",
+  "expected": "frame 1 hash mismatch",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0xaf0de3f359f5321d9df03f9d974f3765100f5a8330f1458e900156429d62deacfaa2b90fd1a553403a03de59143bc198ada523c65836557ae49359f0d0c94b02ee8d1de2 => SpecHashMismatch(0x59f5321d9df03f9d974f3765100f5a8330f1458e900156429d62deacfaa2b90f, 0xd1a553403a03de59143bc198ada523c65836557ae49359f0d0c94b02ee8d1de2)",
+  "at": "2026-11-05T18:37:47.879Z",
+  "recordedIn": [
+   "93df7d1",
+   "de8f887"
+  ],
+  "firstRecorded": "2026-11-06T00:18:33+05:30"
+ },
+ {
+  "id": "A4",
+  "title": "Signed weaker spec hash",
+  "expected": "frame 1 hash mismatch",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0xaf0de3f3d1a553403a03de59143bc198ada523c65836557ae49359f0d0c94b02ee8d1de259f5321d9df03f9d974f3765100f5a8330f1458e900156429d62deacfaa2b90f => SpecHashMismatch(0xd1a553403a03de59143bc198ada523c65836557ae49359f0d0c94b02ee8d1de2, 0x59f5321d9df03f9d974f3765100f5a8330f1458e900156429d62deacfaa2b90f)",
+  "at": "2026-11-05T18:37:47.544Z",
+  "recordedIn": [
+   "93df7d1",
+   "de8f887"
+  ],
+  "firstRecorded": "2026-11-06T00:18:33+05:30"
+ },
+ {
+  "id": "A3b",
+  "title": "Swap in a permissive paymaster",
+  "expected": "frame 0 rejects (BadLayout)",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 0: reverted with data 0x3144dd7b0000000000000000000000000000000000000000000000000000000000000004 => BadLayout(0x4)",
+  "at": "2026-11-05T18:37:32.151Z",
+  "recordedIn": [
+   "93df7d1",
+   "de8f887"
+  ],
+  "firstRecorded": "2026-11-06T00:18:33+05:30"
+ },
+ {
+  "id": "A3",
+  "title": "Drop the renderer frame (self-pay layout)",
+  "expected": "frame 0 rejects",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 0: reverted with data 0x9fb70902 => FrameReadFailed()",
+  "at": "2026-11-05T18:37:31.625Z",
+  "recordedIn": [
+   "93df7d1",
+   "de8f887"
+  ],
+  "firstRecorded": "2026-11-06T00:18:33+05:30"
+ },
+ {
+  "id": "A1",
+  "title": "Swap the recipient",
+  "expected": "mempool reject (tree mismatch)",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0x669a6fec0957d09798aff504c142a3d4388ba142bd724c4810eb6a39b6c9be1bbc6a70cb8809a8bd716ded4841aea4285554b337ead0dfa5d256e4bb163d06d00ab3ac27 => TreeMismatch(0x0957d09798aff504c142a3d4388ba142bd724c4810eb6a39b6c9be1bbc6a70cb, 0x8809a8bd716ded4841aea4285554b337ead0dfa5d256e4bb163d06d00ab3ac27)",
+  "at": "2026-11-05T18:37:19.299Z",
+  "recordedIn": [
+   "93df7d1",
+   "de8f887"
+  ],
+  "firstRecorded": "2026-11-06T00:18:33+05:30"
+ },
+ {
+  "id": "HONEST",
+  "title": "Honest 3-frame transfer",
+  "expected": "admitted by the public alt mempool and mined; batch succeeds",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0xeb721f063fe1e9cda5dd7d8c9939fb73ce172729959d1f23009efba2cb430f54",
+  "block": 405648,
+  "frameGas": [
+   {
+    "execution": 19376,
+    "state": 0
+   },
+   {
+    "execution": 62213,
+    "state": 0
+   },
+   {
+    "execution": 127909,
+    "state": 0
+   }
+  ],
+  "extra": {
+   "payer": "0xee656b20237fbadf51ba251a2512ef1bd2494382",
+   "delivered": "1000000"
+  },
+  "at": "2026-11-05T18:36:59.731Z",
+  "recordedIn": [
+   "93df7d1",
+   "de8f887"
+  ],
+  "firstRecorded": "2026-11-06T00:18:33+05:30"
+ },
+ {
+  "id": "A8",
+  "title": "Lookalike ENS name",
+  "expected": "name not in the cache, so hex is shown; the exclusivity check fails at refresh",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "0x45bdaf820530a4cbd0086fc7728614d14cf73974e1e0e17089000b956b98a659ed979f5e => WrongResolverCode(0x0530a4cbd0086fc7728614d14cf73974e1e0e17089000b956b98a659ed979f5e)",
+  "extra": {
+   "deviceLine": "To: 0x000000000000000000000000000000000000bad1",
+   "lookalike": "verbatim-dem0.eth",
+   "sameCodeChecker": "0xd0dd3f693a5ba49c66cdf73a47f49dc9eb9f7677",
+   "sameCodeResult": "01110000000000000000000000010000011 => RootRolesHeld(0x1000000000000000000000001000001110000000000000000000000010000011)"
+  },
+  "at": "2026-11-05T18:21:28.554Z",
+  "recordedIn": [
+   "569f887",
+   "93df7d1"
+  ],
+  "firstRecorded": "2026-11-05T23:51:29+05:30"
+ },
+ {
+  "id": "B-A1",
+  "title": "Swapped recipient under an honest sentence, on Sepolia",
+  "expected": "bundler rejects; paymaster reverts TreeMismatch",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "0x669a6fec4eb6f6893458703fbc9efbd4efd833b216e3605e4baaf9bc816fd8ae79725f195df46041c947ba5030a2a3ffcfb5a579f05e259333d1c7b76c44165b12de0397 => TreeMismatch(0x4eb6f6893458703fbc9efbd4efd833b216e3605e4baaf9bc816fd8ae79725f19, 0x5df46041c947ba5030a2a3ffcfb5a579f05e259333d1c7b76c44165b12de0397)",
+  "extra": {
+   "bundler": "Internal error from bundler (trace id: e865531da807a9c0a9b235d3dd5c2db9)"
+  },
+  "at": "2026-11-05T18:19:39.114Z",
+  "recordedIn": [
+   "569f887",
+   "93df7d1"
+  ],
+  "firstRecorded": "2026-11-05T23:51:29+05:30"
+ },
+ {
+  "id": "B-swap",
+  "title": "v4 swap through Uniswap's official Sepolia Universal Router and PoolManager",
+  "expected": "bundler accepts; lands; min out respected",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0xf93a83efe8268adef516c11652defd3f064a88f5ab72adc75b8695ff31d78549",
+  "block": 12071212,
+  "extra": {
+   "receivedRaw": "2836125055",
+   "actualGasUsed": "1177510"
+  },
+  "at": "2026-11-05T18:18:51.196Z",
+  "recordedIn": [
+   "569f887",
+   "93df7d1"
+  ],
+  "firstRecorded": "2026-11-05T23:51:29+05:30"
+ },
+ {
+  "id": "B-honest-alchemy",
+  "title": "Honest transfer on Sepolia via Alchemy",
+  "expected": "bundler accepts; lands; delivered",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0x0668bf44585ef7914da9497df05aa7539b86834b470a5118780dec5974097a41",
+  "block": 12071206,
+  "extra": {
+   "actualGasUsed": "1062488",
+   "bundler": "alchemy"
+  },
+  "at": "2026-11-05T18:17:43.891Z",
+  "recordedIn": [
+   "569f887",
+   "93df7d1"
+  ],
+  "firstRecorded": "2026-11-05T23:51:29+05:30"
+ },
+ {
+  "id": "B_ALCHEMY",
+  "title": "B_ALCHEMY",
+  "expected": "",
+  "pass": false,
+  "outcome": "not-run",
+  "message": "Verification gas limit efficiency too low. Required: 0.4, Actual: 0.33401714285714285 \"\"",
+  "at": "2026-11-05T18:14:31.643Z",
+  "recordedIn": [
+   "569f887"
+  ],
+  "firstRecorded": "2026-11-05T23:51:29+05:30"
+ },
+ {
+  "id": "B-honest-pimlico",
+  "title": "Honest transfer on Sepolia via Pimlico, recipient shown by ENS name",
+  "expected": "bundler accepts; lands; delivered",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0xa5b0dddd8c732b0beeedb1192ffecc58f67d9bfd5fc40623b56a68373c1b0b73",
+  "block": 12071190,
+  "extra": {
+   "actualGasUsed": "1248536",
+   "bundler": "pimlico"
+  },
+  "at": "2026-11-05T18:14:28.424Z",
+  "recordedIn": [
+   "569f887",
+   "93df7d1"
+  ],
+  "firstRecorded": "2026-11-05T23:51:29+05:30"
+ },
+ {
+  "id": "A2b",
+  "title": "User signs the true SkimHook sentence",
+  "expected": "policy rejects",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0xa42253ed0000000000000000000000000000000000000000000000000000000000000038 => PolicyRefused(0x38)",
+  "extra": {
+   "deviceRiskLines": [
+    "! NO MINIMUM OUTPUT",
+    "! HOOK CAN TAKE YOUR OUTPUT",
+    "! UNVERIFIED HOOK"
+   ]
+  },
+  "at": "2026-11-05T17:39:39.101Z",
+  "recordedIn": [
+   "bfa1c43",
+   "569f887"
+  ],
+  "firstRecorded": "2026-11-05T23:12:45+05:30"
+ },
+ {
+  "id": "A2",
+  "title": "minOut=0 via SkimHook under an honest sentence",
+  "expected": "mempool reject (tree mismatch)",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0x669a6fecc93259451b6de9637e71c502d9806c5386a9ce842768e7e37525fdf32a41afa401344d55d7fdd8b57a7819c71bb4f8ef23407194dee85794d3cc015132286ae3 => TreeMismatch(0xc93259451b6de9637e71c502d9806c5386a9ce842768e7e37525fdf32a41afa4, 0x01344d55d7fdd8b57a7819c71bb4f8ef23407194dee85794d3cc015132286ae3)",
+  "at": "2026-11-05T17:39:28.198Z",
+  "recordedIn": [
+   "bfa1c43",
+   "569f887"
+  ],
+  "firstRecorded": "2026-11-05T23:12:45+05:30"
+ },
+ {
+  "id": "A2-eoa",
+  "title": "Same evil route on an ordinary wallet",
+  "expected": "the skim works: this is what Verbatim prevents",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0x2813008d2752b5026def6737d23b77a7c8b9e6fd345d8f63e18d7d076780e15b",
+  "block": 405069,
+  "extra": {
+   "victimReceivedRaw": "28361251",
+   "hookTookRaw": "2807763804"
+  },
+  "at": "2026-11-05T17:39:05.605Z",
+  "recordedIn": [
+   "bfa1c43",
+   "569f887"
+  ],
+  "firstRecorded": "2026-11-05T23:12:45+05:30"
+ },
+ {
+  "id": "WRAP",
+  "title": "WRAP_ETH through the real Universal Router",
+  "expected": "admitted, mined, exact WETH delta",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0x57379ce37ef2cc7f9cb7926b1320761c04b922883003a8fc5e2df497d865a74a",
+  "block": 405063,
+  "frameGas": [
+   {
+    "execution": 19532,
+    "state": 0
+   },
+   {
+    "execution": 53392,
+    "state": 0
+   },
+   {
+    "execution": 201979,
+    "state": 0
+   }
+  ],
+  "message": "",
+  "at": "2026-11-05T17:38:29.611Z",
+  "recordedIn": [
+   "bfa1c43",
+   "569f887"
+  ],
+  "firstRecorded": "2026-11-05T23:12:45+05:30"
+ },
+ {
+  "id": "SWAP",
+  "title": "Honest v4 swap through the real Universal Router",
+  "expected": "admitted, mined, min out respected",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0x95910914a4fb466add54191c3d3c8e3eb8f36bc53ba48fc767767c035d2c352f",
+  "block": 405058,
+  "frameGas": [
+   {
+    "execution": 19972,
+    "state": 0
+   },
+   {
+    "execution": 68223,
+    "state": 0
+   },
+   {
+    "execution": 303189,
+    "state": 0
+   }
+  ],
+  "message": "",
+  "extra": {
+   "receivedRaw": "2836125055",
+   "paidRaw": "1000000000000000000"
+  },
+  "at": "2026-11-05T17:37:59.497Z",
+  "recordedIn": [
+   "bfa1c43",
+   "569f887"
+  ],
+  "firstRecorded": "2026-11-05T23:12:45+05:30"
+ },
+ {
+  "id": "HONEST",
+  "title": "Honest 3-frame transfer",
+  "expected": "admitted by the public alt mempool and mined; batch succeeds",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0x2d45a60087828ef4b8f9370a5939cb7ac59200e1767c2c484e7071a2054602ff",
+  "block": 404950,
+  "frameGas": [
+   {
+    "execution": 19376,
+    "state": 0
+   },
+   {
+    "execution": 68773,
+    "state": 0
+   },
+   {
+    "execution": 177731,
+    "state": 0
+   }
+  ],
+  "extra": {
+   "payer": "0x72e546202a4d870b458bcaab3056a2d26fbd2d70",
+   "delivered": "1000000"
+  },
+  "at": "2026-11-05T17:27:12.223Z",
+  "recordedIn": [
+   "b2d07e6",
+   "bfa1c43",
+   "569f887"
+  ],
+  "firstRecorded": "2026-11-05T22:57:19+05:30"
+ },
+ {
+  "id": "A6",
+  "title": "EvilVault hidden WETH pull",
+  "expected": "assertion revert, fee kept",
+  "pass": true,
+  "outcome": "reverted-in-batch",
+  "txHash": "0xd236d5961a831f21c614603ea60bdad52ef5c0d93c4802d402d7ad298044f04b",
+  "block": 404945,
+  "message": "0x7ad2804b00000000000000000000000000000000000000000000000000000000000000020000000000000000000000005c44a2ef8b6737a6ed084efe27860838ced50369000000000000000000000000000000000000000000000002b5e3af16b1880000 => AssertionFailed(0x2, 0x5c44a2ef8b6737a6ed084efe27860838ced50369, 0x2b5e3af16b1880000)",
+  "frameGas": [
+   {
+    "execution": 19360,
+    "state": 0
+   },
+   {
+    "execution": 62711,
+    "state": 0
+   },
+   {
+    "execution": 215261,
+    "state": 0
+   }
+  ],
+  "extra": {
+   "feeKept": "3073400000"
+  },
+  "at": "2026-11-05T17:26:43.763Z",
+  "recordedIn": [
+   "b2d07e6",
+   "bfa1c43",
+   "569f887"
+  ],
+  "firstRecorded": "2026-11-05T22:57:19+05:30"
+ },
+ {
+  "id": "A12",
+  "title": "Gas griefing: a call burns all its gas",
+  "expected": "reserve keeps it safe",
+  "pass": true,
+  "outcome": "reverted-in-batch",
+  "txHash": "0x2db6dd6e4d2ba831e15ad4c5138da62238fe7b4bda1efe61e0c05057d03a78b9",
+  "block": 404925,
+  "message": "0x5c0dee5d000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000 => CallFailed(0x0, 0x) [0x]",
+  "frameGas": [
+   {
+    "execution": 19298,
+    "state": 0
+   },
+   {
+    "execution": 51322,
+    "state": 0
+   },
+   {
+    "execution": 975706,
+    "state": 0
+   }
+  ],
+  "at": "2026-11-05T17:24:42.886Z",
+  "recordedIn": [
+   "b2d07e6",
+   "bfa1c43",
+   "569f887"
+  ],
+  "firstRecorded": "2026-11-05T22:57:19+05:30"
+ },
+ {
+  "id": "A11",
+  "title": "Reentrancy into executeVerified",
+  "expected": "reverts",
+  "pass": true,
+  "outcome": "reverted-in-batch",
+  "txHash": "0xc4044a96493148e05a4c3bd14fbfcc33250045f28c66f146490450a165a82668",
+  "block": 404915,
+  "message": "0x5c0dee5d00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000006408c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001a7265656e747279206661696c65642061732064657369676e656400000000000000000000000000000000000000000000000000000000000000000000 => CallFailed(0x0, 0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001a7265656e747279206661696c65642061732064657369676e6564000000000000) [0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001a7265656e747279206661696c65642061732064657369676e6564000000000000 => Error(reentry failed as designed)]",
+  "frameGas": [
+   {
+    "execution": 19579,
+    "state": 0
+   },
+   {
+    "execution": 60334,
+    "state": 0
+   },
+   {
+    "execution": 76430,
+    "state": 0
+   }
+  ],
+  "at": "2026-11-05T17:23:41.806Z",
+  "recordedIn": [
+   "b2d07e6",
+   "bfa1c43",
+   "569f887"
+  ],
+  "firstRecorded": "2026-11-05T22:57:19+05:30"
+ },
+ {
+  "id": "F7",
+  "title": "Fee failure runs nothing",
+  "expected": "frame 2 fails; no protected call executes",
+  "pass": true,
+  "outcome": "mined",
+  "txHash": "0x3cb2c250ea33b8f49fc3fabbbb6a8632c2fb81911d71d9b28c0a40fa6d5487bf",
+  "block": 404893,
+  "frameGas": [
+   {
+    "execution": 19376,
+    "state": 0
+   },
+   {
+    "execution": 68773,
+    "state": 0
+   },
+   {
+    "execution": 12876,
+    "state": 0
+   }
+  ],
+  "extra": {
+   "statuses": [
+    "0x1",
+    "0x1",
+    "0x0"
+   ]
+  },
+  "at": "2026-11-05T17:21:30.313Z",
+  "recordedIn": [
+   "b2d07e6",
+   "bfa1c43",
+   "569f887"
+  ],
+  "firstRecorded": "2026-11-05T22:57:19+05:30"
+ },
+ {
+  "id": "A10",
+  "title": "7702-delegated sender",
+  "expected": "rejected",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 0: reverted with data 0xf20030d8 => BadSignatureEntry()",
+  "at": "2026-11-05T17:19:37.480Z",
+  "recordedIn": [
+   "b2d07e6",
+   "bfa1c43",
+   "569f887"
+  ],
+  "firstRecorded": "2026-11-05T22:57:19+05:30"
+ },
+ {
+  "id": "A7",
+  "title": "Stale pre-signed transaction past TTL",
+  "expected": "revert",
+  "pass": true,
+  "outcome": "reverted-in-batch",
+  "txHash": "0x60f366a188083185f3f29eee7d2b2db03e0664be1752d096fc8526df4ff952ef",
+  "block": 404870,
+  "message": "0xaa2fd9250000000000000000000000000000000000000000000000000000000000062d860000000000000000000000000000000000000000000000000000000000062d71 => Expired(0x62d86, 0x62d71)",
+  "frameGas": [
+   {
+    "execution": 19376,
+    "state": 0
+   },
+   {
+    "execution": 68773,
+    "state": 0
+   },
+   {
+    "execution": 45363,
+    "state": 0
+   }
+  ],
+  "at": "2026-11-05T17:19:11.990Z",
+  "recordedIn": [
+   "b2d07e6",
+   "bfa1c43",
+   "569f887"
+  ],
+  "firstRecorded": "2026-11-05T22:57:19+05:30"
+ },
+ {
+  "id": "A5",
+  "title": "Poisoned descriptor (unattested code)",
+  "expected": "UNVERIFIED_CONTRACT, policy reject",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0xa42253ed0000000000000000000000000000000000000000000000000000000000000003 => PolicyRefused(0x3)",
+  "at": "2026-11-05T17:18:14.436Z",
+  "recordedIn": [
+   "b2d07e6",
+   "bfa1c43",
+   "569f887"
+  ],
+  "firstRecorded": "2026-11-05T22:57:19+05:30"
+ },
+ {
+  "id": "A9",
+  "title": "Fee griefing with an empty deposit",
+  "expected": "frame 1 rejects",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0x25c3f46e000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000001bc44e900 => InsufficientDeposit(0x1, 0x1bc44e900)",
+  "at": "2026-11-05T17:17:44.624Z",
+  "recordedIn": [
+   "b2d07e6",
+   "bfa1c43",
+   "569f887"
+  ],
+  "firstRecorded": "2026-11-05T22:57:19+05:30"
+ },
+ {
+  "id": "A4b",
+  "title": "Weak spec bytes under honest hash",
+  "expected": "frame 1 hash mismatch",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0xaf0de3f36ebdac1c2d2d3a08e6f5ad61b8ea4943e00384c4324b9ca9ffd24bf486233964d1a553403a03de59143bc198ada523c65836557ae49359f0d0c94b02ee8d1de2 => SpecHashMismatch(0x6ebdac1c2d2d3a08e6f5ad61b8ea4943e00384c4324b9ca9ffd24bf486233964, 0xd1a553403a03de59143bc198ada523c65836557ae49359f0d0c94b02ee8d1de2)",
+  "at": "2026-11-05T17:17:30.917Z",
+  "recordedIn": [
+   "b2d07e6",
+   "bfa1c43",
+   "569f887"
+  ],
+  "firstRecorded": "2026-11-05T22:57:19+05:30"
+ },
+ {
+  "id": "A4",
+  "title": "Signed weaker spec hash",
+  "expected": "frame 1 hash mismatch",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0xaf0de3f3d1a553403a03de59143bc198ada523c65836557ae49359f0d0c94b02ee8d1de26ebdac1c2d2d3a08e6f5ad61b8ea4943e00384c4324b9ca9ffd24bf486233964 => SpecHashMismatch(0xd1a553403a03de59143bc198ada523c65836557ae49359f0d0c94b02ee8d1de2, 0x6ebdac1c2d2d3a08e6f5ad61b8ea4943e00384c4324b9ca9ffd24bf486233964)",
+  "at": "2026-11-05T17:17:30.414Z",
+  "recordedIn": [
+   "b2d07e6",
+   "bfa1c43",
+   "569f887"
+  ],
+  "firstRecorded": "2026-11-05T22:57:19+05:30"
+ },
+ {
+  "id": "A3b",
+  "title": "Swap in a permissive paymaster",
+  "expected": "frame 0 rejects (BadLayout)",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 0: reverted with data 0x3144dd7b0000000000000000000000000000000000000000000000000000000000000004 => BadLayout(0x4)",
+  "at": "2026-11-05T17:17:14.203Z",
+  "recordedIn": [
+   "b2d07e6",
+   "bfa1c43",
+   "569f887"
+  ],
+  "firstRecorded": "2026-11-05T22:57:19+05:30"
+ },
+ {
+  "id": "A3",
+  "title": "Drop the renderer frame (self-pay layout)",
+  "expected": "frame 0 rejects",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 0: reverted with data 0x9fb70902 => FrameReadFailed()",
+  "at": "2026-11-05T17:17:12.265Z",
+  "recordedIn": [
+   "b2d07e6",
+   "bfa1c43",
+   "569f887"
+  ],
+  "firstRecorded": "2026-11-05T22:57:19+05:30"
+ },
+ {
+  "id": "A1",
+  "title": "Swap the recipient",
+  "expected": "mempool reject (tree mismatch)",
+  "pass": true,
+  "outcome": "rejected-at-mempool",
+  "message": "validation frame 1: reverted with data 0x669a6fecbb8f1cf9ab68b093a0c44499a262990d3a9842ec861ccbdc24752975d9ce19c2d6e36993613a14a133363bcb0626dcd65dddd702faf30224d1ffbceccb79e7d3 => TreeMismatch(0xbb8f1cf9ab68b093a0c44499a262990d3a9842ec861ccbdc24752975d9ce19c2, 0xd6e36993613a14a133363bcb0626dcd65dddd702faf30224d1ffbceccb79e7d3)",
+  "at": "2026-11-05T17:16:58.956Z",
+  "recordedIn": [
+   "b2d07e6",
+   "bfa1c43",
+   "569f887"
+  ],
+  "firstRecorded": "2026-11-05T22:57:19+05:30"
+ }
+]

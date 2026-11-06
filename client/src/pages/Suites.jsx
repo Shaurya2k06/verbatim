@@ -135,7 +135,7 @@ function Evidence({ run, info }) {
   );
 }
 
-function RunView({ run, info }) {
+export function RunView({ run, info }) {
   const t0 = run.startedAt ?? run.createdAt;
   return (
     <div className="lp-run" aria-live="polite">

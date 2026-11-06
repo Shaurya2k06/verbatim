@@ -63,5 +63,47 @@ writeFileSync(
     1,
   ) + "\n",
 );
-console.log(`sync-data: ${deployments.length} deployment files, proofs, vectors, commit ${commit}${dirty ? " (evidence files modified)" : ""}`);
+// Every proof run ever recorded, not just the latest per row: proofs.json keeps one run per id, and git keeps the rest. The
+// union is kept in contracts/docs/proof-history.json too, so a shallow clone (as hosted builds use) loses nothing.
+const historyFile = join(repo, "contracts/docs/proof-history.json");
+const runs = new Map();
+const keyOf = (r) => `${r.id}|${r.at ?? ""}`;
+const remember = (r, commit, date) => {
+  const k = keyOf(r);
+  const was = runs.get(k);
+  const recordedIn = [...new Set([...(was?.recordedIn ?? []), ...(r.recordedIn ?? []), ...(commit ? [commit] : [])])];
+  runs.set(k, { ...was, ...r, recordedIn, firstRecorded: was?.firstRecorded ?? r.firstRecorded ?? date ?? null });
+};
+if (existsSync(historyFile)) for (const r of JSON.parse(readFileSync(historyFile, "utf8"))) remember(r);
+try {
+  // --follow keeps the file's history across its move into contracts/; it ignores --reverse, so the order is flipped here.
+  const log = execSync("git log --follow --name-only --format=@%h%x20%cI -- contracts/docs/proofs.json", { cwd: repo, maxBuffer: 1 << 26 }).toString();
+  const versions = [];
+  for (const line of log.split("\n")) {
+    if (line.startsWith("@")) versions.push({ at: line.slice(1).split(" ") });
+    else if (line.trim() && versions.length) versions.at(-1).path = line.trim();
+  }
+  for (const { at, path } of versions.reverse()) {
+    if (!path) continue;
+    let old;
+    try {
+      old = JSON.parse(execSync(`git show ${at[0]}:${path}`, { cwd: repo, maxBuffer: 1 << 26 }).toString());
+    } catch {
+      continue;
+    }
+    for (const r of Object.values(old)) remember(r, at[0], at[1]);
+  }
+} catch {
+  // No git history here: the committed history file stands in for it.
+}
+const current = JSON.parse(readFileSync(join(repo, "contracts/docs/proofs.json"), "utf8"));
+for (const r of Object.values(current)) remember(r);
+const latest = new Set(Object.values(current).map(keyOf));
+const history = [...runs.values()].map((r) => ({ ...r, latest: latest.has(keyOf(r)) })).sort((a, b) => (b.at ?? "").localeCompare(a.at ?? "") || a.id.localeCompare(b.id));
+writeFileSync(join(out, "history.json"), JSON.stringify(history) + "\n");
+const kept = history.map(({ latest: _, ...r }) => r);
+const keptText = JSON.stringify(kept, null, 1) + "\n";
+if (!existsSync(historyFile) || readFileSync(historyFile, "utf8") !== keptText) writeFileSync(historyFile, keptText);
+
+console.log(`sync-data: ${deployments.length} deployment files, proofs, ${history.length} historical runs, vectors, commit ${commit}${dirty ? " (evidence files modified)" : ""}`);
 if (!existsSync(join(out, "proofs.json"))) process.exit(1);

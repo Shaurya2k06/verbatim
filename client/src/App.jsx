@@ -17,6 +17,7 @@ const Ens = lazy(() => import("./pages/Ens"));
 const Trust = lazy(() => import("./pages/Trust"));
 const Mempool = lazy(() => import("./pages/Mempool"));
 const Standards = lazy(() => import("./pages/Standards"));
+const History = lazy(() => import("./pages/History"));
 
 function NotFound() {
   return (
@@ -65,6 +66,7 @@ export default function App() {
             <Route path="trust" element={page(Trust)} />
             <Route path="mempool" element={page(Mempool)} />
             <Route path="proofs" element={<Proofs />} />
+            <Route path="history" element={page(History)} />
             <Route path="standards" element={page(Standards)} />
             {/* /bounty appears only once an L2 deployment with a funded bounty wallet is published. Until then /standards says so. */}
             <Route path="*" element={<NotFound />} />

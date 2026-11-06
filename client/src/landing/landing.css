@@ -1,4 +1,4 @@
-/* The landing page only. Everything is under .lp and prefixed lp- so the app pages keep their own look.
+/* The site's theme. Everything is under .lp and prefixed lp-; app.css maps the app pages' own classes onto it.
    Shared components (Sentence, badges, status bar) read the same variables, so they follow this theme here. */
 
 /* Geist, by Vercel and basement.studio. SIL Open Font License: public/fonts/GEIST-LICENSE.txt */

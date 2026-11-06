@@ -420,6 +420,10 @@ export async function list(env) {
   const why = ready(env);
   const d = dep();
   const f = why ? null : await funds(env).catch(() => null);
+  const done = [...runs.values()]
+    .filter((r) => r.status === "done")
+    .reverse()
+    .map(({ id, case: caseId, suite, proof, title, expect, outcome, asExpected: met, txHash, txUrl, userOpHash, block, gasUsed, createdAt, finishedAt }) => ({ id, case: caseId, suite, proof, title, expect, kind: outcome?.kind, name: outcome?.name ?? null, asExpected: met, txHash, txUrl, userOpHash, block, gasUsed, createdAt, finishedAt }));
   return {
     ready: !why,
     why,
@@ -430,7 +434,9 @@ export async function list(env) {
     funds: f ? { accountEth: f.accountEth, eoaEth: f.eoaEth } : null,
     queued: queue.length + (working ? 1 : 0),
     suites: SUITES.map(publicSuite),
-    recent: [...runs.values()].filter((r) => r.status === "done").slice(-12).reverse().map(({ id, case: caseId, title, outcome, asExpected: met, txUrl, finishedAt }) => ({ id, case: caseId, title, kind: outcome?.kind, name: outcome?.name ?? null, asExpected: met, txUrl, finishedAt })),
+    recent: done.slice(0, 12),
+    // Every finished run this instance still holds, for /history. In memory, so it starts empty after a restart.
+    history: done,
   };
 }
 

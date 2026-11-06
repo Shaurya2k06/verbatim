@@ -12,6 +12,8 @@ export function Markdown({ path, strip = false }) {
     if (!s.data) return "";
     let text = s.data;
     if (strip) text = text.replace(/^# .*\n/, "");
+    // ERC front matter is metadata, not a heading: show it as written.
+    text = text.replace(/^---\n([\s\S]*?)\n---\n/, "```\n$1\n```\n");
     // Relative links in the docs point into the repository.
     const renderer = new marked.Renderer();
     const link = renderer.link.bind(renderer);
