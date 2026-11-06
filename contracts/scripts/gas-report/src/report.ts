@@ -98,7 +98,8 @@ writeFileSync(resolve(ROOT, "contracts/docs/GAS.md"), gas);
 
 const devnetLink = (h: string) => `[\`${h.slice(0, 14)}...\`](https://explorer.altmempool.wtf/tx/${h}?node=https%3A%2F%2Faltmempool.forshtat.com%2Frpc)`;
 const sepLink = (h: string) => `[\`${h.slice(0, 14)}...\`](https://sepolia.etherscan.io/tx/${h})`;
-const short = (m?: string) => (m ? m.replace(/^.*=> /s, "").replace(/\s+/g, " ").slice(0, 88) : "");
+// Node errors can quote raw revert bytes; a NUL in the file makes git and grep treat it as binary.
+const short = (m?: string) => (m ? m.replace(/^.*=> /s, "").replace(/[\x00-\x1f\x7f\s]+/g, " ").slice(0, 88) : "");
 const row = (p: any, link: (h: string) => string) => `| ${p.id} | ${p.title} | ${p.expected} | ${p.pass ? "yes" : "**NO**"} | ${p.txHash ? link(p.txHash) : "rejected, no tx"} | \`${short(p.message) || "as expected"}\` |`;
 const all = Object.values(proofs) as any[];
 const failing = all.filter((p) => !p.pass);

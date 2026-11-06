@@ -1,6 +1,6 @@
 import { Suspense, lazy } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { Layout } from "./components/Layout";
+import { Layout, PageBoundary } from "./components/Layout";
 import { Loading } from "./components/States";
 import { NetworkProvider } from "./lib/network-context";
 import Home from "./pages/Home";
@@ -37,8 +37,16 @@ export default function App() {
     <BrowserRouter>
       <NetworkProvider>
         <Routes>
+          {/* The landing page brings its own navigation and footer. */}
+          <Route
+            index
+            element={
+              <PageBoundary path="/">
+                <Home />
+              </PageBoundary>
+            }
+          />
           <Route element={<Layout />}>
-            <Route index element={<Home />} />
             <Route path="demo" element={page(Demo)} />
             <Route path="attack" element={page(Attack)} />
             <Route path="wallet" element={page(Wallet)} />

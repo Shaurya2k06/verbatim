@@ -1,7 +1,7 @@
 # Proofs
 
 Generated from `contracts/docs/proofs.json`, which `contracts/scripts/live/attacks.ts`, `swap.ts`, `stateless.ts`, `invalidation.ts` and `legb-run.ts` write as they run against the
-live networks. **13 of 48 not met:** A1, A3, A3b, A4, A4b, A9, A5, A6, A14, A16, A17, A17b, B12. A row shows its latest run, which may predate the final build. `contracts/docs/STATUS.md` says what has been rerun.
+live networks. **13 of 49 not met:** A1, A3, A3b, A4, A4b, A9, A5, A6, A14, A16, A17, A17b, B12. A row shows its latest run, which may predate the final build. `contracts/docs/STATUS.md` says what has been rerun.
 
 A rejection here means the node refused the transaction, so there is no transaction hash. The reason is the paymaster's or account's own revert,
 as the node returned it. Reproduce one with `cd contracts/scripts/live && npx tsx attacks.ts A1`.
@@ -74,12 +74,13 @@ Stateless ERC-4337 account `0xa1e877b2f6b167b52d0ad33ea7c73e3301829da7`, with no
 | B-honest-alchemy | Honest transfer on Sepolia via Alchemy | bundler accepts; lands; delivered | yes | [`0x540608c614d9...`](https://sepolia.etherscan.io/tx/0x540608c614d999cfb63fd496e405454928dcc6b889bcf1f029d6bc929a3694f9) | `as expected` |
 | B-swap | v4 swap through Uniswap's official Sepolia Universal Router and PoolManager | lands; minimum output respected | yes | [`0x57c7b706e64d...`](https://sepolia.etherscan.io/tx/0x57c7b706e64d9f8a4445b5e42a78bc9682b43f5c47f25f5639600d0ef5c7b47c) | `as expected` |
 | B-A1 | Swapped recipient under an honest sentence, on Sepolia | bundler rejects; the account's reason is TreeMismatch | yes | rejected, no tx | `Internal error from bundler (trace id: 159b94dedeecf1740556199cd4b2c61e) | Error: TreeMi` |
-| A8 | Lookalike ENS name | not in the snapshot, so hex is shown; the exclusivity proof refuses it | yes | rejected, no tx | `Execution reverted with reason: +Ă                           . Raw Call Arguments:` |
+| A8 | Lookalike ENS name | not in the snapshot, so hex is shown; the exclusivity proof refuses it | yes | rejected, no tx | `Execution reverted with reason: +Ă . Raw Call Arguments: to: 0x1f01041520e365f55be272af8` |
 | B13 | An attestor missing from the ENS anchor | admitted; refused at execution: AttestorNotListed | yes | [`0x4e0614b79956...`](https://sepolia.etherscan.io/tx/0x4e0614b79956b1a43976a58c5b9950fdfadb0857948a7c9d88348bebb6af6758) | `AttestorNotListed(0x062D072F2Cd4E28659cdD434aD985dc5696d522C)` |
 | B-ens-revoked | A leaf revoked by ENS record while the operation is pending | admitted; refused at execution: LeafRevokedInEns | yes | [`0x03675f840b41...`](https://sepolia.etherscan.io/tx/0x03675f840b417f1c6a2efac2cb8fb246155bb40603575dc12c685dde468aad9a) | `LeafRevokedInEns(0x855303e467745419d6be80bbb9f5d7c68f7286761e53355bcdffd7fd2506fdd1)` |
-| B-A2-eoa | The evil route on an ordinary wallet, Sepolia | the skim works: this is what Verbatim prevents | yes | [`0x6c8e25647358...`](https://sepolia.etherscan.io/tx/0x6c8e256473585839e32a6f9deef46501cf935759e665fdec4ee1b7e0b89fb10b) | `as expected` |
-| B-A2b | The same route, signed on the true sentence | the device shows the risks; PolicyRefused | yes | rejected, no tx | `! NO MINIMUM OUTPUT | ! HOOK CAN TAKE YOUR OUTPUT | ! UNVERIFIED HOOK || PolicyRefused(5` |
-| WC | A dapp pairs over WalletConnect's relay; honest swap lands; the evil route shows its risks and is refused | lands; refused | yes | [`0x67810e38daf2...`](https://sepolia.etherscan.io/tx/0x67810e38daf222d4b84500847a495a6595d77c28d1cfe2934e4aa09cb3b8498c) | `as expected` |
+| B-A2-eoa | The evil route on an ordinary wallet, Sepolia | the skim works: this is what Verbatim prevents | yes | [`0xa479af0e2970...`](https://sepolia.etherscan.io/tx/0xa479af0e2970cb6d8ab10345ce69f080df92c61ede8f937d49a38417638ed791) | `as expected` |
+| B-A2b | The same route, signed on the true sentence | the device shows the risks; PolicyRefused | yes | rejected, no tx | `! NO MINIMUM OUTPUT | ! HOOK CAN TAKE YOUR OUTPUT | ! UNVERIFIED HOOK || PolicyRefused; ` |
+| WC | A dapp pairs over WalletConnect's relay; honest swap lands; the evil route shows its risks and is refused | lands; refused by PolicyRefused, with the account unmoved | yes | [`0x8ad5bcfa9b5f...`](https://sepolia.etherscan.io/tx/0x8ad5bcfa9b5fc681b8f6e17b0615f238a4ef8110646ada19c966a35dd9bce75c) | `as expected` |
+| B-multihop | A two-hop v4 swap through the account | the sentence names the route, the swap lands, the output meets the signed minimum | yes | [`0x50b3d64920b7...`](https://sepolia.etherscan.io/tx/0x50b3d64920b75ab479cd79f5dd66f6cffa1e6ae40c00363ce9f8c284e18e840d) | `received 888635262729794, minimum 844203499593304, 2 hops` |
 
 **Refusals through a bundler:** a bundler reports a reverting validation as a generic error, so `B-A2b` reads the reason from the account itself (`contracts/scripts/live/why-evil.ts`).
 

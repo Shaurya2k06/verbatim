@@ -57,24 +57,22 @@ Hackathon code, unaudited. Do not trust it with funds you would miss.
 
 ## Static analysis
 
-**This triage predates the final contracts. Rerun `make -C contracts slither` before any funds are at stake.** [Slither](https://github.com/crytic/slither) over `contracts/src`, excluding informational findings, tests and `forge-std`. 60 findings, every one triaged by reading the code. Slither cannot parse the Yul `FrameReader`, so that file is removed for the run and is covered by the live proofs instead. To reproduce: `make -C contracts slither`.
+Slither 0.11 over `contracts/src` on the final contracts, excluding informational findings, tests and libraries: 78 results, none of them a new defect. Rerun with `make -C contracts slither`; it exits non-zero whenever there are results.
 
 | Finding | Count | Verdict |
 |---|---:|---|
-| `return-bomb` in `protectedBatch` and `_execute` | 1 | **Real, fixed.** A target reverting with about 500 KB ran the outer call past its reserve, reverting the fee charge. Reproduced in `test_A18_return_bomb_does_not_undo_the_fee`, then return data was capped at 256 bytes. See D-A17 |
-| `return-bomb` in `_liveChecks` | 1 | Accepted. That staticcall is limited to `READ_GAS`, so the copy is too, and it runs inside the protected call, whose failure only reverts the batch |
-| `uninitialized-state` | 14 | False positive. `TrustStoreLayout` storage is written by `TrustAdmin` through delegatecall, which Slither does not follow |
-| `constable-states` | 2 | False positive, same cause |
-| `reentrancy-eth`, `reentrancy-no-eth` on `_phase` | 2 | False positive. `_phase` is the reentrancy guard itself: `PHASE_PROTECTED` is set before the calls and refuses reentry (A11) |
+| `return-bomb` in `_liveChecks` | 1 | Accepted. That staticcall is limited to `READ_GAS`, so the copy is too, and it runs inside the protected call, whose failure only reverts the batch. The earlier `return-bomb` in `protectedBatch` and `_execute` was real and is fixed: `_callBounded` keeps at most `MAX_RETURN` bytes (`test_A18_return_bomb_does_not_undo_the_fee`) |
+| `uninitialized-state`, `constable-states` | 12, 6 | False positive. `TrustStoreLayout` storage is written by `TrustAdmin` through delegatecall, which Slither does not follow |
 | `unchecked-transfer` | 2 | Intended. `EvilVault` is the demo attacker |
-| `reentrancy-benign`, `reentrancy-events` | 4 | Accepted. Only `EvilVault`, `deposit` to a caller-chosen token crediting the caller's own balance, and the result event |
-| `uninitialized-local` | 10 | False positive. Solidity zero-initialises these and the code relies on it |
+| `reentrancy-benign`, `reentrancy-events` | 2, 1 | Accepted. `EvilVault`, and `TrustAdmin.deposit`, where a caller-chosen token can only credit its own asset's balance |
+| `uninitialized-local` | 17 | False positive. Solidity zero-initialises these and the code relies on it |
 | `unused-return` | 1 | Intended. `checkName` needs only the primary name from `reverse` |
 | `write-after-write` in `_field` | 1 | False positive. `p` is read in between by `d.rdU8(p++)` |
-| `missing-zero-check` | 10 | Accepted. Constructor arguments set at deploy, and an owner-chosen withdrawal address |
-| `calls-loop` | 5 | Accepted. A batch's calls are the point; a failure reverts it. `refreshTrust`'s loops are bounded by the attestors' own update |
-| `timestamp` | 5 | Intended. These are the expiry and delay checks, in execution only |
-| `immutable-states`, `cache-array-length` | 2 | Optimisation only |
+| `shadowing-local` | 1 | Harmless. `_verifyStateless` reads `maxSnapshotTtl` from the packed policy word, which holds the same value as the state variable it shadows |
+| `missing-zero-check` | 18 | Accepted. Constructor arguments set at deploy, and an owner-chosen withdrawal address. A zero anchor is meaningful: it turns the ENS anchor off on chains without ENS |
+| `calls-loop` | 7 | Accepted. A batch's checks are the point; a failure reverts it. `refreshTrust`'s loops are bounded by the attestors' own update |
+| `timestamp` | 6 | Intended. Expiry and delay checks, in execution and admin paths. None is in validation |
+| `immutable-states`, `cache-array-length` | 1, 2 | Optimisation only. Not changed: each would alter the deployed bytecode for a few gas |
 
 Aderyn was not run.
 
