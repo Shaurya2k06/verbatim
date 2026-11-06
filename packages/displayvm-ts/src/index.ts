@@ -144,7 +144,6 @@ export function render(i: RenderIn, trust: Trust): RenderOut {
 }
 
 /** The spec a tree implies. Render computes both together, since effects need the descriptors. */
-export const derive = (i: RenderIn, trust: Trust) => render(i, trust).spec;
 
 function hinted(c: Ctx, a: Address): bigint {
   for (const h of c.hints) {
@@ -487,12 +486,6 @@ function amountField(t: Buf, label: string | Uint8Array, token: Address, raw: bi
   VT.end(t, at);
 }
 
-/** The policy decision the paymaster will take, for wallets that want to warn early. */
-export function policyRefuses(risk: number, allow = 0): boolean {
-  const refused = BIT.UNVERIFIED | BIT.BLIND | BIT.UNLIMITED | BIT.SPENDER_UNATTESTED | BIT.TOKEN_UNSAFE | BIT.ALLOW_REVERT;
-  if (risk & refused & ~allow) return true;
-  return !!(risk & BIT.HOOK_TAKE) && !(allow & BIT.HOOK_TAKE) && !!(risk & (BIT.NO_MIN_OUT | BIT.HOOK_UNVERIFIED));
-}
 
 /** Packs a short ASCII string into the bytes32 form used for symbols and publisher names. */
 export function packStr(s: string): Hex {

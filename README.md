@@ -50,7 +50,7 @@ All on live networks; every row links to a transaction or a named revert in **[d
 | A7 stale signature, A7b starved expiry frame | Refused by the expiry frame, and the account's gas floor on it |
 | A8 lookalike ENS name | `WrongResolverCode`, and `RootRolesHeld` even when pinned to its own code. Shows as hex |
 | A9 no fee ticket | `NoTicket` |
-| A10 7702-delegated sender | Rejected in frame 0, and in frame 1 by the code hash pin |
+| A10 7702-delegated sender | Rejected by the account frame, and by the paymaster's code hash pin |
 | A11 reentrancy | `CallFailed`; nothing moved |
 | A12 a call burns all its gas | The assertion reserve holds. Batch reverts, frame survives |
 | A13 future-dated expiry | The device refuses; the chain reverts `TtlTooLong` |
@@ -92,7 +92,7 @@ Trusted: the device's decoder and screen, the owners' keys, the attestor quorum 
 | Where | What |
 |---|---|
 | `contracts/src/account/VerbatimAccount.sol` | Frame account: layout lock, batch, assertions. No DELEGATECALL, checked on the bytecode |
-| `contracts/src/paymaster/RendererPaymaster.sol` | The staked renderer: render, derive, policy, fees |
+| `contracts/src/paymaster/RendererPaymaster.sol` | The staked renderer: render, rebuild the digest, fee tickets |
 | `contracts/src/lib/DisplayVM.sol` | The renderer. `packages/displayvm-ts` is its twin |
 | `contracts/src/uniswap/URRender.sol` | Universal Router and v4 decoder. Standalone as `packages/urrender` |
 | `contracts/src/trust/` | TrustStore, `refreshTrust`, the ENS exclusivity proof, the ENS trust anchor |
@@ -137,7 +137,7 @@ cd tools/e2e && pnpm demo     # needs OWNER1_KEY and OWNER2_KEY in .env
 cd tools/e2e && pnpm record   # writes docs/demo/verbatim-demo.mp4
 ```
 
-**Your own deployment.** Generated devnet keys go to the git-ignored `.env`; see `.env.example`.
+**Your own deployment.** Generated devnet keys go to the git-ignored `.env`; see `.env.example`. The devnet's faucet is off, so fund the deployer with `tools/scripts/fund-from-shared.ts` and the shared key from the sidecar's published genesis values (never store that key here). `tools/scripts/wait-devnet.sh` waits for a stalled devnet, then runs everything.
 
 ```sh
 make proofs                         # everything below, Leg A, from a clean deployment
@@ -147,11 +147,12 @@ cd tools/scripts
 npx tsx attacks.ts                  # the attack kit, against the live mempool
 npx tsx swap.ts                     # honest swap, WRAP_ETH, A2
 npx tsx invalidation.ts             # revoking one descriptor
-npx tsx rebalance-pool.ts devnet    # restore the demo pool's price if repeated swaps have drifted it (also: sepolia)
 npx tsx stateless.ts                # the stateless path and B1-B12
 npx tsx legb-ens.ts my-label        # Leg B: ENSv2 publisher name and lock-down
 npx tsx legb-ens.ts my-anchor --anchor   # Leg B: the anchor name's attestor and revocation records
-npx tsx legb-deploy.ts && npx tsx legb-run.ts
+npx tsx legb-deploy.ts && npx tsx legb-run.ts   # the production leg; reissues the 6-hour snapshot
+npx tsx why-evil.ts                 # why the account refuses the evil route, with no transaction
+npx tsx health.ts                   # is the devnet producing blocks?
 cd ../gas-report && pnpm report     # regenerate docs/GAS.md and docs/PROOFS.md
 ```
 
@@ -199,7 +200,7 @@ cd ../gas-report && pnpm report     # regenerate docs/GAS.md and docs/PROOFS.md
 - nobody can change the name's resolver or subregistry, and parents hold no direct right to;
 - registered at least a year past now.
 
-A shown name must resolve forward and reverse at `refreshTrust`, and is re-resolved at execution, where a mismatch reverts. `apps/ens-demo` runs the same checks live for any name you type. See `docs/DECISIONS.md` (D-A11) for limits: only second-level `.eth` names work, and the demo's council is an EOA.
+A shown name must resolve forward and reverse at execution, where a mismatch reverts. `apps/ens-demo` runs the same checks live for any name you type. See `docs/DECISIONS.md` (D-A11) for limits: only second-level `.eth` names work, and the demo's council is an EOA.
 
 ## Trust assumptions and residual risks
 

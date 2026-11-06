@@ -38,7 +38,6 @@ abstract contract RendererCore is TrustStore {
     error SnapshotExpiresTooSoon(uint64 expiry, uint64 snapshotExpiry);
     error SnapshotTtlTooLong(uint256 ttl, uint256 max);
     error NoTicket(uint256 nonce, uint256 needed);
-    error InsufficientDeposit(uint256 available, uint256 needed);
 
 
     constructor(address owner_, address trustAdmin, address permit2, address weth, bytes32 routerPublisher, address[] memory attestors_, uint8 threshold) {

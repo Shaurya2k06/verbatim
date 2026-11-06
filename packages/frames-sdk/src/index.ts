@@ -7,8 +7,6 @@ export const ENTRY_POINT: Address = "0x00000000000000000000000000000000000000aa"
 
 export const Mode = { DEFAULT: 0, VERIFY: 1, SENDER: 2 } as const;
 export const Scope = { NONE: 0, PAYMENT: 1, EXECUTION: 2, EXECUTION_AND_PAYMENT: 3 } as const;
-export const ATOMIC_BATCH_FLAG = 4;
-export const SigScheme = { ARBITRARY: 0, SECP256K1: 1, P256: 2 } as const;
 
 export interface Frame {
   mode: number;
@@ -68,11 +66,6 @@ export const sigHash = (tx: FrameTx): Hex =>
   keccak256(encodeTx({ ...tx, signatures: tx.signatures.map((s) => (s.msg === "0x" ? { ...s, signature: "0x" as Hex } : s)) }));
 
 export const txHash = (tx: FrameTx): Hex => keccak256(encodeTx(tx));
-
-export function decodeTx(raw: Hex): unknown[] {
-  if (!raw.startsWith("0x06")) throw new Error("not a type-0x06 transaction");
-  return fromRlp(`0x${raw.slice(4)}`, "hex") as unknown[];
-}
 
 export function frame(init: Partial<Frame> & { mode: number; execution?: bigint; state?: bigint }): Frame {
   return {
@@ -177,19 +170,3 @@ export async function waitReceipt(hash: Hex, ep: Endpoints = DEVNET, timeoutMs =
   throw new Error(`transaction ${hash} not mined within ${timeoutMs} ms`);
 }
 
-/** Maps a node's rejection text to the rule family it comes from. */
-export function explainRejection(message: string): { rule: string; message: string } {
-  const rules: [RegExp, string][] = [
-    [/uses banned opcode|banned opcode/i, "OPCODES (banned opcode)"],
-    [/accessed .* slot|forbidden .* slot|StorageRead/i, "STORAGE"],
-    [/MAX_VERIFY_GAS/, "BUDGET"],
-    [/validation prefix not recognized/, "PREFIX-010"],
-    [/validation frame (\d+): reverted|validation prefix frame reverted/, "PREFIX-060 (validation frame reverted)"],
-    [/ran out of gas/, "out of gas in validation"],
-    [/un-deployed contract/, "CALLING-010"],
-  ];
-  for (const [re, rule] of rules) if (re.test(message)) return { rule, message };
-  return { rule: "UNKNOWN", message };
-}
-
-export const explorerLink = (hash: Hex) => `${EXPLORER}tx/${hash}?node=${encodeURIComponent(DEVNET.mempool)}`;

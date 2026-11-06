@@ -48,16 +48,16 @@ Hackathon code, unaudited. Do not trust it with funds you would miss.
 
 ## Other trust assumptions and limits
 
-- Revocation is only as fresh as the last `refreshTrust`. An EAS revocation on mainnet has no effect until attestors relay it.
+- Revocation takes effect at execution through `RevocationRegistry`, and ENS where it exists. In the mempool, a stateless transaction can stay valid until its snapshot expires. An EAS revocation on mainnet has no effect until attestors relay it.
 - The paymaster is a shared service. Stake prices identity and is not slashed.
-- Frame 1 trusts frame 0's layout lock by pinning the sender's code hash.
+- The paymaster frame trusts the account frame's layout lock by pinning the sender's code hash.
 - The expiry frame refuses an expired transaction at the mempool. Execution checks the time again. A starved expiry frame is refused by a gas floor on it.
 - A snapshot lasts at most 6 hours by default. A paymaster-path transaction signs the root, so rotating the root drops pending ones on that path.
 - The APPROVE opcode is a patched LOG1 byte. Deployment fails unless the runtime holds exactly one, and CI checks the same (`tools/scripts/check-bytecode.ts`).
 
 ## Static analysis
 
-[Slither](https://github.com/crytic/slither) over `contracts/src`, excluding informational findings, tests and `forge-std`. 60 findings, every one triaged by reading the code. Slither cannot parse the Yul `FrameReader`, so that file is removed for the run and is covered by the live proofs instead. To reproduce: `make slither`.
+**This triage predates the final contracts. Rerun `make slither` before any funds are at stake.** [Slither](https://github.com/crytic/slither) over `contracts/src`, excluding informational findings, tests and `forge-std`. 60 findings, every one triaged by reading the code. Slither cannot parse the Yul `FrameReader`, so that file is removed for the run and is covered by the live proofs instead. To reproduce: `make slither`.
 
 | Finding | Count | Verdict |
 |---|---:|---|

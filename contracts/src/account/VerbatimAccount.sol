@@ -130,7 +130,7 @@ abstract contract VerbatimCore {
     error NotSelf();
     error Reentrant();
     error NotLocked();
-    error Expired(uint256 timestamp, uint256 validUntil);
+    error Expired(uint256 timestamp, uint256 expiry);
     error TtlTooLong(uint256 remaining, uint256 maxTtl);
     error SpecMismatch();
     error CodeChanged(address target);

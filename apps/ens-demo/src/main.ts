@@ -86,7 +86,7 @@ async function run() {
     rows.push(row("Descriptors this publisher stands behind", hashes.length ? null : false, hashes.length ? hashes.join(" ") : "No clear-signing record."));
 
     const allPass = rows.every((r) => !r.querySelector(".bad"));
-    out.replaceChildren(el("div", { class: allPass ? "ok" : "bad", style: "margin-bottom:14px" }, allPass ? `${name} is an exclusive publisher. Its name can appear in signed sentences.` : `${name} fails the exclusivity proof. refreshTrust refuses it, and wallets show the raw address.`), ...rows);
+    out.replaceChildren(el("div", { class: allPass ? "ok" : "bad", style: "margin-bottom:14px" }, allPass ? `${name} is an exclusive publisher. Its name can appear in signed sentences.` : `${name} fails the exclusivity proof. the trust checks refuses it, and wallets show the raw address.`), ...rows);
   } catch (e) {
     out.replaceChildren(el("div", { class: "bad" }, (e as Error).message));
   }

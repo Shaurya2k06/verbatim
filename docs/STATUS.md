@@ -1,6 +1,6 @@
 # Status against context.md
 
-Every [SPEC] item in `context.md`, marked **done**, **partial** or **missing**. A gate counts as passed only with a live transaction or rejection log in `docs/PROOFS.md`. Updated at each gate.
+Where the build stands against `context.md`, gate by gate. A gate counts as passed only with a live transaction or rejection log in `docs/PROOFS.md`. Updated at each gate.
 
 ## Gates
 
@@ -48,7 +48,7 @@ All five probes passed on the live devnet, and the stateless design is feasible 
 
 - The honest swap and A2 use **native-ETH pools**: one call, no approval. On the official Sepolia contracts the victim got 0.0295 dUSDC and the hook 2.92, of a 0.001 ETH swap (`B-A2-eoa`).
 - `permit2.approve` alone now fails `APPROVALS_CLEARED`, which is exactly B14.
-- ERC-20 swaps are attempted in G3, with the measurement recorded either way.
+- An ERC-20 swap on the final build has not been measured.
 
 **A6.** For the same reason EvilVault can no longer hold a standing allowance, so a "hidden pull" cannot happen on a real account. The live A6 is now a vault that keeps the ETH and credits no shares. The hidden-pull case stays as a Foundry test with an out-of-band allowance and a watched token.
 

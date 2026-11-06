@@ -18,7 +18,7 @@ Two questions:
 
 | What | Where it would go | Draft |
 |---|---|---|
-| Canonical-renderer rule, as a PR | `forshtat/mempool-workshop-sidecar` | [note](upstream/canonical-renderer-rule.md), [patch](upstream/canonical-renderer-rule.patch) |
+| Canonical-renderer rule, as a PR | `forshtat/mempool-workshop-sidecar` | [note](upstream/canonical-renderer-rule.md), [patch](upstream/canonical-renderer-rule.patch). Its fixture comes from an earlier build: regenerate it with `tools/scripts/canonical-renderer-proof.ts` before opening |
 | Four rule findings and others | The track author, as an issue or note | [FINDINGS.md](FINDINGS.md) |
 | ERC draft: sentence-bound frame transactions | Ethereum Magicians | [draft](erc/sentence-bound-frame-transactions.md) |
 | ERC draft: signed attestation snapshots | Ethereum Magicians | [draft](erc/signed-attestation-snapshots.md) |

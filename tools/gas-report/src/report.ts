@@ -9,7 +9,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const proofs: Record<string, any> = JSON.parse(readFileSync(resolve(ROOT, "docs/proofs.json"), "utf8"));
 const env = Object.fromEntries(readFileSync(resolve(ROOT, ".env"), "utf8").split("\n").filter((l) => l.includes("=")).map((l) => [l.slice(0, l.indexOf("=")), l.slice(l.indexOf("=") + 1)]));
 
-const LEG_B = /^(B-|A8)/;
+const LEG_B = /^(B-|B13$|A8$|WC$)/;
 const CAP = 100_000;
 const fmt = (n: number) => n.toLocaleString("en-US");
 
@@ -30,15 +30,17 @@ for (const id of ["HONEST", "SWAP", "WRAP", "A6", "A7", "A11", "A12", "F7"]) {
   if (!p?.txHash) continue;
   const f = await frames(p.txHash);
   measured.push({ id, title: p.title, f });
-  const [a, b, c] = f.frames;
-  rows.push(`| ${id} | ${p.title} | ${fmt(a.execution)} | ${fmt(b.execution)} | ${fmt(a.execution + b.execution + 5600)} | ${fmt(c.execution)} | ${fmt(c.state)} | \`${p.txHash.slice(0, 12)}...\` |`);
+  // The last frame executes; everything before it validates: two or three frames, by path and build.
+  const exec = f.frames[f.frames.length - 1];
+  const verify = f.frames.slice(0, -1).map((x: any) => x.execution);
+  const prefix = verify.reduce((x: number, y: number) => x + y, 0) + 5600;
+  rows.push(`| ${id} | ${p.title} | ${verify.map(fmt).join(" + ")} | ${fmt(prefix)} | ${fmt(exec.execution)} | ${fmt(exec.state)} | \`${p.txHash.slice(0, 12)}...\` |`);
 }
 
 const legB = ["B-honest-pimlico", "B-honest-alchemy", "B-swap"].filter((k) => proofs[k]?.txHash).map((k) => `| ${proofs[k].title} | ${proofs[k].extra.bundler ?? "pimlico"} | ${fmt(Number(proofs[k].extra.actualGasUsed))} | [tx](https://sepolia.etherscan.io/tx/${proofs[k].txHash}) |`);
 
 const sepoliaGas = async (hash: string) => Number(BigInt((await rpc<any>(env.SEPOLIA_RPC_URL, "eth_getTransactionReceipt", [hash])).gasUsed));
 const legBTxGas = (await Promise.all(["B-honest-pimlico", "B-honest-alchemy", "B-swap"].filter((k) => proofs[k]?.txHash).map(async (k) => `${fmt(await sepoliaGas(proofs[k].txHash))} (${k})`))).join(", ");
-const max = Math.max(...measured.filter((m) => ["HONEST", "SWAP", "WRAP"].includes(m.id)).map((m) => m.f.frames[1].execution));
 const gas = `# Gas
 
 Measured, not estimated. \`tools/gas-report\` re-reads every number below from \`frameReceipts\` on the live chain.
@@ -46,31 +48,16 @@ Regenerate with \`pnpm --filter @verbatim/gas-report report\`.
 
 ## Leg A: EF frames devnet (chain 1337)
 
-Each frame's execution gas, from its receipt. "Prefix" adds frame 0, frame 1 and the 5,600 gas of two protocol-validated
-signatures, which is the sum the mempool's cap applies to (declared limits, in practice: ${fmt(20_500)} + ${fmt(73_700)} + ${fmt(5_600)} = ${fmt(99_800)}).
+Each frame's execution gas, from its receipt. "Prefix" adds the validation frames and the 5,600 gas of two protocol-validated
+signatures. The mempool's cap applies to the declared limits plus signatures. Rows come from the latest run of each proof: \`docs/STATUS.md\` says which predate the final build.
 
-| Proof | What | Frame 0 | Frame 1 | Prefix | Frame 2 exec | Frame 2 state | Tx |
-|---|---|---:|---:|---:|---:|---:|---|
+| Proof | What | Validation frames | Prefix | Execute exec | Execute state | Tx |
+|---|---|---:|---:|---:|---:|---|
 ${rows.join("\n")}
 
-**Against the spec's targets (§14):**
+**Why the prefix is tight:** the deployed sidecar caps it at ${fmt(CAP)} (\`FINDINGS.md\`, b), so render was written to fit. See \`DECISIONS.md\`, D-A20.
 
-| Component | Target | Measured | |
-|---|---|---:|---|
-| Frame 0 (layout lock, signature checks) | 20-30k | ${fmt(measured[0].f.frames[0].execution)} | within |
-| Frame 1, transfer sentence | 60-120k | ${fmt(measured[0].f.frames[1].execution)} | within |
-| Frame 1, v4 swap (F6) | at most 300k for the render | ${fmt(proofs.SWAP ? measured.find((m) => m.id === "SWAP")!.f.frames[1].execution : 0)} for all of frame 1 | far under |
-| Frame 1 total | at most 600k | ${fmt(max)} at most | far under |
-
-**Why these are so far below the targets:** the deployed sidecar caps the whole prefix at ${fmt(CAP)} (see \`DECISIONS.md\`, D-A2), so render was
-written to fit. Frame reads are batched into one STATICCALL, buffers are unchecked over a bounds-checked cursor, and a token or
-descriptor costs one SLOAD.
-
-**The limit that remains:** one call per transaction on the deployed sidecar. Measured by simulation, frame 1 for N transfers is
-62,213 (1), 83,778 (2), 105,330 (3), 148,466 (5): about 21,500 per extra call, so a second call overflows the cap. ERC-8421's 1M staked
-budget would hold over 40 calls, against the renderer's own limit of 16.
-
-**Frame 2 grows with the account's history.** The assertion snapshot reads every approval-ledger entry and tracked token, so the same transfer measured 127,909 on a fresh account and more once the demo's approvals exist. The ledger is capped at 64 entries, and \`pruneLedger\` removes dead ones.
+**The limit that remains:** one call per transaction on the deployed sidecar. Each extra call adds about 21,500 to the account's work, so a second call overflows the cap. ERC-8421's 1M staked budget would hold them, up to the renderer's own limit.
 
 **State gas:** this devnet charges EIP-8037 state gas, about 1,530 per byte of new state. It is why frame 2 declares
 1,500,000 of it, why a first approval costs much more than a later one (ledger entries are new slots), and why deploying the
@@ -84,7 +71,7 @@ Measured by \`tools/scripts/measure.ts\` with generous limits, so each figure is
 |---|---:|---:|---:|---:|---:|---:|
 ${JSON.parse(readFileSync(resolve(ROOT, "docs/prefix-measurements.json"), "utf8")).map((r: any) => `| ${r.name} | ${fmt(r.expiry)} | ${fmt(r.frame0)} | ${fmt(r.frame1)} | 5,600 | ${fmt(r.expiry + r.frame0 + r.frame1 + 5600)} | ${fmt(100000 - r.expiry - r.frame0 - r.frame1 - 5600)} |`).join("\n")}
 
-Multi-hop swaps are not supported. \`V3_SWAP_EXACT_IN\` renders, but the devnet's router has no v3 factory, so it cannot run there. v4 \`SWAP_EXACT_IN\` and \`PERMIT2_TRANSFER_FROM\` render as \`BLIND\` and are refused, which is proof A17. Adding them is future work and each must keep this floor.
+v4 \`SWAP_EXACT_IN\` renders in both renderers and is tested, but has not been measured on a live chain. \`V3_SWAP_EXACT_IN\` renders, but the devnet's router has no v3 factory, so it cannot run there. An unknown command or action renders as \`BLIND\` and is refused.
 
 ## Patched bytecode
 
@@ -96,7 +83,7 @@ ${execFileSync("npx", ["tsx", "check-bytecode.ts"], { cwd: resolve(ROOT, "tools/
 
 ## Leg B: Sepolia (ERC-4337, EntryPoint v0.7)
 
-\`actualGasUsed\` from the bundler's receipt, covering account validation, paymaster render, the batch and overhead.
+\`actualGasUsed\` from the bundler's receipt, covering account validation with its render, the batch and overhead. There is no paymaster on this path.
 
 | What | Bundler | actualGasUsed | Tx |
 |---|---|---:|---|
@@ -120,8 +107,8 @@ const sep = JSON.parse(readFileSync(resolve(ROOT, "deployments/sepolia.json"), "
 
 const md = `# Proofs
 
-Generated from \`docs/proofs.json\`, which \`tools/scripts/attacks.ts\`, \`swap.ts\`, \`invalidation.ts\` and \`legb-run.ts\` write as they run against the
-live networks. ${failing.length ? `**${failing.length} failing:** ${failing.map((f) => f.id).join(", ")}.` : `All ${all.length} pass.`}
+Generated from \`docs/proofs.json\`, which \`tools/scripts/attacks.ts\`, \`swap.ts\`, \`stateless.ts\`, \`invalidation.ts\` and \`legb-run.ts\` write as they run against the
+live networks. ${failing.length ? `**${failing.length} of ${all.length} not met:** ${failing.map((f) => f.id).join(", ")}. A row shows its latest run, which may predate the final build. \`docs/STATUS.md\` says what has been rerun.` : `All ${all.length} met. \`docs/STATUS.md\` says what has been rerun on the final build.`}
 
 A rejection here means the node refused the transaction, so there is no transaction hash. The reason is the paymaster's or account's own revert,
 as the node returned it. Reproduce one with \`cd tools/scripts && npx tsx attacks.ts A1\`.
@@ -136,39 +123,28 @@ Live deployment: paymaster \`${dep.paymaster}\`, account \`${dep.account}\`, sta
 |---|---|---|---|---|---|
 ${all.filter((p) => !LEG_B.test(p.id)).map((p) => row(p, devnetLink)).join("\n")}
 
-**What the "plain EOA" row shows:** \`A2-eoa\` is the same evil route sent from an ordinary wallet. Received \`${proofs["A2-eoa"]?.extra?.victimReceivedRaw}\` raw dUSDC, while the hook's
-beneficiary took \`${proofs["A2-eoa"]?.extra?.hookTookRaw}\`. That is the loss Verbatim's rejections prevent.
+**What the "plain EOA" row shows:** \`A2-eoa\` is the same evil route sent from an ordinary wallet. That is the loss Verbatim's rejections prevent.
 
 **Revocation (\`A15\`):** of 5 signed transactions, an unrelated \`refreshTrust\` invalidated none, and revoking one descriptor invalidated exactly the one using it
-(${JSON.stringify(proofs.A15?.extra?.afterRevocation)}). Measured by re-running validation through \`ethrex_simulateFrameTransaction\`, the call the sidecar itself makes. They share a
+(${JSON.stringify(proofs.A15?.extra?.afterRevocation)}). The refresh keeps the snapshot root: rotating it is a different event, since paymaster-path transactions sign it. Measured by re-running validation through \`ethrex_simulateFrameTransaction\`, the call the sidecar itself makes. They share a
 sender, so they were not all held pending at once.
 
-**Explorer links** name the miner's node (\`?node=...\`), because the explorer otherwise asks the gateway, which did not see these. There each honest row shows "On chain" and "Every rule passed", with the admission report for frame 0 (sender) and frame 1 (payer).
-
-**Which endpoint:** the docs' gateway and the miner's sidecar run the same rules. On the night of 5 to 6 November the gateway lost its gossip link to the miner
-(\`skandha_connectedPeers\` returned \`[]\`, and every sender's transactions stayed \`New\`), so these were submitted to the miner's sidecar. Rule-enforcing admission is identical. Earlier deployments' transactions did go through the gateway and landed, for example \`0x70855b1b...73f4\` in block 404793.
+**Explorer links** name the miner's node (\`?node=...\`), because the explorer otherwise asks the gateway, which may not have seen these.
 
 **Staked vs unstaked, canonical vs alt:** ethrex's canonical check reports \`StorageReadNonSender\` for these transactions, since the paymaster reads its own storage. The alt mempool
 admits them because the paymaster is staked. This is the "needs the alt mempool" evidence.
 
-## Leg B: Sepolia, official Uniswap contracts, ENSv2
+## Production leg: Sepolia, official Uniswap contracts, ENSv2
 
-Paymaster \`${sep.paymaster}\`, account \`${sep.account}\`.
+Stateless ERC-4337 account \`${sep.account}\`, with no paymaster.
 
 | ID | Case | Spec expects | Met | Transaction | Reason or detail |
 |---|---|---|---|---|---|
 ${all.filter((p) => LEG_B.test(p.id)).map((p) => row(p, sepLink)).join("\n")}
 
-| ENS step | Transaction |
-|---|---|
-| Registered \`${sep.ens.name}\` | ${sepLink(sep.ens.registered)} |
-| Renounced resolver root roles (SET_TEXT, LINK, UPGRADE and their admins) | ${sepLink(sep.ens.lockTxs.resolver)} |
-| Renounced registry roles (SET_RESOLVER, SET_SUBREGISTRY and their admins) | ${sepLink(sep.ens.lockTxs.registry)} |
-| Council published the \`clear-signing\` record | ${sepLink(sep.ens.recordTx)} |
-| \`refreshTrust\`, passing attestors and the live exclusivity proof | ${sepLink(sep.refreshTrustTx)} |
+**Refusals through a bundler:** a bundler reports a reverting validation as a generic error, so \`B-A2b\` reads the reason from the account itself (\`tools/scripts/why-evil.ts\`).
 
-**A8 in detail:** \`${sep.ens.lookalike}\` was registered without giving up any roles, and published a record claiming a descriptor. \`refreshTrust\` refuses it with \`WrongResolverCode\`.
-A checker pinned to the lookalike's own resolver code still refuses it, with \`RootRolesHeld\` (checker \`${proofs.A8?.extra?.sameCodeChecker}\`). A sentence paying its address shows \`${proofs.A8?.extra?.deviceLine}\`: hex, no name.
+ENS: publisher \`${sep.ens.publisher}\`, trust anchor \`${sep.ens.anchor}\`. The anchor's attestor record was set in ${sepLink(sep.ens.attestorsRecordTx)}.
 
 ## In the browser
 

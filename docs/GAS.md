@@ -5,38 +5,21 @@ Regenerate with `pnpm --filter @verbatim/gas-report report`.
 
 ## Leg A: EF frames devnet (chain 1337)
 
-Each frame's execution gas, from its receipt. "Prefix" adds frame 0, frame 1 and the 5,600 gas of two protocol-validated
-signatures, which is the sum the mempool's cap applies to (declared limits, in practice: 20,500 + 73,700 + 5,600 = 99,800).
+Each frame's execution gas, from its receipt. "Prefix" adds the validation frames and the 5,600 gas of two protocol-validated
+signatures. The mempool's cap applies to the declared limits plus signatures. Rows come from the latest run of each proof: `docs/STATUS.md` says which predate the final build.
 
-| Proof | What | Frame 0 | Frame 1 | Prefix | Frame 2 exec | Frame 2 state | Tx |
-|---|---|---:|---:|---:|---:|---:|---|
-| HONEST | Honest 3-frame transfer | 18,264 | 56,650 | 80,514 | 140,741 | 293,760 | `0x41bf1e2ec4...` |
-| SWAP | Honest v4 swap through the real Universal Router | 18,860 | 62,725 | 87,185 | 358,960 | 97,920 | `0x6aaba4c1fd...` |
-| WRAP | WRAP_ETH through the real Universal Router | 18,420 | 47,779 | 71,799 | 264,408 | 97,920 | `0x9f48386b43...` |
-| A6 | EvilVault hidden WETH pull | 18,248 | 51,962 | 75,810 | 230,237 | 0 | `0x1884f7b0ef...` |
-| A7 | Stale pre-signed transaction past validUntil | 18,264 | 56,650 | 80,514 | 55,930 | 0 | `0xf938324fe9...` |
-| A11 | Reentrancy into executeVerified | 18,467 | 49,258 | 73,325 | 124,419 | 0 | `0x7cc61d7e4a...` |
-| A12 | Gas griefing: a call burns all its gas | 18,186 | 41,270 | 65,056 | 975,879 | 0 | `0xfdfc492f75...` |
-| F7 | Fee failure runs nothing | 18,264 | 56,638 | 80,502 | 12,750 | 0 | `0xaafbfccd52...` |
+| Proof | What | Validation frames | Prefix | Execute exec | Execute state | Tx |
+|---|---|---:|---:|---:|---:|---|
+| HONEST | Honest 4-frame transfer | 3,051 + 16,112 + 60,482 | 85,245 | 160,115 | 391,680 | `0x9455794616...` |
+| SWAP | Honest v4 swap through the real Universal Router | 18,860 + 62,725 | 87,185 | 358,960 | 97,920 | `0x6aaba4c1fd...` |
+| WRAP | WRAP_ETH through the real Universal Router | 18,420 + 47,779 | 71,799 | 264,408 | 97,920 | `0x9f48386b43...` |
+| A11 | Reentrancy into executeVerified | 3,051 + 16,248 + 51,922 | 76,821 | 102,171 | 97,920 | `0x55077d80b6...` |
+| A12 | Gas griefing: a call burns all its gas | 3,051 + 16,051 + 45,113 | 69,815 | 975,903 | 97,920 | `0x34a28447d3...` |
+| F7 | Fee failure runs nothing | 3,051 + 16,112 + 60,470 | 85,233 | 20,932 | 0 | `0xfac98fb726...` |
 
-**Against the spec's targets (§14):**
+**Why the prefix is tight:** the deployed sidecar caps it at 100,000 (`FINDINGS.md`, b), so render was written to fit. See `DECISIONS.md`, D-A20.
 
-| Component | Target | Measured | |
-|---|---|---:|---|
-| Frame 0 (layout lock, signature checks) | 20-30k | 18,264 | within |
-| Frame 1, transfer sentence | 60-120k | 56,650 | within |
-| Frame 1, v4 swap (F6) | at most 300k for the render | 62,725 for all of frame 1 | far under |
-| Frame 1 total | at most 600k | 62,725 at most | far under |
-
-**Why these are so far below the targets:** the deployed sidecar caps the whole prefix at 100,000 (see `DECISIONS.md`, D-A2), so render was
-written to fit. Frame reads are batched into one STATICCALL, buffers are unchecked over a bounds-checked cursor, and a token or
-descriptor costs one SLOAD.
-
-**The limit that remains:** one call per transaction on the deployed sidecar. Measured by simulation, frame 1 for N transfers is
-62,213 (1), 83,778 (2), 105,330 (3), 148,466 (5): about 21,500 per extra call, so a second call overflows the cap. ERC-8421's 1M staked
-budget would hold over 40 calls, against the renderer's own limit of 16.
-
-**Frame 2 grows with the account's history.** The assertion snapshot reads every approval-ledger entry and tracked token, so the same transfer measured 127,909 on a fresh account and more once the demo's approvals exist. The ledger is capped at 64 entries, and `pruneLedger` removes dead ones.
+**The limit that remains:** one call per transaction on the deployed sidecar. Each extra call adds about 21,500 to the account's work, so a second call overflows the cap. ERC-8421's 1M staked budget would hold them, up to the renderer's own limit.
 
 **State gas:** this devnet charges EIP-8037 state gas, about 1,530 per byte of new state. It is why frame 2 declares
 1,500,000 of it, why a first approval costs much more than a later one (ledger entries are new slots), and why deploying the
@@ -46,35 +29,35 @@ paymaster took about 34M gas.
 
 Measured by `tools/scripts/measure.ts` with generous limits, so each figure is what the frame used. The checklist's floor is 8,000 of headroom.
 
-| Transaction | Frame 0 | Frame 1 | Signatures | Prefix | Headroom |
-|---|---:|---:|---:|---:|---:|
-| transfer | 18,264 | 56,650 | 5,600 | 80,514 | 19,486 |
-| approve | 18,279 | 61,233 | 5,600 | 85,112 | 14,888 |
-| permit2.approve | 18,310 | 67,558 | 5,600 | 91,468 | 8,532 |
-| v4 swap | 18,860 | 62,725 | 5,600 | 87,185 | 12,815 |
+| Transaction | Expiry | Account | Paymaster | Signatures | Prefix | Headroom |
+|---|---:|---:|---:|---:|---:|---:|
+| transfer | 3,051 | 16,112 | 60,482 | 5,600 | 85,245 | 14,755 |
+| approve | 3,051 | 16,121 | 64,032 | 5,600 | 88,804 | 11,196 |
+| permit2.approve | 3,051 | 16,146 | 69,058 | 5,600 | 93,855 | 6,145 |
+| v4 swap (ETH in) | 3,051 | 16,546 | 65,439 | 5,600 | 90,636 | 9,364 |
 
-Multi-hop swaps are not supported. `V3_SWAP_EXACT_IN` renders, but the devnet's router has no v3 factory, so it cannot run there. v4 `SWAP_EXACT_IN` and `PERMIT2_TRANSFER_FROM` render as `BLIND` and are refused, which is proof A17. Adding them is future work and each must keep this floor.
+v4 `SWAP_EXACT_IN` renders in both renderers and is tested, but has not been measured on a live chain. `V3_SWAP_EXACT_IN` renders, but the devnet's router has no v3 factory, so it cannot run there. An unknown command or action renders as `BLIND` and is refused.
 
 ## Patched bytecode
 
 Each holds exactly one LOG1 before patching, checked in CI by `tools/scripts/check-bytecode.ts`. Hashes of the artifacts' patched runtimes; deployed code differs where immutables are filled in.
 
 ```
-ok   VerbatimAccount: LOG1 1, DELEGATECALL 0, patched runtime 0x25ace8c23ea3852d210a0585e920f4c60d1747bc8a4d685402e71211aa8bcbfc
-ok   RendererPaymaster: LOG1 1, DELEGATECALL 1, patched runtime 0xe72159bf7cb2c7b11caedef04ca46995d6f134e2a595319e0ba36ce6364fc206
+ok   VerbatimAccount: LOG1 1, DELEGATECALL 0, patched runtime 0xa7d43ff3f8dec81efb1487f96934998099f20553131ecf397943315da566bd58
+ok   RendererPaymaster: LOG1 1, DELEGATECALL 1, patched runtime 0x22c8c6d900c7d338df8c959cc50a2ea34d11ce646a9311704ca543de82ed5518
 ```
 
 ## Leg B: Sepolia (ERC-4337, EntryPoint v0.7)
 
-`actualGasUsed` from the bundler's receipt, covering account validation, paymaster render, the batch and overhead.
+`actualGasUsed` from the bundler's receipt, covering account validation with its render, the batch and overhead. There is no paymaster on this path.
 
 | What | Bundler | actualGasUsed | Tx |
 |---|---|---:|---|
-| Honest transfer on Sepolia via Pimlico, recipient shown by ENS name | pimlico | 1,107,411 | [tx](https://sepolia.etherscan.io/tx/0x49256aa47f5000f839301ffa7a6add588725f345e6d6d7142c32d7c4db54d2da) |
-| Honest transfer on Sepolia via Alchemy | alchemy | 1,107,411 | [tx](https://sepolia.etherscan.io/tx/0xc30b42437771a2fb31532bf43515faed1033c9f9bf9a2130b98572491d26c52c) |
-| v4 swap through Uniswap's official Sepolia Universal Router and PoolManager | pimlico | 1,172,189 | [tx](https://sepolia.etherscan.io/tx/0x9723873a218547940dd2992d71b3e09364406ae8fffb77ab1bff3253a713b035) |
+| Honest transfer on Sepolia via Pimlico, recipient shown by ENS name | pimlico | 1,532,214 | [tx](https://sepolia.etherscan.io/tx/0xd5bef0e32ce8ee7239bac08ae676329dae13b1a1b33de0eedf1429705e2e1bae) |
+| Honest transfer on Sepolia via Alchemy | alchemy | 1,521,133 | [tx](https://sepolia.etherscan.io/tx/0x540608c614d999cfb63fd496e405454928dcc6b889bcf1f029d6bc929a3694f9) |
+| v4 swap through Uniswap's official Sepolia Universal Router and PoolManager | pimlico | 1,267,022 | [tx](https://sepolia.etherscan.io/tx/0x57c7b706e64d9f8a4445b5e42a78bc9682b43f5c47f25f5639600d0ef5c7b47c) |
 
-**Read that column with care.** `actualGasUsed` is what the EntryPoint bills: it includes `preVerificationGas` and the 10% penalty on unused call gas, and our limits are deliberately generous. The bundle transactions themselves used far less, read from their receipts: 395,343 (B-honest-pimlico), 395,307 (B-honest-alchemy), 473,485 (B-swap).
+**Read that column with care.** `actualGasUsed` is what the EntryPoint bills: it includes `preVerificationGas` and the 10% penalty on unused call gas, and our limits are deliberately generous. The bundle transactions themselves used far less, read from their receipts: 1,030,506 (B-honest-pimlico), 1,019,425 (B-honest-alchemy), 736,653 (B-swap).
 
 Bundler limits met (F8): Alchemy requires at least 40% of the verification limits to be used, which rejected a generous first plan
 (33%). The plan in `tools/scripts/lib/userop.ts` passes both Alchemy and Pimlico.

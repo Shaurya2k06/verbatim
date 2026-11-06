@@ -117,10 +117,6 @@ export function signingPanel(p: { tree: Hex; txCommit: Hex }, needed: number, on
   );
 }
 
-export function digestFor(p: { tree: Hex; txCommit: Hex }): Hex {
-  return review(p).digest;
-}
-
 /** Sends to the real alt mempool, reporting rejection or the mined outcome into `box`. */
 export async function sendAndReport(tx: FrameTx, account: Address, box: HTMLElement): Promise<void> {
   box.replaceChildren(el("div", { class: "line" }, "Submitting to the alt mempool..."));

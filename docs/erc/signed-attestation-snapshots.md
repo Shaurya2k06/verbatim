@@ -54,7 +54,7 @@ A leaf left out of the next snapshot lapses at `expiry`. For immediate effect a 
 
 ## Rationale
 
-Omitting a proof must only be able to refuse or show less; a verifier MUST treat a missing proof of something a transaction needs as a refusal. The cost is transaction size and a bound on revocation latency in the mempool: both are measured in the reference implementation's `docs/ALTMEMPOOL.md`.
+Omitting a proof must only be able to refuse or show less; a verifier MUST treat a missing proof of something a transaction needs as a refusal. The cost is transaction size and a bound on revocation latency in the mempool, at most one TTL.
 
 This generalises beyond renderers to sponsors and oracles: anything attested that validation needs to know.
 
