@@ -1,122 +1,59 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { Suspense, lazy } from "react";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { Layout } from "./components/Layout";
+import { Loading } from "./components/States";
+import { NetworkProvider } from "./lib/network-context";
+import Home from "./pages/Home";
+import Proofs from "./pages/Proofs";
 
-function App() {
-  const [count, setCount] = useState(0)
+// Heavier pages load on demand: they bring the renderer, the signer core and WalletConnect.
+const Demo = lazy(() => import("./pages/Demo"));
+const Attack = lazy(() => import("./pages/Attack"));
+const Wallet = lazy(() => import("./pages/Wallet"));
+const Sentences = lazy(() => import("./pages/Sentences"));
+const Xray = lazy(() => import("./pages/Xray"));
+const Ens = lazy(() => import("./pages/Ens"));
+const Trust = lazy(() => import("./pages/Trust"));
+const Mempool = lazy(() => import("./pages/Mempool"));
+const Standards = lazy(() => import("./pages/Standards"));
 
+function NotFound() {
   return (
     <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
+      <h1>Not found</h1>
+      <p className="lede">There is no page here.</p>
     </>
-  )
+  );
 }
 
-export default App
+const page = (C) => (
+  <Suspense fallback={<Loading />}>
+    <C />
+  </Suspense>
+);
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <NetworkProvider>
+        <Routes>
+          <Route element={<Layout />}>
+            <Route index element={<Home />} />
+            <Route path="demo" element={page(Demo)} />
+            <Route path="attack" element={page(Attack)} />
+            <Route path="wallet" element={page(Wallet)} />
+            <Route path="sentences" element={page(Sentences)} />
+            <Route path="xray" element={page(Xray)} />
+            <Route path="ens" element={page(Ens)} />
+            <Route path="trust" element={page(Trust)} />
+            <Route path="mempool" element={page(Mempool)} />
+            <Route path="proofs" element={<Proofs />} />
+            <Route path="standards" element={page(Standards)} />
+            {/* /bounty appears only once an L2 deployment with a funded bounty wallet is published. Until then /standards says so. */}
+            <Route path="*" element={<NotFound />} />
+          </Route>
+        </Routes>
+      </NetworkProvider>
+    </BrowserRouter>
+  );
+}

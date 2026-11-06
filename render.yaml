@@ -1,0 +1,39 @@
+# Render blueprint for server/ (the API). The client is a static site on Vercel; set its origin as CLIENT_ORIGIN here, and this
+# service's URL as VITE_API_URL there. Secrets are `sync: false`: entered in Render, never committed.
+services:
+  - type: web
+    name: verbatim-server
+    runtime: node
+    plan: free
+    rootDir: .
+    buildCommand: corepack enable && pnpm install --frozen-lockfile --filter @verbatim/server...
+    startCommand: node server/src/index.js
+    healthCheckPath: /api/health
+    autoDeploy: true
+    buildFilter:
+      paths: ["server/**", "deployments/**", "pnpm-lock.yaml"]
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: CLIENT_ORIGIN
+        sync: false
+      - key: SEPOLIA_RPC_URL
+        sync: false
+      - key: BUNDLER_URL
+        sync: false
+      - key: BUNDLER_URL_2
+        sync: false
+      - key: WALLET_CONNECT_PROJECT_ID
+        sync: false
+      - key: UNISWAP_API_KEY
+        sync: false
+      - key: ETHERSCAN_API_KEY
+        sync: false
+      - key: DEMO_EOA_KEY
+        sync: false
+      - key: ATTESTOR1_KEY
+        sync: false
+      - key: ATTESTOR2_KEY
+        sync: false
+      - key: ATTESTOR3_KEY
+        sync: false

@@ -107,14 +107,6 @@ if (!s().poolEth) {
   writeS({ poolEth: { key: k, init: init.transactionHash, liquidity: liq.transactionHash } });
 }
 
-const st = s();
-writeFileSync(resolve(ROOT, "deployments/sepolia.json"), JSON.stringify({
-  network: "sepolia", chainId: 11155111, entryPoint: ENTRY_POINT, account: st.account4337, statelessRenderer: st.statelessRenderer, revocations: st.revocations, ensTrustChecker: st.checker, ensTrustAnchor: st.anchor,
-  tokens: { dUSDC: st.tokenA, dWETH: st.tokenB }, pools: { eth: st.poolEth, erc20: st.pool },
-  uniswap: { router: UNI.router, poolManager: UNI.poolManager, positionManager: UNI.positionManager, permit2: UNI.permit2 },
-  ens: { publisher: NAME, publisherResolver: pub_().resolver, anchor: `${ANCHOR}.eth`, anchorResolver: anc().resolver, attestorsRecordTx: st.attestorsRecord, lookalike: "verbatim-dem0.eth" },
-}, null, 2) + "\n");
-console.log(JSON.stringify({ account: st.account4337, anchor: st.anchor, renderer: st.statelessRenderer }, null, 1));
 void addr; void key;
 
 // The evil route for the real-interface attack: SkimHook on the official PoolManager, with an ETH pool an attacker would seed.
@@ -152,3 +144,6 @@ if (!readS().poolEthEvil) {
   console.log("evil ETH pool", init.transactionHash, liq.transactionHash);
   writeS({ poolEthEvil: { key: k, init: init.transactionHash, liquidity: liq.transactionHash } });
 }
+
+// Last, so the published deployment includes the evil route.
+await import("./export-sepolia");

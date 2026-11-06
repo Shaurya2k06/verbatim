@@ -1,5 +1,5 @@
 # `make proofs` regenerates docs/proofs.json from a clean Leg A deployment on the public devnet. Needs .env (see .env.example).
-.PHONY: install test fuzz slither vectors proofs proofs-legb report addresses bytecode
+.PHONY: install test fuzz slither vectors proofs proofs-legb report addresses bytecode demo-live demo-dry
 
 install:
 	pnpm install --frozen-lockfile
@@ -34,3 +34,10 @@ report: addresses
 
 addresses:
 	cd tools/scripts && npx tsx addresses.ts
+
+# The whole demo, live on Sepolia, narrated in the terminal. demo-dry mines nothing.
+demo-live: install
+	cd tools/scripts && npx tsx live-demo.ts
+
+demo-dry: install
+	cd tools/scripts && npx tsx live-demo.ts --dry
