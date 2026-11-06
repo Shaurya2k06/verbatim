@@ -55,6 +55,12 @@ function Qr({ frames }) {
 function Scanner({ onCode, onClose }) {
   const video = useRef(null);
   const [err, setErr] = useState(null);
+  // The callback changes whenever the page above re-renders (status polling, a new request object). The camera must not restart
+  // each time, so the effect reads the latest callback through a ref and starts the camera once.
+  const latest = useRef(onCode);
+  useEffect(() => {
+    latest.current = onCode;
+  });
   useEffect(() => {
     let stream;
     let frame;
@@ -70,7 +76,7 @@ function Scanner({ onCode, onClose }) {
         ctx.drawImage(v, 0, 0);
         const code = jsQR(ctx.getImageData(0, 0, canvas.width, canvas.height).data, canvas.width, canvas.height, { inversionAttempts: "dontInvert" });
         if (code?.data.startsWith("VSG1:")) {
-          onCode(code.data);
+          latest.current(code.data);
           return;
         }
       }
@@ -92,7 +98,7 @@ function Scanner({ onCode, onClose }) {
       cancelAnimationFrame(frame);
       stream?.getTracks().forEach((t) => t.stop());
     };
-  }, [onCode]);
+  }, []);
   return (
     <div className="scanner">
       {err ? <div className="bad">Cannot scan: {err}. Paste the signature instead.</div> : <video ref={video} playsInline muted />}

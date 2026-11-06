@@ -103,7 +103,8 @@ form.inline input { flex: 1; }
 
 /* Surfaces */
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; margin-bottom: 14px; min-width: 0; }
-.callout { background: var(--warnbg); color: var(--ink); border: 1px solid color-mix(in srgb, var(--warn) 30%, transparent); border-radius: 10px; padding: 12px 14px; margin: 14px 0; font-size: 14px; }
+.callout { background: none; color: var(--mute); border: 0; padding: 0; margin: 14px 0; font-size: 13px; }
+.callout strong { color: var(--ink); }
 .ok, .bad { padding: 10px 12px; border-radius: 8px; font-weight: 600; overflow-wrap: anywhere; margin: 8px 0; }
 .ok { color: var(--ok); background: var(--okbg); }
 .bad { color: var(--risk); background: var(--riskbg); }

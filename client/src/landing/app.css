@@ -158,13 +158,20 @@
   background: var(--riskbg);
   box-shadow: none;
 }
+/* Notes and disclosures: plain text, no yellow box. The words stay; only the tab is gone. */
 .lp-app .callout {
+  margin: 14px 0;
+  padding: 0;
   border: 0;
-  border-left: 2px solid var(--warn);
-  border-radius: 2px;
-  background: var(--warnbg);
-  font-size: 14px;
-  line-height: 24px;
+  border-radius: 0;
+  background: none;
+  color: var(--mute);
+  font-size: 13px;
+  line-height: 22px;
+}
+.lp-app .callout strong {
+  color: var(--ink);
+  font-weight: 600;
 }
 .lp-app .ok,
 .lp-app .bad,
