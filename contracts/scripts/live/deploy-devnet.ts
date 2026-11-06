@@ -111,7 +111,8 @@ if (!s.trustEpoch) {
   // One snapshot, two delivery paths: the same root is cached here and carried in proofs on the stateless path (§5).
   const snap = await publishSnapshot(u, 1337n, 2);
   u.root = snap.root;
-  writeFileSync(resolve(ROOT, "contracts/deployments/snapshot-devnet.json"), JSON.stringify(snap, null, 1) + "\n");
+  // A side deployment under its own state file (the unstaked proof) must not overwrite the main deployment's snapshot.
+  if (!process.env.VERBATIM_STATE) writeFileSync(resolve(ROOT, "contracts/deployments/snapshot-devnet.json"), JSON.stringify(snap, null, 1) + "\n");
   const r = await attest(s.paymaster, u);
   console.log("refreshTrust", r.transactionHash, "gas", r.gasUsed, "root", snap.root);
   writeState({ trustEpoch: 1, refreshTx: r.transactionHash });

@@ -54,8 +54,8 @@ All on live networks; every row links to a transaction or a named revert in **[c
 
 | Attack | What happened |
 |---|---|
-| A1 swap the recipient | Mempool rejects: `TreeMismatch` |
-| A2 minOut = 0 through SkimHook | Lying sentence: `TreeMismatch`. True sentence: device warns, `PolicyRefused`. Same route on a plain wallet: the hook takes 99% |
+| A1 swap the recipient | Mempool rejects: the render differs from what was signed (`SpecHashMismatch`, or `TreeMismatch` on the stateless path) |
+| A2 minOut = 0 through SkimHook | Lying sentence: `SpecHashMismatch`. True sentence: device warns, `PolicyRefused`. Same route on a plain wallet: the hook takes 99% |
 | A3 drop or swap the renderer | The account frame rejects: `BadLayout(0)`, `BadLayout(4)` |
 | A4 weaker spec | `SpecHashMismatch`, both ways |
 | A5 poisoned descriptor | Renders blind: `PolicyRefused` |

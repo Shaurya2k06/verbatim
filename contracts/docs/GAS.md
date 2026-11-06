@@ -10,7 +10,7 @@ signatures. The mempool's cap applies to the declared limits plus signatures. Ro
 
 | Proof | What | Validation frames | Prefix | Execute exec | Execute state | Tx |
 |---|---|---:|---:|---:|---:|---|
-| HONEST | Honest 4-frame transfer | 3,051 + 16,285 + 60,493 | 85,429 | 160,872 | 391,680 | `0xc55c00f744...` |
+| HONEST | Honest 4-frame transfer | 3,051 + 16,285 + 60,493 | 85,429 | 160,872 | 97,920 | `0x5dcc5a88e7...` |
 | SWAP | Honest v4 swap through the real Universal Router | 3,051 + 16,719 + 65,218 | 90,588 | 240,545 | 97,920 | `0xcad426d4e5...` |
 | WRAP | WRAP_ETH through the real Universal Router | 3,051 + 16,409 + 53,824 | 78,884 | 181,124 | 97,920 | `0x25c7c73f13...` |
 | A6 | EvilVault keeps the ETH and credits no shares | 3,051 + 16,298 + 54,220 | 79,169 | 136,429 | 97,920 | `0x4221e7bcda...` |

@@ -68,6 +68,8 @@ Execution, Sepolia and every other table: [GAS.md](GAS.md). The side-by-side of 
 - **`/suites` signs with two owner keys held on the server.** It is testnet only, and those keys must never guard real funds.
 - **Six guards are not asserted by name in a test,** listed in `STATUS.md`. Each effect check is, and disabling any one of them fails a test.
 - **Demo pools drift** as swaps sell into them, and an honest "at least 2000" then correctly fails.
+- **`B10` leaves its revocation in place.** It revoked the transfer descriptor on the devnet, so a stateless transfer there now lands and reverts `LeafRevoked` until the next deployment. The stateless proofs ran before it.
+- **The paymaster-path snapshot on the devnet expires at 12:51 UTC on 6 November.** After that, redeploy with `fresh-deploy.sh` before a devnet demo.
 - **The devnet may reset again.** `contracts/scripts/live/fresh-deploy.sh` rebuilds it, and the addresses change. A snapshot lasts 6 hours: `refresh-snapshot.ts` re-signs Sepolia's.
 
 ## Remaining manual steps

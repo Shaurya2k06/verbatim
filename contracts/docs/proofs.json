@@ -5,8 +5,8 @@
     "expected": "admitted by the public alt mempool and mined; batch succeeds",
     "pass": true,
     "outcome": "mined",
-    "txHash": "0xc55c00f7442a3804054ea2c498e88d305f0b1e348a5159b7c23417c84a87cf54",
-    "block": 289,
+    "txHash": "0x5dcc5a88e70a2d98b5c0ff81f9d6d93549b609a6de42a4b9c80f54d4e3065d29",
+    "block": 1131,
     "frameGas": [
       {
         "execution": 3051,
@@ -22,14 +22,14 @@
       },
       {
         "execution": 160872,
-        "state": 391680
+        "state": 97920
       }
     ],
     "extra": {
       "payer": "0x004ecc066292c1fe27109f96c3fd1413053e5d73",
       "delivered": "1000000"
     },
-    "at": "2026-11-06T06:57:50.742Z"
+    "at": "2026-11-06T08:22:03.112Z"
   },
   "A1": {
     "id": "A1",
@@ -393,7 +393,7 @@
     "expected": "not in the snapshot, so hex is shown; the exclusivity proof refuses it",
     "pass": true,
     "outcome": "rejected-at-mempool",
-    "message": "Execution reverted with reason: +\u0102\r\u0010\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0010\u0000\u0000\u0011\u0010\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0010\u0000\u0000\u0011.\n\nRaw Call Arguments:\n  to:    0x1f01041520e365f55be272af88e9053894cfc573\n  data:  0x257d67a | To: 0x000000000000000000000000000000000000bad1",
+    "message": "Execution reverted with reason: +Ă\r\u0010\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0010\u0000\u0000\u0011\u0010\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0010\u0000\u0000\u0011.\n\nRaw Call Arguments:\n  to:    0x1f01041520e365f55be272af88e9053894cfc573\n  data:  0x257d67a | To: 0x000000000000000000000000000000000000bad1",
     "at": "2026-11-06T00:20:15.658Z"
   },
   "A13": {

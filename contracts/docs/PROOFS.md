@@ -14,7 +14,7 @@ Live deployment: paymaster `0x004ecc066292c1fe27109f96c3fd1413053e5d73`, account
 
 | ID | Attack or case | Spec expects | Met | Transaction | Reason from the chain |
 |---|---|---|---|---|---|
-| HONEST | Honest 4-frame transfer | admitted by the public alt mempool and mined; batch succeeds | yes | [`0xc55c00f7442a...`](https://explorer.altmempool.wtf/tx/0xc55c00f7442a3804054ea2c498e88d305f0b1e348a5159b7c23417c84a87cf54?node=https%3A%2F%2Faltmempool.forshtat.com%2Frpc) | `as expected` |
+| HONEST | Honest 4-frame transfer | admitted by the public alt mempool and mined; batch succeeds | yes | [`0x5dcc5a88e70a...`](https://explorer.altmempool.wtf/tx/0x5dcc5a88e70a2d98b5c0ff81f9d6d93549b609a6de42a4b9c80f54d4e3065d29?node=https%3A%2F%2Faltmempool.forshtat.com%2Frpc) | `as expected` |
 | A1 | Swap the recipient | mempool reject: the render differs from what was signed | yes | rejected, no tx | `SpecHashMismatch(0x03ad505e608ef67049b9a9c03ac760e23b3d5cf37ba73f276df530a334167223, 0x4` |
 | A3 | Drop the renderer frame (self-pay layout) | frame 0 rejects with BadLayout | yes | rejected, no tx | `BadLayout(0x0)` |
 | A3b | Swap in a permissive paymaster | frame 0 rejects (BadLayout) | yes | rejected, no tx | `BadLayout(0x4)` |
