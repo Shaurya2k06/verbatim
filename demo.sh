@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 # Verbatim: run everything we claim, from the terminal, and show it working.
 #
-#   ./demo.sh                 all stages: every attack and swap type on Sepolia, the frames devnet, and all 13 cases on the hosted server.
+#   ./demo.sh                 all stages: every attack and swap type on Sepolia, the frames devnet, and the hosted site in a real browser
+#                             (every page, the ENS checks, all 13 live cases and the full demo, through the page's own buttons).
 #                             Mines about 10 transactions (roughly 0.004 Sepolia ETH plus gas); takes 15-20 minutes
 #   ./demo.sh --no-mine       same, but nothing is mined: only what is refused before the mempool
 #   ./demo.sh --quick         skip the slow parts (fuzz drops to 500 cases, one hosted case, no browser)
 #   ./demo.sh --record        also record the 3-minute video with real browsers (adds about 6 minutes)
 #   ./demo.sh --destructive   also run the devnet case that burns a descriptor (B10); afterwards the devnet needs contracts/scripts/live/fresh-deploy.sh
-#   ./demo.sh --only=tests,live,hosted      just those stages (env tests fuzz bytecode live hosted devnet phone record)
+#   ./demo.sh --only=tests,live,hosted      just those stages (env tests fuzz bytecode live hosted site devnet phone record)
 #   ./demo.sh --fuzz=2000     fuzz case count
 #
 # Needs: the root .env (git-ignored; only its variable names are checked here, values are never printed), node, pnpm, forge, anvil.
@@ -108,32 +109,31 @@ fi
 
 # ── 6 ───────────────────────────────────────────────────────────────────────────────────────────────────────────────
 if want hosted; then
-  stage "6 · The hosted site and server" "$SITE and $API: pages load, the new build is live, and a real case runs on Sepolia through the server"
+  stage "6 · The hosted site and server" "$SITE and $API: pages load, the new build is live, and the server is ready to sign"
   for p in / /demo /uniswap /ens /proofs "/proofs?id=B-A1" "/proofs?view=history"; do
     c=$(http "$SITE$p"); [ "$c" = 200 ] && pass "GET $p" "HTTP $c" || fail "GET $p" "HTTP $c"
   done
   JS=$(curl -s -m 30 "$SITE/" | grep -oE '/assets/index-[^"]+\.js' | head -1)
   if [ -n "$JS" ]; then
     curl -s -m 60 "$SITE$JS" -o /tmp/verbatim-bundle.js
-    for k in "Run this suite" "See the demo"; do grep -q "$k" /tmp/verbatim-bundle.js && pass "site bundle has \"$k\"" "the current build" || fail "site bundle lacks \"$k\"" "Vercel is serving an old build"; done
+    for k in "History & proofs" "See the demo"; do grep -q "$k" /tmp/verbatim-bundle.js && pass "site bundle has \"$k\"" "the current build" || fail "site bundle lacks \"$k\"" "Vercel is serving an old build"; done
   else fail "site bundle not found" ""; fi
   echo "  ${D}waking the server (the first request after idle can take up to a minute)${Z}"
   INFO=$(curl -s -m 120 "$API/api/suites")
   READY=$(echo "$INFO" | js 'j.ready'); NS=$(echo "$INFO" | js 'Array.isArray(j.suites)?j.suites.length:j.suites')
   if [ "$READY" = true ]; then pass "server is ready to sign" "$NS suites listed"; else fail "server not ready" "$(echo "$INFO" | js 'j.why')"; fi
-  if [ "$READY" = true ] && [ "$MINE" = 1 ]; then
-    if [ "$QUICK" = 1 ]; then CASES="unattested"; else CASES=$(echo "$INFO" | js '(j.suites||[]).flatMap(s=>s.cases.map(c=>c.id)).join(" ")'); fi
-    echo "  ${D}running ${CASES// /, } on the hosted server, one at a time (each is a real Sepolia run)${Z}"
-    for CASE in $CASES; do
-      RUN=$(curl -s -m 60 -X POST "$API/api/suites/run" -H 'content-type: application/json' -d "{\"case\":\"$CASE\"}" | js 'j.id')
-      if [ -z "$RUN" ]; then fail "hosted case $CASE: could not start" ""; continue; fi
-      V=""; for i in $(seq 1 120); do V=$(curl -s -m 30 "$API/api/suites/run/$RUN"); [ "$(echo "$V" | js 'j.status')" = done ] && break; sleep 3; done
-      ASX=$(echo "$V" | js 'j.asExpected'); OUT=$(echo "$V" | js 'j.outcome&&(j.outcome.name||j.outcome.kind)+(j.txUrl?"  "+j.txUrl:"")')
-      TITLE=$(echo "$V" | js 'j.title')
-      [ "$ASX" = true ] && pass "hosted · $CASE ($TITLE)" "$OUT" || fail "hosted · $CASE ($TITLE) did not behave as expected" "$OUT"
-      sleep 6
-    done
-  elif [ "$READY" = true ]; then skip "hosted runs" "--no-mine"; fi
+fi
+
+# ── 6b ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+if want site; then
+  stage "6b · The site in a real browser" "every page, the ENS checks, and every live case and the full demo run through the page's own buttons on Sepolia"
+  if [ "$MINE" = 1 ] && [ "$QUICK" = 0 ]; then SARGS=""; else SARGS="--no-runs"; fi
+  echo "  ${D}\$ SITE=$SITE tsx site-check.ts $SARGS${Z}"
+  SLOG="$(mktemp -t verbatim-site.XXXXXX)"
+  (cd contracts/scripts/e2e && SITE="$SITE" pnpm exec tsx site-check.ts $SARGS) 2>&1 | tee "$SLOG" | sed 's/^/  /'
+  SN=$(sed 's/\x1b\[[0-9;]*m//g' "$SLOG" | grep -c "^  ✓ "); SB=$(sed 's/\x1b\[[0-9;]*m//g' "$SLOG" | grep -c "^  ✗ ")
+  [ "$SB" = 0 ] && [ "$SN" -gt 0 ] && pass "site: all $SN browser checks passed" "" || fail "site: $SB browser check(s) failed" "$SN passed"
+  rm -f "$SLOG"
 fi
 
 # ── 7 ───────────────────────────────────────────────────────────────────────────────────────────────────────────────
