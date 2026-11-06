@@ -6,7 +6,9 @@ export const api = (path) => new URL(`${BASE}/api${path}`, window.location.origi
 
 async function call(method, path, body) {
   const r = await fetch(api(path), { method, headers: body ? { "content-type": "application/json" } : {}, body: body ? JSON.stringify(body, (_, v) => (typeof v === "bigint" ? `0x${v.toString(16)}` : v)) : undefined });
-  const j = await r.json().catch(() => ({ error: `server returned ${r.status}` }));
+  // Anything but JSON means no API answered (for example a static host's fallback page): treat it as down.
+  if (!(r.headers.get("content-type") ?? "").includes("application/json")) throw Object.assign(new Error(`the API is not reachable (HTTP ${r.status})`), { status: r.status });
+  const j = await r.json();
   if (!r.ok) throw Object.assign(new Error(j.error ?? `server returned ${r.status}`), { status: r.status });
   return j;
 }

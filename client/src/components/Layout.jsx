@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Component, useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { DevnetBanner, StatusBar } from "./StatusBar";
 import { useData } from "../lib/data";
@@ -15,6 +15,25 @@ export const ROUTES = [
   ["/proofs", "Proofs"],
   ["/standards", "Standards"],
 ];
+
+/** One page failing must not blank the site: show the error, keep the navigation. */
+class PageBoundary extends Component {
+  state = { error: null };
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+  componentDidUpdate(prev) {
+    if (prev.path !== this.props.path && this.state.error) this.setState({ error: null });
+  }
+  render() {
+    if (!this.state.error) return this.props.children;
+    return (
+      <div className="bad">
+        This page failed: {this.state.error.message}. The rest of the site still works; <a href="/proofs">the proof ledger</a> needs no network.
+      </div>
+    );
+  }
+}
 
 export const REPO = "https://github.com/shaurya2k06/verbatim";
 
@@ -47,7 +66,9 @@ export function Layout() {
         <DevnetBanner />
       </header>
       <main>
-        <Outlet />
+        <PageBoundary path={loc.pathname}>
+          <Outlet />
+        </PageBoundary>
       </main>
       <footer className="foot">
         <a href={REPO}>Repository</a>

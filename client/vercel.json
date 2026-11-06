@@ -2,5 +2,5 @@
   "installCommand": "cd .. && corepack enable && pnpm install --frozen-lockfile --filter @verbatim/web...",
   "buildCommand": "pnpm build",
   "outputDirectory": "dist",
-  "rewrites": [{ "source": "/((?!data/|assets/).*)", "destination": "/index.html" }]
+  "rewrites": [{ "source": "/((?!api/|data/|assets/).*)", "destination": "/index.html" }]
 }
