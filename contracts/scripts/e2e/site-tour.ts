@@ -204,7 +204,6 @@ const N = {
   compare: "Every transaction carries two formats, and the owners sign the hash of each. The VTREE checks the words. It's the sentence as canonical bytes, and during validation a VERIFY frame renders it again from the real calldata. If it differs, the mempool never admits it. The VSPEC checks the effects. It's the list of what must be true after the batch, taken byte for byte from the sentence's guarantees, and the account asserts it after the calls. If one fails, the whole batch reverts.",
   benefits: "So risk arrives in plain words, read from the hook's address on chain. Every transaction carries a mandatory expiry. A name has to earn its place with a live exclusivity proof. And it all fits the rails you already have.",
   paths: "Two ways to fit under the hundred-thousand gas cap. On the stateless path, the account's VERIFY frame checks proofs carried in the transaction and renders, in ninety thousand gas with four signatures, no stake needed. On the paymaster path, a staked paymaster renders from its own cache in its own frame, and a transfer costs eighty-five thousand. Rotating the snapshot invalidated none of fifty pending stateless transactions, and all fifty on the paymaster path.",
-  proof: "And don't take the page's word for it. These counts are read from the proof ledger, and every row links to its transaction, or to the named revert that stopped it.",
   proofsIntro: "Here is the proof ledger. Each row is what a live network returned. We'll start on the EF frames devnet: EIP-8141 frame transactions, sent through the ERC-8421 alternative mempool.",
   honest: "An honest transfer on the paymaster path: four frames. Frame zero checks the expiry. Frame one is the account's VERIFY frame. Frame two is the paymaster's VERIFY frame, which renders the sentence from its cache in about sixty thousand gas. Frame three is the SENDER frame, which executes.",
   honestWhy: "Why frames matter. The protocol validates the owners' signatures over an explicit message, so the account never calls ecrecover: it rebuilds the digest from its own render, and compares. A VERIFY frame reads the sender frame's calldata through the new introspection opcodes, which our FrameReader exposes to Solidity.",
@@ -334,7 +333,7 @@ await startServer();
 console.log(`voice: ${server ? `Kokoro ${VOICE} ×${VOICE_SPEED}` : "macOS say"}`);
 // Every fixed line, made before the camera rolls.
 {
-  const all = [...(SKIP_LANDING ? [] : [N.hero, N.heroDevice, N.problem, ...N.how, N.archIntro, ...Object.values(N.arch), N.compare, N.benefits, N.paths, N.proof]), N.proofsIntro, N.honest, N.honestWhy, N.honestEx, N.stateless, N.statelessEx, N.a1, N.b14, N.b14Ex, N.g0c, N.bench, N.ensIntro, N.ensProof, N.ensLookPre, N.ensLook, N.ensResolve, N.demoIntro, N.uniIntro, N.fullIntro, N.fullLog, N.history, ...Object.values(CASES).flatMap((c) => [c.pre, c.post, ...(c.ex ? [c.ex] : [])])];
+  const all = [...(SKIP_LANDING ? [] : [N.hero, N.heroDevice, N.problem, ...N.how, N.archIntro, ...Object.values(N.arch), N.compare, N.benefits, N.paths]), N.proofsIntro, N.honest, N.honestWhy, N.honestEx, N.stateless, N.statelessEx, N.a1, N.b14, N.b14Ex, N.g0c, N.bench, N.ensIntro, N.ensProof, N.ensLookPre, N.ensLook, N.ensResolve, N.demoIntro, N.uniIntro, N.fullIntro, N.fullLog, N.history, ...Object.values(CASES).flatMap((c) => [c.pre, c.post, ...(c.ex ? [c.ex] : [])])];
   let said = 0;
   for (const t of all) said += (await line(t)).dur;
   console.log(`${all.length} fixed lines, ${(said / 60).toFixed(1)} minutes of speech`);
@@ -634,7 +633,6 @@ await speak(site, "landing · what changes", N.benefits, async () => {
   await glide(await topOf("#paths", H - 120), 7000);
 });
 await speak(site, "landing · three paths", N.paths, () => glideTo("#paths", 1400));
-await speak(site, "landing · proof", N.proof, () => glideTo("#proof", 1400));
 // The rest of the page, skimmed.
 cut(site, "real", "landing · skim");
 for (const sel of ["#try", "#faq", ".lp-finale"]) await glideTo(sel, 700);

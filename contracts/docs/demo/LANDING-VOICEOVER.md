@@ -91,12 +91,6 @@ Read at a natural pace, the narration runs about 5:20 in total.
 
 > The trade-off is where trust lives. The stateless path carries its snapshot inside the transaction, so it needs no stake and runs in any frame mempool: rotating the snapshot invalidated none of fifty pending transactions. The paymaster reads its own storage, which the canonical rules refuse and ERC-8421 admits because it's staked. The same rotation invalidated all fifty, because each one signed the cached root. The wallet picks the stateless path when it fits with ten thousand gas to spare, and the paymaster path otherwise.
 
-## 8. Proof: "Don't take this page's word for it" (about 10 s)
-
-**On screen:** the four stat tiles.
-
-> And don't take the page's word for it. These counts are read from the proof ledger, and every row links to its transaction, or to the named revert that stopped it.
-
-## 9. Try it, FAQ, finale (about 3 s, no voiceover)
+## 8. Try it, FAQ, finale (about 3 s, no voiceover)
 
 **On screen:** scroll quickly to the end of the page.

@@ -6,7 +6,6 @@ import { perFrame } from "./motion";
 const SECTIONS = [
   ["#how", "How it works"],
   ["#architecture", "Architecture"],
-  ["#proof", "Proof"],
   ["#faq", "FAQ"],
 ];
 

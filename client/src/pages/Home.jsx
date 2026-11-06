@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Evidence } from "../components/Badge";
 import { REPO } from "../components/Layout";
-import { DevnetBanner, StatusBar } from "../components/StatusBar";
 import { Failed } from "../components/States";
 import { Architecture } from "../landing/Architecture";
 import { Boot } from "../landing/Boot";
@@ -349,82 +347,6 @@ function Paths() {
   );
 }
 
-function Proof({ s, manifest, error }) {
-  const reg = manifest?.registry;
-  return (
-    <section className="lp-section" id="proof" aria-labelledby="proof-title">
-      <div className="lp-head" {...reveal()}>
-        <div>
-          <p className="lp-eyebrow">Proof</p>
-          <h2 id="proof-title">Don’t take this page’s word for it</h2>
-        </div>
-        <p className="lp-copy">The counts below are read from the proof ledger published with this build. Each row links to the transaction or the named revert behind it.</p>
-      </div>
-      {error ? <Failed what="the proof ledger" error={error} /> : null}
-      <ul className="lp-stats" {...reveal()}>
-        <li>
-          {s ? (
-            <>
-              <b>
-                {s.attacksMet} <small>of {s.attacks}</small>
-              </b>
-              <span>recorded attacks stopped as expected</span>
-              <div className="badges">
-                {s.attacksMetByEvidence.final ? <Evidence kind="final" detail={s.attacksMetByEvidence.final} /> : null}
-                {s.attacksMetByEvidence.older ? <Evidence kind="older" detail={s.attacksMetByEvidence.older} /> : null}
-              </div>
-            </>
-          ) : error ? null : (
-            <div className="lp-skel lp-skel-stat" aria-hidden="true" />
-          )}
-        </li>
-        <li>
-          {s ? (
-            <>
-              <b>
-                {s.rejected} <small>rejected</small>
-              </b>
-              <span>transactions refused before the mempool, against {s.admitted} admitted</span>
-            </>
-          ) : error ? null : (
-            <div className="lp-skel lp-skel-stat" aria-hidden="true" />
-          )}
-        </li>
-        <li>
-          {reg ? (
-            <>
-              <b>
-                {reg.compiled.toLocaleString("en-US")} <small>of {reg.total.toLocaleString("en-US")}</small>
-              </b>
-              <span>ERC-7730 registry functions compile, with each failure listed and explained</span>
-            </>
-          ) : error ? null : (
-            <div className="lp-skel lp-skel-stat" aria-hidden="true" />
-          )}
-        </li>
-        <li>
-          <b>
-            10,000 <small>per CI run</small>
-          </b>
-          <span>random cases compare the Solidity and TypeScript renderers byte for byte, with zero mismatches</span>
-        </li>
-      </ul>
-      {s && s.notMet + s.notRun > 0 ? (
-        <p className="lp-honest">
-          <b>
-            {s.notMet + s.notRun} of {s.total} rows
-          </b>{" "}
-          miss their expected result or have not run. They stay listed. <Link to="/proofs">Read them →</Link>
-        </p>
-      ) : null}
-      <div className="lp-status">
-        <StatusBar />
-        <DevnetBanner />
-      </div>
-    </section>
-  );
-}
-
 function Try() {
   const [copied, setCopied] = useState(false);
   const copy = async () => {
@@ -505,7 +427,6 @@ export default function Home() {
   const { hash } = useLocation();
   const list = d.data ? rows(d.data[0]) : null;
   const s = list ? summary(list) : null;
-  const manifest = d.data?.[1] ?? null;
 
   // Arriving by link: once on mount, and again when the data has settled the sections above the target. After that, in-page
   // links belong to the browser.
@@ -542,7 +463,6 @@ export default function Home() {
         <Benefits />
         <Paths />
         <Rule />
-        <Proof s={s} manifest={manifest} error={d.error} />
         <Rule />
         <Try />
         <Faq />
