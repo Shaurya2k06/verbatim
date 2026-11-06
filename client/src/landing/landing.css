@@ -1147,6 +1147,20 @@ html:has(.lp) {
 .lp-card-ok .lp-card-big {
   color: var(--ok);
 }
+.lp-card-fmt {
+  display: flex;
+  flex-direction: column;
+}
+.lp-card-fmt .lp-card-big {
+  color: var(--ok);
+}
+.lp-card-fmt .lp-kv {
+  flex: 1;
+}
+.lp-fmt-code {
+  display: block;
+  margin: 24px 0 16px;
+}
 .lp-kv {
   display: grid;
   gap: 8px;

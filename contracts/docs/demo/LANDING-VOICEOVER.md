@@ -61,11 +61,11 @@ Read at a natural pace, the narration runs about 5:20 in total.
 | **Lands** | If every promise holds, it lands: checked once on the words, and once on the effects. |
 | **Batch reverts** | If an assertion fails, everything the calls did is undone. The fee stays paid, and the signed digest can't be replayed. |
 
-## 5. "Same route. Two wallets." (about 21 s)
+## 5. "VTREE and VSPEC" (about 30 s)
 
-**On screen:** the "99% gone" card beside the "Nothing moved" card, then the line about Uniswap's real interface under them.
+**On screen:** the VTREE card, then the VSPEC card.
 
-> Here's the difference, recorded on Sepolia. The same 0.001 ETH swap on Uniswap's official contracts, through a pool whose hook skims the output. The ordinary wallet lost nearly all of it. With Verbatim, the VTREE, the sentence the chain rebuilds from the calldata, carried three risk lines read from the hook's address. The account answered PolicyRefused, and nothing moved. Had the screen hidden a warning, the rebuilt VTREE wouldn't match, and the VSPEC would still hold the output to the signed minimum after the calls. We also compromised Uniswap's real interface: it quoted 26 USDC, and the ordinary wallet got 0.026.
+> Every transaction carries two formats, and the owners sign the hash of each. The VTREE checks the words. It's the sentence as canonical bytes, and during validation a VERIFY frame renders it again from the real calldata. If it differs, the mempool never admits it. The VSPEC checks the effects. It's the list of what must be true after the batch, taken byte for byte from the sentence's guarantees, and the account asserts it after the calls. If one fails, the whole batch reverts.
 
 ## 6. "Stop trusting the screen" (about 15 s)
 

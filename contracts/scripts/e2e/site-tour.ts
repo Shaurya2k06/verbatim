@@ -201,7 +201,7 @@ const N = {
     landed: "If every promise holds, it lands: checked once on the words, and once on the effects.",
     reverted: "If an assertion fails, everything the calls did is undone. The fee stays paid, and the signed digest can't be replayed.",
   } as Record<string, string>,
-  compare: "Here's the difference, recorded on Sepolia. The same 0.001 ETH swap on Uniswap's official contracts, through a pool whose hook skims the output. The ordinary wallet lost nearly all of it. With Verbatim, the VTREE, the sentence the chain rebuilds from the calldata, carried three risk lines read from the hook's address. The account answered PolicyRefused, and nothing moved. Had the screen hidden a warning, the rebuilt VTREE wouldn't match, and the VSPEC would still hold the output to the signed minimum after the calls. We also compromised Uniswap's real interface: it quoted 26 USDC, and the ordinary wallet got 0.026.",
+  compare: "Every transaction carries two formats, and the owners sign the hash of each. The VTREE checks the words. It's the sentence as canonical bytes, and during validation a VERIFY frame renders it again from the real calldata. If it differs, the mempool never admits it. The VSPEC checks the effects. It's the list of what must be true after the batch, taken byte for byte from the sentence's guarantees, and the account asserts it after the calls. If one fails, the whole batch reverts.",
   benefits: "So risk arrives in plain words, read from the hook's address on chain. Every transaction carries a mandatory expiry. A name has to earn its place with a live exclusivity proof. And it all fits the rails you already have.",
   paths: "Two ways to fit under the hundred-thousand gas cap. On the stateless path, the account's VERIFY frame checks proofs carried in the transaction and renders, in ninety thousand gas with four signatures, no stake needed. On the paymaster path, a staked paymaster renders from its own cache in its own frame, and a transfer costs eighty-five thousand. Rotating the snapshot invalidated none of fifty pending stateless transactions, and all fifty on the paymaster path.",
   proof: "And don't take the page's word for it. These counts are read from the proof ledger, and every row links to its transaction, or to the named revert that stopped it.",
@@ -629,7 +629,7 @@ for (const id of ["frontend", "ts", "signer", "ppay", "pstate", "p4337", "trust"
   await speak(site, `architecture · ${id}`, N.arch[id], () => press(site.locator(`.react-flow__node[data-id="${id}"]`)));
 }
 
-await speak(site, "landing · same route, two wallets", N.compare, () => glideTo("#compare", 1500));
+await speak(site, "landing · VTREE and VSPEC", N.compare, () => glideTo("#compare", 1500));
 await speak(site, "landing · what changes", N.benefits, async () => {
   await glideTo("#benefits", 1200);
   await glide(await topOf("#paths", H - 120), 7000);

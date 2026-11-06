@@ -4,7 +4,6 @@ import { Evidence } from "../components/Badge";
 import { REPO } from "../components/Layout";
 import { DevnetBanner, StatusBar } from "../components/StatusBar";
 import { Failed } from "../components/States";
-import { TxLink } from "../components/TxLink";
 import { Architecture } from "../landing/Architecture";
 import { Boot } from "../landing/Boot";
 import { BENEFITS, COMMANDS, COVERS, EXCLUDES, EXPLORE, FAQ, FRAME_CAP, FRAME_PATHS, REFUSALS, STEPS, TRY, VERSUS } from "../landing/content";
@@ -30,8 +29,6 @@ function Rule() {
     </div>
   );
 }
-
-const dusdc = (raw) => (Number(raw) / 1e6).toFixed(2);
 
 function HeroProof({ s }) {
   if (!s) return <div className="lp-skel lp-skel-line" aria-hidden="true" />;
@@ -174,89 +171,65 @@ function ArchitectureSection() {
   );
 }
 
-function SideBySide({ list }) {
-  const eoa = list?.find((r) => r.id === "B-A2-eoa");
-  const ours = list?.find((r) => r.id === "B-A2b");
-  const got = eoa?.extra?.victimGot;
-  const took = eoa?.extra?.hookTook;
-  const share = got && took ? Math.round((Number(took) / (Number(took) + Number(got))) * 100) : null;
+/** What each of Verbatim's two formats does, one card each. Sourced from contracts/docs/VTREE.md and VSPEC.md. */
+const FORMATS = [
+  {
+    name: "VTREE",
+    big: "Checks the words",
+    doc: "VTREE.md",
+    rows: [
+      ["What it is", "the sentence as canonical bytes: a header (chain, account, expiry, snapshot root, path), then each call with its fields, risks and guarantees"],
+      ["What is signed", "its hash, keccak256 of those bytes. The offline device decodes the bytes itself and lists the risks and guarantees first"],
+      ["When it is checked", "during validation: a VERIFY frame renders the VTREE again from the real calldata. The Solidity and TypeScript renderers agree byte for byte, across 10,000 fuzz cases"],
+      ["Nothing unexplained", "an unknown function, contract or router command renders as BLIND, and is refused"],
+      ["If it differs", "the mempool never admits the transaction, and nobody pays"],
+    ],
+    code: "SpecHashMismatch · TreeMismatch",
+  },
+  {
+    name: "VSPEC",
+    big: "Checks the effects",
+    doc: "VSPEC.md",
+    rows: [
+      ["What it is", "the list of what must be true after the batch: balance changes, allowance limits, owners, code hashes, no approval left standing"],
+      ["Where it comes from", "the VTREE’s guarantee section, byte for byte, so a host cannot show strong guarantees and send weaker ones"],
+      ["What is signed", "its hash, beside the VTREE’s, in the same owner digest"],
+      ["When it is checked", "after the calls run, inside the account. A tracked asset the VSPEC does not name may not drop at all"],
+      ["If one fails", "the whole batch reverts. The fee stays paid, and the signed digest cannot be replayed"],
+    ],
+    code: "AssertionFailed · APPROVALS_CLEARED",
+  },
+];
+
+function Formats() {
   return (
     <section className="lp-section" id="compare" aria-labelledby="compare-title">
       <div className="lp-head" {...reveal()}>
         <div>
-          <p className="lp-eyebrow">The difference</p>
-          <h2 id="compare-title">Same route. Two wallets.</h2>
+          <p className="lp-eyebrow">Two formats</p>
+          <h2 id="compare-title">VTREE and VSPEC</h2>
         </div>
-        <p className="lp-copy">A 0.001 ETH swap on Uniswap’s official Sepolia contracts, through a pool whose hook skims the output. Both results are recorded on a live network. The difference is the two things Verbatim adds: a VTREE, the sentence the chain rebuilds from the calldata, and a VSPEC, the promises it checks after the calls.</p>
+        <p className="lp-copy">Every transaction carries two byte formats, and the owners sign the hash of each. One is checked before the transaction is admitted, the other after its calls have run.</p>
       </div>
       <div className="lp-duel">
-        <article className="lp-card lp-card-bad" {...reveal()}>
-          <IsoIcon name="leak" size={88} />
-          <h3>Ordinary wallet</h3>
-          <p className="lp-card-big">{share !== null ? `${share}% gone` : "…"}</p>
-          <dl className="lp-kv">
-            <div>
-              <dt>You signed</dt>
-              <dd>raw calldata. No VTREE, so nothing rebuilt what you read</dd>
-            </div>
-            <div>
-              <dt>After the swap</dt>
-              <dd>nothing checked. No VSPEC, so the hook’s cut stood</dd>
-            </div>
-            <div>
-              <dt>You received</dt>
-              <dd>{got ? `${dusdc(got)} dUSDC` : "…"}</dd>
-            </div>
-            <div>
-              <dt>The hook took</dt>
-              <dd>{took ? `${dusdc(took)} dUSDC` : "…"}</dd>
-            </div>
-            <div>
-              <dt>Transaction</dt>
-              <dd>{eoa?.txHash ? <TxLink hash={eoa.txHash} leg={eoa.leg} /> : "…"}</dd>
-            </div>
-          </dl>
-        </article>
-        <article className="lp-card lp-card-ok" {...reveal(1)}>
-          <IsoIcon name="check" size={88} />
-          <h3>Verbatim</h3>
-          <p className="lp-card-big">Nothing moved</p>
-          <dl className="lp-kv">
-            <div>
-              <dt>VTREE, what you read</dt>
-              <dd>the sentence, with three risk lines read from the hook’s address: no minimum output, hook can take your output, unverified hook</dd>
-            </div>
-            <div>
-              <dt>Rebuilt on chain</dt>
-              <dd>
-                the same VTREE, from the real calldata. The policy refuses that hook: <code>PolicyRefused</code>
-              </dd>
-            </div>
-            <div>
-              <dt>If the screen lied</dt>
-              <dd>
-                hide a warning, and the rebuilt VTREE no longer matches what was signed: <code>SpecHashMismatch</code>
-              </dd>
-            </div>
-            <div>
-              <dt>VSPEC, what must hold</dt>
-              <dd>ETH spent exactly as signed, output at or above the signed minimum, no approval left. Checked after the calls, or the batch reverts</dd>
-            </div>
-            <div>
-              <dt>Recorded</dt>
-              <dd>{ours ? <Evidence kind={ours.evidence} /> : "…"}</dd>
-            </div>
-          </dl>
-        </article>
-      </div>
-      <p className="lp-copy lp-duel-note" {...reveal()}>
-        We also compromised <b>Uniswap’s real interface</b>: it quoted <b>26.19 USDC</b>, and the ordinary wallet got <b>0.026</b>. The VTREE rebuilt from those exact bytes carried three risk lines, and the account answered <code>PolicyRefused</code>.{" "}
-        <Link to="/uniswap">Watch the recording →</Link>
-      </p>
-      <div className="lp-ctas lp-ctas-center">
-        <Link className="lp-btn lp-btn-outline" to="/uniswap#skim">
-          Run both, live
-        </Link>
+        {FORMATS.map((f, i) => (
+          <article key={f.name} className="lp-card lp-card-fmt" {...reveal(i)}>
+            <h3>{f.name}</h3>
+            <p className="lp-card-big">{f.big}</p>
+            <dl className="lp-kv">
+              {f.rows.map(([k, v]) => (
+                <div key={k}>
+                  <dt>{k}</dt>
+                  <dd>{v}</dd>
+                </div>
+              ))}
+            </dl>
+            <code className="lp-trace-log lp-fmt-code">{f.code}</code>
+            <a className="lp-more" href={`${DOCS}/${f.doc}`} target="_blank" rel="noreferrer">
+              Read the {f.name} format ↗
+            </a>
+          </article>
+        ))}
       </div>
     </section>
   );
@@ -596,7 +569,7 @@ export default function Home() {
         <How />
         <Rule />
         <ArchitectureSection />
-        <SideBySide list={list} />
+        <Formats />
         <Rule />
         <Benefits />
         <Paths />
