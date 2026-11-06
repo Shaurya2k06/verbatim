@@ -240,6 +240,45 @@ contract Account4337Test is SnapshotFixture {
         acct.validateUserOp(op, h, 0);
     }
 
+    function test_owner_signatures_must_be_exactly_threshold_long() public {
+        (PackedUserOperation memory op, bytes32 h, , , , ) = _honest(1);
+        VerbatimAccount4337.Sig memory sig = abi.decode(op.signature, (VerbatimAccount4337.Sig));
+        sig.ownerSigs = bytes.concat(sig.ownerSigs, hex"00");
+        op.signature = abi.encode(sig);
+        vm.expectRevert(VerbatimCore.BadSignatureLength.selector);
+        acct.validateUserOp(op, h, 0);
+    }
+
+    /// The same signature in its other valid form, with s flipped: it recovers the same owner, so only this check stops it.
+    function test_a_malleated_owner_signature_is_refused() public {
+        (PackedUserOperation memory op, bytes32 h, , , , ) = _honest(1);
+        VerbatimAccount4337.Sig memory sig = abi.decode(op.signature, (VerbatimAccount4337.Sig));
+        bytes memory o = sig.ownerSigs;
+        uint256 n = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141;
+        uint256 lowS;
+        assembly ("memory-safe") {
+            lowS := mload(add(o, 0x40))
+        }
+        uint256 highS = n - lowS;
+        assembly ("memory-safe") {
+            mstore(add(o, 0x40), highS)
+        }
+        o[64] = o[64] == bytes1(uint8(27)) ? bytes1(uint8(28)) : bytes1(uint8(27));
+        sig.ownerSigs = o;
+        op.signature = abi.encode(sig);
+        vm.expectRevert(VerbatimCore.SignatureMalleable.selector);
+        acct.validateUserOp(op, h, 0);
+    }
+
+    function test_an_attestor_list_it_does_not_hold_is_refused() public {
+        (PackedUserOperation memory op, bytes32 h, , , , ) = _honest(1);
+        VerbatimAccount4337.Sig memory sig = abi.decode(op.signature, (VerbatimAccount4337.Sig));
+        sig.attestors[0] = address(0xBAD);
+        op.signature = abi.encode(sig);
+        vm.expectRevert(VerbatimAccount4337.WrongAttestors.selector);
+        acct.validateUserOp(op, h, 0);
+    }
+
     function test_a_stranger_cannot_attest() public {
         (PackedUserOperation memory op, bytes32 h, VerbatimCore.Call[] memory calls, bytes memory proofs, bytes memory tree, bytes memory spec) = _honest(1);
         bytes32 d = acct.digestOf(keccak256(tree), keccak256(spec), EXP, root, 3, h);

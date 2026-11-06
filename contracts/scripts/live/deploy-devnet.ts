@@ -126,4 +126,13 @@ if (!s.funded) {
   writeState({ funded: true });
   s = readState();
 }
+// Probe contracts: A3 needs a second paymaster to swap in, A5 needs code nobody attested, and G0 probes the mempool with them.
+if (!s.probeAccount) {
+  const a = await deploy(deployer, "Probes.sol", "ProbeAccount", { args: [s.frameReader], approve: true });
+  const p = await deploy(deployer, "Probes.sol", "ProbePaymaster", { args: [s.frameReader], approve: true, value: parseEther("0.05") });
+  // Staked through its own stake(), as ERC-8421 requires: the registry keys on msg.sender.
+  await send(deployer, p.address, encodeFunctionData({ abi: artifact("Probes.sol", "ProbePaymaster").abi, functionName: "stake", args: [STAKING_REGISTRY, 86400] }), parseEther("0.012"));
+  writeState({ probeAccount: a.address, probePaymaster: p.address });
+  s = readState();
+}
 console.log(JSON.stringify(s, null, 2));

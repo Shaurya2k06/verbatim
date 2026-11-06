@@ -49,7 +49,7 @@ function GasTable({ rows }) {
   return (
     <div className="panel">
       <h2>
-        Validation gas, paymaster path <Evidence kind="older" />
+        Validation gas, paymaster path <Evidence kind="final" />
       </h2>
       <div className="scroll">
         <table className="plain num small">
@@ -90,7 +90,7 @@ function GasTable({ rows }) {
         </table>
       </div>
       <p className="small muted">
-        From <code>docs/prefix-measurements.json</code>, the last measurement on the four-frame layout before the devnet stopped. Signature cost counts against the cap (proof <Link to="/proofs?id=G0c">G0c</Link>: 100,000 admitted, 100,001 refused). The stateless path has not been measured live yet; its declared budget is {n(STATELESS_GAS.expiry + STATELESS_GAS.account)} plus signatures. These numbers are replaced when the devnet rerun lands.
+        From <code>docs/prefix-measurements.json</code>, on the final build. Signature cost counts against the cap (proof <Link to="/proofs?id=G0c">G0c</Link>: 100,000 admitted, 100,001 refused). The stateless path carries its proofs and two more signatures, so it costs more: 90,485 for a transfer and 96,542 for a swap (<code>docs/prefix-stateless.json</code>).
       </p>
       <details>
         <summary className="small">Full measurements (docs/GAS.md)</summary>
@@ -149,7 +149,7 @@ function Simulator({ rows }) {
               : "Neither path fits: split the batch, or wait for a higher cap."}
         </span>
       </div>
-      <p className="small muted">An estimate: proof verification is taken as about 20k over the render, pending live stateless measurements.</p>
+      <p className="small muted">An estimate: proof verification is taken as about 20k over the render. Measured, it is 16k to 20k for the transactions in the table.</p>
     </div>
   );
 }
@@ -199,10 +199,11 @@ export default function Mempool() {
           <div className="panel">
             <h2>Invalidation</h2>
             <p className="small">
-              On the paymaster path, a trust update can make pending transactions fail validation. Expected: N evicted on the paymaster path, 0 on the stateless path. The N=50 benchmark has not run yet: it needs the devnet. What was measured, with 5 transactions:
+              Pending transactions stopped by a trust update, from 50 signed transactions across 50 senders. A refresh that keeps the snapshot stops none on either path. Rotating the snapshot stops all 50 on the paymaster path and none on the stateless path, because a paymaster-path signature covers the root the paymaster holds.
             </p>
+            <ProofRef id="BENCH-N50" />
             <ProofRef id="A15" />
-            <p className="small muted">Method: re-running validation for each pending transaction through ethrex_simulateFrameTransaction, the call the sidecar makes. Limit: they shared a sender, so they were not all pending at once.</p>
+            <p className="small muted">Method: re-running validation for each transaction through ethrex_simulateFrameTransaction, the call the sidecar makes. Limit: they were signed and ready, not held in a live pool, because the miner would land them within seconds.</p>
           </div>
         </>
       )}

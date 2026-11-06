@@ -46,7 +46,7 @@ Secrets go in the root `.env` (see `.env.example`). `server/.env.example` lists 
 - **A captured attestor quorum.** It *can* mislabel spenders, tokens or names. The amounts in the signed guarantees, the no-standing-approvals rule, and execution-time revocation still hold.
 - **Drift** (Apr 2026) is a footnote only. A truthful sentence would have described those admin calls accurately; expiry is the only mitigation that applies.
 
-**Where this stands:** [contracts/docs/STATUS.md](contracts/docs/STATUS.md) is the honest list. The public devnet stopped producing blocks during the final build, so the frames rows below are pending a rerun on it. Sepolia rows are live on the final code.
+**Where this stands:** every row in [PROOFS.md](contracts/docs/PROOFS.md) meets its expected result, on the final code, on the public frames devnet and Sepolia. The real Uniswap interface attack and the N=50 invalidation bench are recorded. What is left is yours: [contracts/docs/REPORT.md](contracts/docs/REPORT.md) lists it, and [STATUS.md](contracts/docs/STATUS.md) has the gates.
 
 ## It runs today
 
@@ -77,7 +77,7 @@ All on live networks; every row links to a transaction or a named revert in **[c
 | B13 attestor no longer listed in ENS | Refused at execution: `AttestorNotListed` |
 | B14, I12 an approval left standing | `AssertionFailed`: `APPROVALS_CLEARED` |
 
-Tests: 176 Foundry tests, including a stateful invariant suite and the attacks above, plus the TypeScript packages. I8 (the renderers are byte-identical) is a differential fuzzer: 10,000 random cases per CI run, zero mismatches. Coverage: **1,898 of 3,035 functions in the ERC-7730 registry compile, across 65 protocols** ([contracts/docs/REGISTRY.md](contracts/docs/REGISTRY.md), failures listed with reasons). Effects are written and tested for ERC-20, WETH, Permit2, the Universal Router, an ERC-4626 vault and an Aave-style pool. Static analysis and threat model: [SECURITY.md](contracts/SECURITY.md).
+Tests: 191 Foundry tests, including a stateful invariant suite and the attacks above, plus the TypeScript packages. I8 (the renderers are byte-identical) is a differential fuzzer: 10,000 random cases per CI run, zero mismatches. Coverage: **1,898 of 3,035 functions in the ERC-7730 registry compile, across 65 protocols** ([contracts/docs/REGISTRY.md](contracts/docs/REGISTRY.md), failures listed with reasons). Effects are written and tested for ERC-20, WETH, Permit2, the Universal Router, an ERC-4626 vault and an Aave-style pool. Static analysis and threat model: [SECURITY.md](contracts/SECURITY.md).
 
 ## Architecture
 
@@ -112,8 +112,9 @@ Trusted: the device's decoder and screen, the owners' keys, the attestor quorum 
 | `contracts/src/stateless/` | The proof-reading renderer and the revocation registry |
 | `contracts/src/leg-b/` | The same logic behind ERC-4337: any bundler, no paymaster |
 | `packages/signer` | Offline signer: one HTML file |
-| `client/apps/` | Wallet, swap demo, attack kit, ENS publisher check |
-| `tools/` | `difffuzz`, `gas-report`, `e2e` (demo and video), `scripts` (deploy and proofs) |
+| `client/` | The hosted site. `client/apps/` holds the earlier wallet, swap demo, attack kit and ENS check |
+| `server/` | The API and the only place secrets live |
+| `contracts/scripts/` | `live` (deploys and proofs), `difffuzz`, `gas-report`, `e2e` (demo and video), `uniswap-evil` (the real-interface attack) |
 
 Formats: [VTREE](contracts/docs/VTREE.md), [VSPEC](contracts/docs/VSPEC.md), [VDESC](contracts/docs/VDESC.md). Design and trade-offs for the mempool: **[contracts/docs/ALTMEMPOOL.md](contracts/docs/ALTMEMPOOL.md)**. Snapshots: [SNAPSHOT](contracts/docs/SNAPSHOT.md). Everything that changed from the design, and why: [contracts/docs/DECISIONS.md](contracts/docs/DECISIONS.md). Rule findings: [contracts/docs/FINDINGS.md](contracts/docs/FINDINGS.md). ERC drafts: [sentence-bound frame transactions](contracts/docs/erc/sentence-bound-frame-transactions.md), [signed attestation snapshots](contracts/docs/erc/signed-attestation-snapshots.md).
 
@@ -152,7 +153,7 @@ cd contracts/scripts/e2e && pnpm demo     # needs OWNER1_KEY and OWNER2_KEY in .
 cd contracts/scripts/e2e && pnpm record   # writes contracts/docs/demo/verbatim-demo.mp4
 ```
 
-**Your own deployment.** Generated devnet keys go to the git-ignored `.env`; see `.env.example`. The devnet's faucet is off, so fund the deployer with `contracts/scripts/live/fund-from-shared.ts` and the shared key from the sidecar's published genesis values (never store that key here). `contracts/scripts/live/wait-devnet.sh` waits for a stalled devnet, then runs everything.
+**Your own deployment.** Generated devnet keys go to the git-ignored `.env`; see `.env.example`. The faucet gives 1 ETH an hour per address, through the gateway only, and `deploy-devnet.ts` asks it. If that is not enough, fund the deployer with `contracts/scripts/live/fund-from-shared.ts` and the shared key from the sidecar's published genesis values (never store that key here). `contracts/scripts/live/wait-devnet.sh` waits for a stalled devnet, then runs everything.
 
 ```sh
 make -C contracts proofs                         # everything below, Leg A, from a clean deployment

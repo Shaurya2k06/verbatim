@@ -23,6 +23,20 @@ async function frames(hash: string) {
   };
 }
 
+const statelessRows = JSON.parse(readFileSync(resolve(ROOT, "contracts/docs/prefix-stateless.json"), "utf8")) as { name: string; expiry: number; account: number; signatures: number; prefix: number; proofBytes: number }[];
+const statelessSection = statelessRows.length
+  ? `### Stateless path
+
+Simulated with room to spare, so these are what each transaction needs. The declared limits stay under the 100,000 cap: expiry 3,500, account 85,300, four signatures 11,200.
+
+| Transaction | Expiry | Account | Signatures | Prefix | Proof bytes |
+|---|---:|---:|---:|---:|---:|
+${statelessRows.map((r) => `| ${r.name} | ${fmt(r.expiry)} | ${fmt(r.account)} | ${fmt(r.signatures)} | ${fmt(r.prefix)} | ${fmt(r.proofBytes)} |`).join("\n")}
+
+The G2 target was a prefix of at most 90k. A transfer misses it by 485 gas, and a swap needs 96,542. All of them fit the cap.
+
+`
+  : "";
 const rows: string[] = [];
 const measured: { id: string; title: string; f: Awaited<ReturnType<typeof frames>> }[] = [];
 for (const id of ["HONEST", "SWAP", "WRAP", "A6", "A7", "A11", "A12", "F7"]) {
@@ -55,6 +69,7 @@ signatures. The mempool's cap applies to the declared limits plus signatures. Ro
 |---|---|---:|---:|---:|---:|---|
 ${rows.join("\n")}
 
+${statelessSection}
 **Why the prefix is tight:** the deployed sidecar caps it at ${fmt(CAP)} (\`FINDINGS.md\`, b), so render was written to fit. See \`DECISIONS.md\`, D-A20.
 
 **The limit that remains:** one call per transaction on the deployed sidecar. Each extra call adds about 21,500 to the account's work, so a second call overflows the cap. ERC-8421's 1M staked budget would hold them, up to the renderer's own limit.
@@ -71,7 +86,7 @@ Measured by \`contracts/scripts/live/measure.ts\` with generous limits, so each 
 |---|---:|---:|---:|---:|---:|---:|
 ${JSON.parse(readFileSync(resolve(ROOT, "contracts/docs/prefix-measurements.json"), "utf8")).map((r: any) => `| ${r.name} | ${fmt(r.expiry)} | ${fmt(r.frame0)} | ${fmt(r.frame1)} | 5,600 | ${fmt(r.expiry + r.frame0 + r.frame1 + 5600)} | ${fmt(100000 - r.expiry - r.frame0 - r.frame1 - 5600)} |`).join("\n")}
 
-v4 \`SWAP_EXACT_IN\` renders in both renderers and is tested, but has not been measured on a live chain. \`V3_SWAP_EXACT_IN\` renders, but the devnet's router has no v3 factory, so it cannot run there. An unknown command or action renders as \`BLIND\` and is refused.
+v4 \`SWAP_EXACT_IN\` is measured on Sepolia: two hops landed through the account in 929,953 transaction gas (\`B-multihop\`). \`V3_SWAP_EXACT_IN\` renders, but the devnet's router has no v3 factory, so it cannot run there. An unknown command or action renders as \`BLIND\` and is refused.
 
 ## Patched bytecode
 

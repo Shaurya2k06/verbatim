@@ -210,16 +210,16 @@ export const PATHS = [
     name: "Stateless",
     where: "any mempool, no stake",
     body: "Trust travels inside the transaction as snapshot proofs and attestor signatures, so validation reads no global state.",
-    state: "Tested in Foundry, live run pending",
-    tone: "warn",
+    state: "Live on the frames devnet",
+    tone: "ok",
   },
   {
     icon: "vault",
     name: "Paymaster",
     where: "ERC-8421 alternative mempool",
-    body: "A staked paymaster renders from its own cache and rebuilds the digest. A transfer fit in 85,245 gas of the 100,000 cap, measured before the devnet stopped.",
-    state: "Older build, rerun pending",
-    tone: "warn",
+    body: "A staked paymaster renders from its own cache and rebuilds the digest. A transfer fit in 85,429 gas of the 100,000 cap.",
+    state: "Live on the frames devnet",
+    tone: "ok",
   },
 ];
 

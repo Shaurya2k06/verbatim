@@ -107,7 +107,15 @@ The first G1 build measured 99-109k against the 100k cap. Changes, all in both r
 D9 means an ERC-20 swap must be `[permit2.approve, execute]` in one batch, which does not fit the deployed sidecar's cap at about 21k a call. The honest swap and A2 use native-ETH pools: one call and no approval. For the same reason EvilVault cannot hold a standing allowance on a real account, so the live A6 is a vault that keeps the ETH and credits no shares. The hidden pull stays as a Foundry test with an out-of-band allowance and a watched token. This conflict is worth raising in the findings: D9 and the flat cap together rule out ERC-20 swaps until BUDGET-010's 1M applies.
 
 ### D-A22: the real-interface attack, and what its harness changes
-`contracts/scripts/uniswap-evil` applies the malicious build step to a checkout of `Uniswap/interface`. To run at all, the checkout loses references to unpublished workspaces (`tools/uniswap-nx` and others), and defaults testnet mode on. The harness routes RPC to our provider and Trading API paths to its public host with the team's key. Other Uniswap backends refuse a localhost origin; they are not spoofed. See `STATUS.md` for how far this got.
+`contracts/scripts/uniswap-evil` applies the malicious build step to a checkout of `Uniswap/interface`. To run at all, the checkout loses references to unpublished workspaces (`tools/uniswap-nx` and others). The harness presets testnet mode where the app persists it, routes RPC to our provider, and sends Trading API paths to their public host with the team's key. Uniswap's other backends refuse a localhost origin. They are not spoofed: they get a failed answer, as they would offline. The one stub is token metadata for the selected pair, read from the chain. The quote and the transaction are real (`B-UI-eoa`, `B-UI-verbatim`).
+
+The page offers Sepolia USDC, because the Trading API quotes real pools. The build step routes through our SkimHook pool, which pays dUSDC. So the victim also ends up with the wrong token, which an attacker would not need to do on a chain where the hook sat in a pool with real liquidity.
+
+### D-A23: B12 on the live chain stops earlier than the account
+`consumed[]` is what stops the same content under another nonce key, and Foundry proves it (`test_B12_I13_same_digest_cannot_execute_twice`). The devnet refuses before that check runs, in two ways. A sequence belongs to its key, so the copy fails `Nonce mismatch` unless the original used sequence 0, and a contract starts at 1. A key also adds 20,000 validation gas, so no keyed form fits the 100k cap (`FINDINGS.md`). `B12` records the refusal the chain actually gives.
+
+### D-A24: inside the cap, the stateless path refuses the skim hook by running out of gas
+Rendering a hook route costs more than the stateless account's 85,300 limit. So `S-A2` and `S-A2b` are refused with no reason attached. With room to spare, the same transaction reverts with `PolicyRefused(56)`, and `S-A2b` asserts that too. The refusal fails closed, but the wallet cannot show the reason from a mempool error. On the paymaster path the reason comes back directly (`A2b`).
 
 ## Every transaction field (Leg A)
 

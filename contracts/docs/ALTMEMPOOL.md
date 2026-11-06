@@ -58,7 +58,7 @@ One shared paymaster is a shared risk, so this is the central question. A pendin
 
 - (a) the sender's own state changing;
 - (b) revocation of a descriptor or hook **that transaction uses**;
-- (b') on the paymaster path only, a rotated snapshot root, because the signature covers the root. This one is shared by every pending transaction on that path, and the N=50 bench still has to measure it. The stateless path has no such event: its snapshot travels in the transaction;
+- (b') on the paymaster path only, a rotated snapshot root, because the signature covers the root. This one is shared by every pending transaction on that path. The N=50 bench below measures it. The stateless path has no such event: its snapshot travels in the transaction;
 - (c) code appearing at an address it claimed empty (and a lying claim fails at execution anyway);
 - (d) the sender's own fee ticket for that nonce being reclaimed, which only it can start, and which takes a delay.
 
@@ -68,7 +68,35 @@ Three design choices exist purely for this:
 - **Per-descriptor hashes in the tree (D5).** There is no global epoch: each call binds its own `descHash`.
 - **Fees from a per-nonce ticket in the paymaster's own storage.** No token balance to race, and no two pending transactions share one: each nonce has its own prepaid amount (A14).
 
-**Measured** (`INVALIDATION` in `PROOFS.md`): of 5 signed transactions, an unrelated `refreshTrust` that kept the root invalidated none, and revoking one descriptor invalidated exactly the one using it. **Limit of this measurement:** validation was re-run through `ethrex_simulateFrameTransaction`, the same call the sidecar makes. The five share a sender, so they were not all held pending in the mempool at once, and we did not observe the sidecar's own eviction.
+**Measured, N = 50** (`BENCH-N50` in `PROOFS.md`, raw numbers in `invalidation-bench.json`): 50 signed transactions from 50 senders, one per sender, on each path.
+
+| Trust update | Stopped, paymaster path | Stopped, stateless path |
+|---|---:|---:|
+| `refreshTrust` that keeps the snapshot | 0 of 50 | 0 of 50 |
+| Rotating the snapshot root | 50 of 50 (`SnapshotMismatch`) | 0 of 50 |
+
+Revoking one descriptor stops only the transactions that use it (`A15`).
+
+**Method and its limit.** Validation is re-run through `ethrex_simulateFrameTransaction`, the call the sidecar makes for admission and revalidation. The transactions are signed and ready, not sitting in a live pool, because the miner lands them within seconds. So this measures which transactions a revalidation would evict, not an eviction observed in the pool. Rotating the snapshot took about two seconds to revalidate all 50 from a laptop, which says little about a node.
+
+## The two paths, measured
+
+From §16.3 of the build contract, on the public devnet, final build.
+
+| Metric | Stateless | Paymaster |
+|---|---|---|
+| Prefix gas, transfer, with signatures | 90,485 | 85,429 |
+| Prefix gas, v4 swap (ETH in) | 96,542 | 90,588 |
+| Headroom to the 100k cap, transfer / swap | 9,515 / 3,458 | 14,571 / 9,412 |
+| Accepted by the public pool | yes (`S-HONEST`) | no: unstaked is refused (`CANONICAL-UNSTAKED`) |
+| Accepted under ERC-8421 with stake | yes | yes (`HONEST`) |
+| Pending transactions stopped by a trust update, N = 50 | 0 | 0 |
+| Pending transactions stopped by rotating the snapshot, N = 50 | 0 | 50 |
+| Revocation latency (mempool / execution) | up to the snapshot TTL, 6 hours / immediate (`B10`) | immediate (`A15`) / immediate |
+| Transaction size, transfer / swap | 2,711 / 3,703 bytes | 1,571 / 2,691 bytes |
+| Attacks caught | `S-A1`, `S-A2`, `S-A2b`, `B1`-`B11`, `B12` | `A1`-`A18`, `B14`, `F7` |
+
+The stateless path costs more gas and 1.0 to 1.1 KB more per transaction, which is less than the 2 to 3.5 KB the design expected. In exchange it needs no stake and no shared state. The G2 target of a 90k prefix is missed by 485 gas on a transfer. Two further limits are in `DECISIONS.md`: inside the cap it refuses a skim hook by running out of gas, so no reason reaches the wallet (D-A24), and a nonce key does not fit on either path (D-A23).
 
 ## Other trade-offs
 

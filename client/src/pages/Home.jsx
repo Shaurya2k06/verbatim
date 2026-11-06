@@ -38,7 +38,7 @@ function HeroProof({ s }) {
   const live = s.attacksMetByEvidence.final ?? 0;
   return (
     <p className="lp-hero-proof">
-      <b>{live}</b> attacks stopped on Sepolia, on the final build. <Link to="/proofs">See every record →</Link>
+      <b>{live}</b> attacks stopped on live networks, on the final build. <Link to="/proofs">See every record →</Link>
     </p>
   );
 }
@@ -358,7 +358,7 @@ function Proof({ s, manifest, error }) {
           <b>
             {s.notMet + s.notRun} of {s.total} rows
           </b>{" "}
-          miss their expected result or have not run. The public frames devnet stopped during the final build, so those rows come from older builds, some with a masked revert bug since fixed. They stay listed until the rerun. <Link to="/proofs">Read them →</Link>
+          miss their expected result or have not run. They stay listed. <Link to="/proofs">Read them →</Link>
         </p>
       ) : null}
       <div className="lp-status">

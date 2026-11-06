@@ -1,1 +1,1 @@
-{ "name": "@verbatim/uniswap-evil", "private": true, "type": "module", "license": "MIT", "dependencies": { "viem": "^2.21.0", "playwright": "^1.48.0" }, "devDependencies": { "tsx": "^4.19.0" } }
+{"name":"@verbatim/uniswap-evil","private":true,"type":"module","license":"MIT","dependencies":{"@verbatim/displayvm-ts":"workspace:*","playwright":"^1.48.0","viem":"^2.21.0"},"devDependencies":{"tsx":"^4.19.0"}}

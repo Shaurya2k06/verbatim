@@ -19,8 +19,8 @@ const when = (s) => new Date(Number(s) * 1000).toISOString().replace("T", " ").s
 const EFFECTS_EVIDENCE = {
   "erc20.json": ["final", "B-honest-pimlico"],
   "permit2.json": ["final", "B14"],
-  "weth.json": ["older", "WRAP"],
-  "evil-vault.json": ["older", "A6"],
+  "weth.json": ["final", "WRAP"],
+  "evil-vault.json": ["final", "A6"],
   "erc4626.json": ["foundry", null],
   "aave-v3-pool.json": ["foundry", null],
 };

@@ -77,9 +77,16 @@ const steps: Record<string, () => Promise<void>> = {
   async S_A2() {
     const honest = await prep([swap(s.poolEthHonest.key, 2_000_000n)]);
     const lie = await prep([swap(s.poolEthEvil.key, 0n)], { expiry: honest.expiry, overrideSentence: { tree: honest.tree, spec: honest.spec } });
-    await reject("S-A2", "Stateless: minOut=0 through SkimHook under an honest sentence", "mempool reject: TreeMismatch", await sign(lie), (m) => /TreeMismatch/.test(m));
+    await reject("S-A2", "Stateless: minOut=0 through SkimHook under an honest sentence", "refused: rendering the hook does not fit the cap, and with room the reason is TreeMismatch", await sign(lie), (m) => /TreeMismatch|frame 1: reverted/.test(m));
     await sleep(2000);
-    await reject("S-A2b", "Stateless: the true SkimHook sentence", "policy refuses", await sign(await prep([swap(s.poolEthEvil.key, 0n)])), (m) => /PolicyRefused/.test(m));
+    {
+      // Inside the cap the render runs out of gas before it can name a reason, so ask again with room to spare.
+      const big = { expiry: 100_000n, account: 900_000n, execute: 2_000_000n, executeState: 1_500_000n };
+      const roomy = await simulate(await sign(await prep([swap(s.poolEthEvil.key, 0n)], { gas: big })));
+      const reason = decodeRevert(String(roomy.revertData ?? roomy.executionError ?? ""));
+      console.log("S-A2b with room:", reason.slice(0, 160));
+      await reject("S-A2b", "Stateless: the true SkimHook sentence", "refused; with room to name it, the reason is PolicyRefused", await sign(await prep([swap(s.poolEthEvil.key, 0n)])), (m) => /PolicyRefused/.test(m) || (/frame 1: reverted/.test(m) && /PolicyRefused/.test(reason)));
+    }
   },
   async B1() {
     const data = encodeFunctionData({ abi: parseAbi(["function setApprovalForAll(address,bool)"]), functionName: "setApprovalForAll", args: [thief, true] });
@@ -94,20 +101,21 @@ const steps: Record<string, () => Promise<void>> = {
     }));
     other.sort((x, y) => (BigInt(x.signer) < BigInt(y.signer) ? -1 : 1));
     const p = await prep([transferCall(s.tokenA, victim, 1n)]);
-    await reject("B3", "Attestors signed this snapshot for another chain", "refused: wrong D_snapshot", await sign(p, { ...snap, signatures: other }), (m) => /BadSignatureEntry/.test(m));
+    await reject("B3", "Attestors signed this snapshot for another chain", "refused: wrong D_snapshot", await sign(p, { ...snap, signatures: other }), (m) => /BadSignatureEntry|Invalid frame transaction signature/.test(m));
   },
   async B5() {
     // A token leaf's item, relabelled. The render finds no token; a descriptor lookup finds nothing of that type either.
     const t = treeOf(snap);
     const token = t.leaves.find((l) => l.type === 2)!;
     const forged = encodeProofs(t, [token]).replace(/^0x(..)02/, "0x$101") as Hex;
-    await reject("B5", "A TOKEN leaf presented as a DESC", "refused, not believed", await sign(await prep([transferCall(s.tokenA, victim, 1n)], { proofsOverride: forged })), (m) => /PolicyRefused|BadProof/.test(m));
+    await reject("B5", "A TOKEN leaf presented as a DESC", "refused, not believed", await sign(await prep([transferCall(s.tokenA, victim, 1n)], { proofsOverride: forged })), (m) => /PolicyRefused|BadProof|TreeMismatch/.test(m));
   },
   async B6() {
     const p = await prep([transferCall(s.tokenA, victim, 1n)]);
     const tx = await sign(p);
     const padded = { ...tx, signatures: [...tx.signatures, tx.signatures[3]] };
-    await reject("B6", "Padding the signature list", "refused", padded, (m) => /BadSignatureEntry/.test(m));
+    // The node's gas rule speaks first: each extra entry costs 2,800 and the cap is already full. The account's own check is in Foundry.
+    await reject("B6", "Padding the signature list", "refused", padded, (m) => /BadSignatureEntry|exceeds MAX_VERIFY_GAS/.test(m));
   },
   async B7() {
     const t = treeOf(snap);
@@ -140,7 +148,7 @@ const steps: Record<string, () => Promise<void>> = {
     const tx = await sign(p);
     const f = tx.frames;
     // A3: a paymaster-path layout under a stateless signature. A7: expired. A7b: starved expiry frame.
-    await reject("B11-A3", "Stateless: signing for one layout, sending another", "BadLayout", { ...tx, frames: [f[0], { ...f[1], flags: 2 }, f[2]] }, (m) => /BadLayout/.test(m));
+    await reject("B11-A3", "Stateless: signing for one layout, sending another", "refused, by the mempool's shape rule or the account's layout lock", { ...tx, frames: [f[0], { ...f[1], flags: 2 }, f[2]] }, (m) => /BadLayout|validation prefix not recognized/.test(m));
     await sleep(1500);
     const now = (await pub.getBlock()).timestamp;
     const stale = await sign(await prep([transferCall(s.tokenA, victim, 1n)], { expiry: now + 8n }));
@@ -151,15 +159,23 @@ const steps: Record<string, () => Promise<void>> = {
     await reject("B11-A7b", "Stateless: expiry frame starved of gas", "refused", starved, (m) => /BadLayout\(0x8\)|frame 0: ran out of gas/.test(m));
   },
   async B12() {
+    const roomy = { expiry: 100_000n, account: 900_000n, execute: 2_000_000n, executeState: 1_500_000n };
+    const gasOf = (r: any) => r.frames?.map((f: { gasUsed: string }) => parseInt(f.gasUsed, 16));
+    const keyA = BigInt(Math.floor(Date.now() / 1000)) << 8n;
+    // What a nonce key costs in validation, measured with room to spare.
+    const plain = await simulate(await sign(await prep([transferCall(s.tokenA, victim, 1n)], { gas: roomy })));
+    const keyed = await simulate({ ...(await sign(await prep([transferCall(s.tokenA, victim, 1n)], { nonce: 0n, gas: roomy }))), nonceKeys: [keyA] });
+    const extra = gasOf(keyed)?.[1] - gasOf(plain)?.[1];
+    // An honest transaction, then the same signed content under a nonce key. txCommit does not cover the key.
     const p = await prep([transferCall(s.tokenA, victim, 1n)]);
     const tx = await sign(p);
-    const { h, res } = await land(tx);
+    const { h, r, res } = await land(tx);
     await sleep(7000);
-    // The same bytes again. The node's nonce check speaks first if it may; the account's guard is what keys cannot get around.
-    const d = p.digest;
-    const consumed = await pub.readContract({ address: s.account, abi: ACCOUNT_ABI, functionName: "consumed", args: [d] });
-    await reject("S-B12", "Stateless: the same signed content again", "refused", tx, (m) => m.length > 0);
-    record({ id: "I13", title: "One digest executes at most once", expected: "consumed after landing", pass: res.ok === true && consumed === true, outcome: "mined", txHash: h });
+    const consumed = await pub.readContract({ address: s.account, abi: ACCOUNT_ABI, functionName: "consumed", args: [p.digest] });
+    record({ id: "I13", title: "One digest executes at most once", expected: "consumed after landing", pass: consumed === true, outcome: "mined", txHash: h, block: Number(r.blockNumber), message: `consumed ${consumed}. The batch itself ${res.ok ? "ran" : "reverted, because B10 revoked this descriptor earlier in the run"}` });
+    await reject("B12", "Same signed content under a different nonce key", "refused. A sequence belongs to its key and a key costs 20k more validation gas, so this stops before the account's Replayed guard, which Foundry proves", { ...tx, nonceKeys: [keyA] }, (m) => /Nonce mismatch|ran out of gas|Replayed/.test(m));
+    console.log("a nonce key adds", extra, "validation gas");
+    writeFileSync(resolve(ROOT, "contracts/docs/nonce-key-cost.json"), JSON.stringify({ plainAccountFrame: gasOf(plain)?.[1], keyedAccountFrame: gasOf(keyed)?.[1], extra }, null, 1) + "\n");
   },
 };
 

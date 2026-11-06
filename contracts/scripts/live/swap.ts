@@ -80,10 +80,10 @@ const steps: Record<string, () => Promise<void>> = {
     const lie = await prepareTx([swapCall(evil, 0n)], { expiry: shown.expiry, overrideSentence: { tree: shown.tree, spec: shown.spec } });
     try {
       const h = await submit(await sign(lie));
-      record({ id: "A2", title: "minOut=0 via SkimHook under an honest sentence", expected: "mempool reject (tree mismatch)", pass: false, outcome: "mined", txHash: h });
+      record({ id: "A2", title: "minOut=0 via SkimHook under an honest sentence", expected: "mempool reject: the render differs from what was signed", pass: false, outcome: "mined", txHash: h });
     } catch (e) {
       const msg = decodeRevert((e as RpcError).message);
-      record({ id: "A2", title: "minOut=0 via SkimHook under an honest sentence", expected: "mempool reject (tree mismatch)", pass: /TreeMismatch/.test(msg), outcome: "rejected-at-mempool", message: msg });
+      record({ id: "A2", title: "minOut=0 via SkimHook under an honest sentence", expected: "mempool reject: the render differs from what was signed", pass: /TreeMismatch|SpecHashMismatch/.test(msg), outcome: "rejected-at-mempool", message: msg });
     }
     await sleep(2000);
     // The device shows the truth, and the owner signs anyway: policy still refuses.
