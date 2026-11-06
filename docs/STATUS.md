@@ -6,16 +6,26 @@ Every [SPEC] item in `context.md`, marked **done**, **partial** or **missing**. 
 
 | Gate | State | Evidence or what is left |
 |---|---|---|
-| G0 probes | **Done** | `G0a`–`G0f` in `PROOFS.md`. See "G0 results" below |
-| G1 paymaster upgrade | **In progress** | Contracts, twins, device and Foundry tests done; live matrix running |
-| G2 stateless path | Missing | |
-| G3 Uniswap | Partial | Honest swap, A2 and A2-eoa live. No real-interface attack, X-ray, upstream PR; v4 `SWAP_EXACT_IN` and measured v3 multi-hop missing |
-| G4 production L2 | Missing | Deploying needs real funds; going live needs an external red team and outside attestor keys |
-| G5 ENS anchor | Partial | Publisher exclusivity, recipient names and A8 exist, against the old Leg B. `EnsTrustAnchor`, attestor and revocation records, B13 missing |
-| G6 measurement and standards | Partial | Small invalidation test only. Findings (b), (c) written; (a), (d) not. ERC drafts need rewriting. `SNAPSHOT.md` missing |
-| G7 freeze | Missing | Demo script, Q&A cards, offline fallback, rehearsals, final videos |
+| G0 probes | **Done** | `G0a`-`G0f` in `PROOFS.md` |
+| G1 paymaster upgrade | **Code done, live proofs pending** | 160 Foundry tests, 10k fuzz. **The public devnet stopped at block 408262.** `tools/scripts/wait-devnet.sh` reruns everything when it moves. Until then the devnet rows in `proofs.json` are from older builds, and some show failures from a masked-revert bug since fixed |
+| G2 stateless path | **Code done, live proofs pending** | Tests for B1-B11 pass. `stateless.ts` has the live cases. Same blocker. Coverage so far: the descriptors in `descriptors/`, proved for transfer, approve, swap and wrap |
+| G3 Uniswap | **Partial** | Side-by-side live on official Sepolia contracts (`B-A2-eoa`, `B-A2b`). v4 multi-hop renders in both twins; not measured live. Hook X-ray built. Real interface: see below. Upstream PR not opened |
+| G4 production | **Sepolia done; mainnet needs funds** | `VerbatimAccount4337` live through Pimlico and Alchemy. `deploy-l2.ts`, the oracle and terms are written. Not deployed to an L2, and no funds at risk |
+| G5 ENS anchor | **Done on Sepolia, no hosted demo link** | `B13`, `B-ens-revoked`, `A8`. `apps/ens-demo` runs locally; a live link needs hosting |
+| G6 measurement and standards | **Partial** | Four findings and both ERC drafts written, not posted. `SNAPSHOT.md` done. The N=50 invalidation bench needs the devnet. FrameReader and the patch tool are packaged, not published |
+| G7 freeze | **Partial** | Script, Q&A, offline fallback written. Rehearsals are yours. Final videos wait on the live run |
+| Hardware signer | **Not built** | Needs hardware in hand. The offline app remains the fallback |
 
-**Leg B on Sepolia is behind the code.** The deployed contracts match the previous design and their proofs are still valid for it, but `VerbatimAccount4337` and `RendererPaymaster4337` were removed from the source in G1 because G4 replaces them with a stateless account. `legb-*.ts` will not run until then.
+## The real-interface attack: how far it got
+
+Working, with your Trading API key and Reown ID:
+
+- `Uniswap/interface` builds and serves locally from a clean checkout, once references to its unpublished workspaces are removed (`tools/uniswap-evil`, `DECISIONS.md` D-A22).
+- The malicious build step loads in the page, and wraps the provider.
+- The UI detects and connects a wallet, on testnet mode.
+- Trading API calls succeed through the harness.
+
+**Blocked:** selecting a token. The token selector and URL token lookup read Uniswap's data backend, which refuses a localhost origin and which the API key does not cover. So the UI has not yet shown a quote, and the attack has not run end to end through it. **Options:** a Uniswap data API key or allowed origin, or stubbing the data backend's responses in the harness, with that disclosed. The same route is proven without the UI, on the official contracts.
 
 ## G0 results
 
@@ -36,7 +46,7 @@ All five probes passed on the live devnet, and the stateless design is feasible 
 
 **D9 and the 100k cap, for ERC-20 swaps.** No approval may outlive a batch, so an ERC-20 swap has to be `[permit2.approve, execute]` in one batch. Each extra call costs about 21k, and the budget does not hold two. Today:
 
-- The honest swap and A2 use **native-ETH pools**: one call, no approval. The context's "28 USDC / 2,807 to the hook" figures came from the previous ERC-20 route and need re-measuring.
+- The honest swap and A2 use **native-ETH pools**: one call, no approval. On the official Sepolia contracts the victim got 0.0295 dUSDC and the hook 2.92, of a 0.001 ETH swap (`B-A2-eoa`).
 - `permit2.approve` alone now fails `APPROVALS_CLEARED`, which is exactly B14.
 - ERC-20 swaps are attempted in G3, with the measurement recorded either way.
 
@@ -44,4 +54,4 @@ All five probes passed on the live devnet, and the stateless design is feasible 
 
 ## Gas changes that made G1 fit
 
-The first G1 build measured 99–109k. Now 85–91k. See `DECISIONS.md`, D-A20.
+The first G1 build measured 99-109k. The last measurement, before the devnet stopped: 85.2k transfer, 88.8k approve, 90.6k swap (ETH in). See `DECISIONS.md`, D-A20. The stateless path has not been measured live.

@@ -21,9 +21,12 @@ const b = await chromium.launch();
 const ctx = await b.newContext({ viewport: { width: 1280, height: 900 } });
 const page = await ctx.newPage();
 const sent: any[] = [];
+page.on("requestfailed", (r) => { const u = r.url(); if (!/amplitude|statsig|sentry|127\.0\.0\.1/.test(u)) console.log("XFAIL", u.slice(0, 110), (r.postData() ?? "").slice(0, 140)); });
 const calls: string[] = [];
 // The UI's own backends refuse a localhost origin. RPC goes to our provider, the Trading API to its public host with the team's key.
 // Anything else fails cleanly, as it would offline: no origin is spoofed, and no other Uniswap service is used.
+const USDC = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";
+const USDC_TOKEN = { chainId: 11155111, address: USDC, symbol: "USDC", decimals: 6, name: "USD Coin", type: "TOKEN_TYPE_ERC20", safetyLevel: "SAFETY_LEVEL_VERIFIED", feeData: {} };
 const CORS = { "access-control-allow-origin": "*", "access-control-allow-headers": "*", "access-control-allow-methods": "*" };
 const TRADING = /\/(check_approval|quote|swap|swappable_tokens|plan|order|orders|indicative_quote|limit_order_quote|send|wrap|unwrap)(\?|$)/;
 await page.route(/entry-gateway\.backend-[a-z]+\.api\.uniswap\.org|trade-api\.gateway\.uniswap\.org/, async (route) => {

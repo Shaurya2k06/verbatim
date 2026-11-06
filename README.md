@@ -20,21 +20,20 @@ A staked paymaster re-renders that sentence from the transaction's real calldata
 
 ## Scope
 
-**In scope**
-- A human signer reading a sentence on a device, approving a transaction whose calldata a frontend or host may have tampered with (the Bybit class).
-- An accurate-looking contract call with hidden effects on **tracked** assets or permissions: the "contract told the truth; the chain caught what it did" case.
-- Stale pre-signed authority: an absolute `validUntil` kills it within minutes.
-- Swap frontends lying about the minimum output, route, recipient, or hook risk (the Uniswap case).
+**In scope:**
+- A human reading a sentence on a device, with a host or frontend that tampers with the transaction (the Bybit class).
+- A contract that describes itself truthfully but has hidden effects on tracked assets.
+- Swap frontends that lie about the minimum output, route, recipient, or hook risk.
+- Stale pre-signed transactions, killed by a mandatory absolute expiry.
 
-**Out of scope (say it first)**
-- Compromised machine signers with no human reading anything (Binance).
-- Stolen owner keys.
-- Collusion: a k-of-n attestor quorum compromised together with a compromised ENS publisher.
-- A sentence that is accurate but misunderstood.
-- Untracked state, protocol-internal ledgers, and admin-parameter-dependent behaviour.
-- Off-chain signatures. ERC-1271 is off by default; opting in renders `NO_POST_CHECK`.
+**Out of scope:**
+- Compromised **machine** signers (Binance, Oct 2026), stolen keys, and sentences that are accurate but misunderstood.
+- Admin-parameter semantics and protocol-internal ledgers beyond what descriptors render.
+- **Unattested contracts.** They are refused, and there is no "effects-only" mode.
+- **A captured attestor quorum.** It *can* mislabel spenders, tokens or names. The amounts in the signed guarantees, the no-standing-approvals rule, and execution-time revocation still hold.
+- **Drift** (Apr 2026) is a footnote only. A truthful sentence would have described those admin calls accurately; expiry is the only mitigation that applies.
 
-(The ERC-1271 opt-in itself is not built, so `isValidSignature` always fails.)
+**Where this stands:** [docs/STATUS.md](docs/STATUS.md) is the honest list. The public devnet stopped producing blocks during the final build, so the frames rows below are pending a rerun on it. Sepolia rows are live on the final code.
 
 ## It runs today
 
@@ -44,24 +43,28 @@ All on live networks; every row links to a transaction or a named revert in **[d
 |---|---|
 | A1 swap the recipient | Mempool rejects: `TreeMismatch` |
 | A2 minOut = 0 through SkimHook | Lying sentence: `TreeMismatch`. True sentence: device warns, `PolicyRefused`. Same route on a plain wallet: the hook takes 99% |
-| A3 drop or swap the renderer | Frame 0 rejects: `BadLayout(0)`, `BadLayout(4)` |
+| A3 drop or swap the renderer | The account frame rejects: `BadLayout(0)`, `BadLayout(4)` |
 | A4 weaker spec | `SpecHashMismatch`, both ways |
 | A5 poisoned descriptor | Renders blind: `PolicyRefused` |
-| A6 EvilVault's hidden pull | Admitted, then `AssertionFailed` names dWETH. Everything undone, fee kept |
-| A7 stale signature | `Expired`. Fee kept |
+| A6 EvilVault keeps the ETH and credits no shares | Admitted, then `AssertionFailed`. Everything undone, fee kept |
+| A7 stale signature, A7b starved expiry frame | Refused by the expiry frame, and the account's gas floor on it |
 | A8 lookalike ENS name | `WrongResolverCode`, and `RootRolesHeld` even when pinned to its own code. Shows as hex |
 | A9 no fee ticket | `NoTicket` |
 | A10 7702-delegated sender | Rejected in frame 0, and in frame 1 by the code hash pin |
 | A11 reentrancy | `CallFailed`; nothing moved |
 | A12 a call burns all its gas | The assertion reserve holds. Batch reverts, frame survives |
-| A13 future-dated `validUntil` | The device refuses; the chain reverts `TtlTooLong` |
+| A13 future-dated expiry | The device refuses; the chain reverts `TtlTooLong` |
 | A14 two transactions on one fee ticket | Only one can land |
 | A15 descriptor revoked with transactions pending | Only the ones using it drop |
 | A16 router command with the allow-revert flag | `UR_ALLOW_REVERT` node, `PolicyRefused` |
 | A17 unknown router command or v4 action | `BLIND`, `PolicyRefused` |
 | A18 a call reverts with 500 KB | Batch reverts, fee stays paid |
+| B1-B11 the stateless path | Unattested collection, cross-chain snapshot, type confusion, padding, omitted proof, proxy swap, far-future snapshot, revocation while pending |
+| B12, I13 the same signed content again | Refused: `Replayed` |
+| B13 attestor no longer listed in ENS | Refused at execution: `AttestorNotListed` |
+| B14, I12 an approval left standing | `AssertionFailed`: `APPROVALS_CLEARED` |
 
-Tests: 100 Foundry tests, including a stateful invariant suite for I1-I7, I9 and I10 and the attacks above, plus the TypeScript packages. I8 (the renderers are byte-identical) is a differential fuzzer: 10,000 random cases per CI run, zero mismatches. Coverage: **1,898 of 3,035 functions in the ERC-7730 registry compile, across 65 protocols** ([docs/REGISTRY.md](docs/REGISTRY.md), failures listed with reasons). Effects are written and tested for ERC-20, WETH, Permit2, the Universal Router, an ERC-4626 vault and an Aave-style pool. Static analysis and threat model: [SECURITY.md](SECURITY.md).
+Tests: 160 Foundry tests, including a stateful invariant suite and the attacks above, plus the TypeScript packages. I8 (the renderers are byte-identical) is a differential fuzzer: 10,000 random cases per CI run, zero mismatches. Coverage: **1,898 of 3,035 functions in the ERC-7730 registry compile, across 65 protocols** ([docs/REGISTRY.md](docs/REGISTRY.md), failures listed with reasons). Effects are written and tested for ERC-20, WETH, Permit2, the Universal Router, an ERC-4626 vault and an Aave-style pool. Static analysis and threat model: [SECURITY.md](SECURITY.md).
 
 ## Architecture
 
@@ -69,19 +72,20 @@ Tests: 100 Foundry tests, including a stateful invariant suite for I1-I7, I9 and
   frontend (may be hostile)
         |  calls
         v
-  displayvm-ts renders sentence T and spec S  --QR-->  OFFLINE SIGNER: decodes T itself, shows every line,
-        |                                     <--QR--  signs EIP-712(txCommit, hash(T), hash(S), validUntil)
+  displayvm-ts renders sentence T and spec S  --QR-->  OFFLINE SIGNER: decodes T itself, shows guarantees first,
+        |                                     <--QR--  signs D_owner(hash T, hash S, expiry, snapshot root, path, txCommit)
         v
-  0x06 transaction: [VERIFY account | VERIFY paymaster | SENDER account.executeVerified]
-        |
-        v  ERC-8421 ALT MEMPOOL simulates validation
-  frame 0  account:   layout lock; protocol-recovered owner signatures over the digest
-  frame 1  paymaster: re-render(frame 2 calldata) == T ? derive == S ? policy ? fee ticket ? then APPROVE(PAYMENT)
-        |
-        v  EXECUTION
-  frame 2  account:   charge fee -> [inner self-call: expiry, live re-checks, snapshot, calls, assert S]
-                      assertion failure undoes the batch, and the fee stays paid
+  Stateless path, any mempool                    Paymaster path, ERC-8421 alt mempool
+  [expiry | VERIFY account | SENDER account]     [expiry | VERIFY account | VERIFY paymaster | SENDER account]
+  account renders from Merkle proofs,            paymaster renders from its cache and rebuilds D_owner
+  attestors sign the snapshot, no stake          staked, per-nonce fee tickets
+        |                                                |
+        v  EXECUTION (both)
+  charge any fee -> [inner self-call: expiry, revocations, live re-checks, snapshot, calls, assert S, ledger]
+                    assertion failure undoes the batch; the digest stays consumed
 ```
+
+The same logic runs behind ERC-4337 (path 3), with any bundler and no paymaster: `contracts/src/leg-b/`.
 
 Trusted: the device's decoder and screen, the owners' keys, the attestor quorum and the ENS publisher (both must collude to lie), the EVM. Untrusted: frontend, host, RPC, relayer, target contracts (their behaviour is asserted), and our own TypeScript (a mismatch fails closed).
 
@@ -91,13 +95,14 @@ Trusted: the device's decoder and screen, the owners' keys, the attestor quorum 
 | `contracts/src/paymaster/RendererPaymaster.sol` | The staked renderer: render, derive, policy, fees |
 | `contracts/src/lib/DisplayVM.sol` | The renderer. `packages/displayvm-ts` is its twin |
 | `contracts/src/uniswap/URRender.sol` | Universal Router and v4 decoder. Standalone as `packages/urrender` |
-| `contracts/src/trust/` | TrustStore, `refreshTrust`, the ENS exclusivity proof |
-| `contracts/src/leg-b/` | The same logic behind ERC-4337 |
+| `contracts/src/trust/` | TrustStore, `refreshTrust`, the ENS exclusivity proof, the ENS trust anchor |
+| `contracts/src/stateless/` | The proof-reading renderer and the revocation registry |
+| `contracts/src/leg-b/` | The same logic behind ERC-4337: any bundler, no paymaster |
 | `packages/signer` | Offline signer: one HTML file |
 | `apps/` | Wallet, swap demo, attack kit, ENS publisher check |
 | `tools/` | `difffuzz`, `gas-report`, `e2e` (demo and video), `scripts` (deploy and proofs) |
 
-Formats: [VTREE](docs/VTREE.md), [VSPEC](docs/VSPEC.md), [VDESC](docs/VDESC.md). Design and trade-offs for the mempool: **[docs/ALTMEMPOOL.md](docs/ALTMEMPOOL.md)**. Everything that changed from the original design, and why: [docs/DECISIONS.md](docs/DECISIONS.md).
+Formats: [VTREE](docs/VTREE.md), [VSPEC](docs/VSPEC.md), [VDESC](docs/VDESC.md). Design and trade-offs for the mempool: **[docs/ALTMEMPOOL.md](docs/ALTMEMPOOL.md)**. Snapshots: [SNAPSHOT](docs/SNAPSHOT.md). Everything that changed from the design, and why: [docs/DECISIONS.md](docs/DECISIONS.md). Rule findings: [docs/FINDINGS.md](docs/FINDINGS.md). ERC drafts: [sentence-bound frame transactions](docs/erc/sentence-bound-frame-transactions.md), [signed attestation snapshots](docs/erc/signed-attestation-snapshots.md).
 
 ## Run it
 
@@ -118,11 +123,12 @@ pnpm --filter @verbatim/wallet dev         # :5174
 pnpm --filter @verbatim/swap-demo dev      # :5175
 pnpm --filter @verbatim/evil-frontend dev  # :5176  "attack us"
 pnpm --filter @verbatim/ens-demo dev       # :5177  ENS exclusivity for any name, read from Sepolia
+pnpm --filter @verbatim/hook-xray dev      # :5178  what a v4 hook may do, from its address
 ```
 
 The account is 2-of-3, so each page needs two owners. Paste an owner key into the signer, and another into the page's "Laptop owner" field. Keys stay in the browser. The camera needs HTTPS or localhost; otherwise copy and paste the request and signature. `pnpm --filter @verbatim/signer build` gives a single `dist/index.html` to load once and use in airplane mode.
 
-If the honest swap fails with `V4TooLittleReceived`, the slippage check is working: enough demo swaps have moved the pool. Run `tools/scripts/rebalance-pool.ts`.
+If the honest swap fails with `V4TooLittleReceived`, the slippage check is working: enough demo swaps have moved the pool. Snapshots last 6 hours, so before a demo rerun `legb-deploy.ts` on Sepolia and refresh the devnet.
 
 **Everything in a browser, unattended,** or a captioned fallback video (needs `ffmpeg`, and `pnpm exec playwright install chromium` once):
 
@@ -142,7 +148,9 @@ npx tsx attacks.ts                  # the attack kit, against the live mempool
 npx tsx swap.ts                     # honest swap, WRAP_ETH, A2
 npx tsx invalidation.ts             # revoking one descriptor
 npx tsx rebalance-pool.ts devnet    # restore the demo pool's price if repeated swaps have drifted it (also: sepolia)
-npx tsx legb-ens.ts my-label        # Leg B: ENSv2 name and lock-down (edit LABEL in legb-deploy.ts)
+npx tsx stateless.ts                # the stateless path and B1-B12
+npx tsx legb-ens.ts my-label        # Leg B: ENSv2 publisher name and lock-down
+npx tsx legb-ens.ts my-anchor --anchor   # Leg B: the anchor name's attestor and revocation records
 npx tsx legb-deploy.ts && npx tsx legb-run.ts
 cd ../gas-report && pnpm report     # regenerate docs/GAS.md and docs/PROOFS.md
 ```
@@ -182,7 +190,7 @@ cd ../gas-report && pnpm report     # regenerate docs/GAS.md and docs/PROOFS.md
 
 ## ENS
 
-`verbatim-demo.eth` on Sepolia ENSv2 publishes the descriptor hashes it stands behind, and appears in signed sentences (`Send tokens (by verbatim-demo.eth)`, `To: verbatim-demo.eth (0x3ac4...)`). A name only gets there through both gates: k-of-n attestors **and** a live exclusivity proof in `refreshTrust` ([`EnsTrustChecker.sol:111`](contracts/src/trust/EnsTrustChecker.sol#L111)):
+`verbatim-demo.eth` on Sepolia ENSv2 publishes the descriptor hashes it stands behind, and appears in signed sentences (`Send tokens (by verbatim-demo.eth)`, `To: verbatim-demo.eth (0x3ac4...)`). On the production leg a name only stands through both gates: a k-of-n attested snapshot **and** a live exclusivity proof read at execution through `EnsTrustAnchor` ([`EnsTrustChecker.sol:111`](contracts/src/trust/EnsTrustChecker.sol#L111)):
 
 - the resolver is the pinned code, and is reached directly (no wildcard, no CCIP-read);
 - the `clear-signing` text record lists this descriptor's hash;
@@ -195,18 +203,18 @@ A shown name must resolve forward and reverse at `refreshTrust`, and is re-resol
 
 ## Trust assumptions and residual risks
 
-- **Attestor and ENS publisher collusion** can publish a false descriptor (Leg B). On the frames devnet there is no ENS, so attestors alone: sentences there say `ATTESTED_NO_ENS` in `attestStatus`.
+- **A captured attestor quorum** can mislabel spenders, tokens or names. On Sepolia it must also get past ENS: publisher exclusivity, and the anchor's attestor and revocation records. On the frames devnet there is no ENS, so attestors alone: sentences there say so in `attestStatus`.
 - **The ENS DAO and root** are irreducible trust.
 - **Stolen keys** sign whatever they like.
 - **A misunderstood sentence** is still a signed one.
 - **Untracked state:** assertions cover balances, allowances, operators and owners of tracked assets, not protocol-internal ledgers.
-- **Revocation is only as fresh as the last `refreshTrust`.**
+- **Revocation is immediate at execution** through the registry and ENS, and at most one snapshot TTL (6 hours) in the mempool on the stateless path.
 - **Machine signers:** out of scope.
 - **The paymaster is a shared service.** Its stake prices identity only, and it is not slashed.
 
 ## Status and limits
 
-Hackathon code, unaudited. Known limits: one call per transaction on the deployed sidecar, no mainnet deployment yet, and others in [docs/DECISIONS.md](docs/DECISIONS.md). The devnet is a throwaway network that may reset, in which case its addresses change and `fresh-deploy.sh` rebuilds everything.
+Hackathon code, unaudited. Known limits: one call per transaction on the deployed sidecar, so ERC-20 swaps do not fit yet; no mainnet deployment; no independent review. The rest are in [docs/STATUS.md](docs/STATUS.md) and [docs/DECISIONS.md](docs/DECISIONS.md). The devnet is a throwaway network that may reset, in which case its addresses change and `fresh-deploy.sh` rebuilds everything.
 
 **Built with AI.** Most of this repo was written with Claude Code, directed and reviewed by the team.
 
