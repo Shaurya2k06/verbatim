@@ -76,7 +76,7 @@ These need you. Nothing here has been done for you.
 
 1. **Make the repo public,** which the Uniswap and ENS tracks require.
 2. **Submit the Uniswap feedback form,** https://developers.uniswap.org/hackathon-feedback, linking `FEEDBACK.md`. `context.md` says never to cut this.
-3. **Check the hosted deploys** after the repo move, record the public URL, and confirm every link from a logged-out browser. The ENS track needs the live link. I could not check Vercel or Render from here.
+3. **Update the hosted site.** https://verbatim-wallet.vercel.app answers logged out, but it serves commit `aa5dbf1`: 13 unmet rows and addresses from before the devnet reset. It updates when `main` does. Then check every link logged out: links into the repo stay broken until it is public.
 4. **Upload the videos.** The two recordings above are captioned or silent screen captures, in git-ignored files. Record a main video if you want voice.
 5. **Select prizes:** EF Frame Transaction Alternative Mempool, Uniswap Build, ENS Best Use of ENSv2.
 6. **Rehearse three times,** once with a devnet failure handled live ([OFFLINE.md](demo/OFFLINE.md)).
