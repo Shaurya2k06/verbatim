@@ -10,7 +10,7 @@ import { ROOT, addr, key, loadEnv } from "./lib/env";
 import { artifact } from "./lib/chain";
 import { record } from "./lib/proofs";
 import { ENS, ENTRY_POINT, RESOLVER_ABI, UNI, dnsName, namedKey, pub, readS, tx, wallet } from "./lib/sepolia";
-import { buildOp, sendOp, waitOp, type Built } from "./lib/userop";
+import { buildOp, sendOp, validationRevert, waitOp, type Built } from "./lib/userop";
 import { decodeRevert } from "./lib/results";
 
 const env = loadEnv();
@@ -133,7 +133,16 @@ const steps: Record<string, () => Promise<void>> = {
     } catch (e) {
       reason = (e as Error).message;
     }
-    record({ id: "B-A2b", title: "The same route, signed on the true sentence", expected: "the device shows the risks; refused", pass: reason.length > 0 && lines.some((l) => /HOOK CAN TAKE YOUR OUTPUT/.test(l)) && lines.some((l) => /NO MINIMUM OUTPUT/.test(l)), outcome: "rejected-at-mempool", message: `${lines.join(" | ")} || ${reason.slice(0, 100)}` });
+    // The bundler's error is generic: the refusal has to be the account's own.
+    const raw = await validationRevert(truth);
+    let named = "";
+    try {
+      named = raw ? decodeErrorResult({ abi: artifact("VerbatimAccount4337.sol", "VerbatimAccount4337").abi, data: raw }).errorName : "";
+    } catch {
+      /* not a known error */
+    }
+    reason = `${named || "no named refusal"}; bundler: ${reason}`;
+    record({ id: "B-A2b", title: "The same route, signed on the true sentence", expected: "the device shows the risks; PolicyRefused", pass: named === "PolicyRefused" && lines.some((l) => /HOOK CAN TAKE YOUR OUTPUT/.test(l)) && lines.some((l) => /NO MINIMUM OUTPUT/.test(l)), outcome: "rejected-at-mempool", message: `${lines.join(" | ")} || ${reason.slice(0, 100)}` });
   },
   async B13() {
     // Governance drops every attestor from the ENS record while an operation is on its way: validation is unaffected, execution refuses.

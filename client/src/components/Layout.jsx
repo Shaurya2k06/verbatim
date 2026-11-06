@@ -1,0 +1,88 @@
+import { Component, useEffect, useState } from "react";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { DevnetBanner, StatusBar } from "./StatusBar";
+import { useData } from "../lib/data";
+
+export const ROUTES = [
+  ["/demo", "Side-by-side"],
+  ["/attack", "Attack us"],
+  ["/wallet", "Wallet"],
+  ["/sentences", "Sentences"],
+  ["/xray", "Hook X-ray"],
+  ["/ens", "ENS"],
+  ["/trust", "Trust"],
+  ["/mempool", "Mempool"],
+  ["/proofs", "Proofs"],
+  ["/standards", "Standards"],
+];
+
+/** One page failing must not blank the site: show the error, keep the navigation. */
+class PageBoundary extends Component {
+  state = { error: null };
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+  componentDidUpdate(prev) {
+    if (prev.path !== this.props.path && this.state.error) this.setState({ error: null });
+  }
+  render() {
+    if (!this.state.error) return this.props.children;
+    return (
+      <div className="bad">
+        This page failed: {this.state.error.message}. The rest of the site still works; <a href="/proofs">the proof ledger</a> needs no network.
+      </div>
+    );
+  }
+}
+
+export const REPO = "https://github.com/shaurya2k06/verbatim";
+
+export function Layout() {
+  const [open, setOpen] = useState(false);
+  const loc = useLocation();
+  const manifest = useData("manifest.json");
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [loc.pathname]);
+  return (
+    <>
+      <StatusBar />
+      <header className="top">
+        <nav className="nav">
+          <NavLink to="/" className="brand" end>
+            Verbatim
+          </NavLink>
+          <button className="menu" aria-expanded={open} aria-controls="nav-links" onClick={() => setOpen(!open)}>
+            {open ? "Close" : "Menu"}
+          </button>
+          <div id="nav-links" className={`links${open ? " open" : ""}`}>
+            {ROUTES.map(([to, label]) => (
+              <NavLink key={to} to={to} onClick={() => setOpen(false)}>
+                {label}
+              </NavLink>
+            ))}
+          </div>
+        </nav>
+        <DevnetBanner />
+      </header>
+      <main>
+        <PageBoundary path={loc.pathname}>
+          <Outlet />
+        </PageBoundary>
+      </main>
+      <footer className="foot">
+        <a href={REPO}>Repository</a>
+        <a href={`${REPO}/tree/main/docs/erc`}>ERC drafts</a>
+        <a href={`${REPO}/blob/main/docs/FINDINGS.md`}>Findings</a>
+        <a href={`${REPO}/blob/main/LICENSE`}>MIT license</a>
+        <a href={`${REPO}/graphs/contributors`}>Team</a>
+        {manifest.data ? (
+          <span className="mono">
+            evidence as of {manifest.data.commit}
+            {manifest.data.dirty ? "+modified" : ""}
+          </span>
+        ) : null}
+      </footer>
+    </>
+  );
+}

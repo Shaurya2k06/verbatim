@@ -693,10 +693,10 @@
   "B-A2b": {
     "id": "B-A2b",
     "title": "The same route, signed on the true sentence",
-    "expected": "the device shows the risks; refused",
+    "expected": "the device shows the risks; PolicyRefused",
     "pass": true,
     "outcome": "rejected-at-mempool",
-    "message": "! NO MINIMUM OUTPUT | ! HOOK CAN TAKE YOUR OUTPUT | ! UNVERIFIED HOOK || Internal error from bundler (trace id: 97937f41ba825672c3b85ddd3a367486)",
+    "message": "! NO MINIMUM OUTPUT | ! HOOK CAN TAKE YOUR OUTPUT | ! UNVERIFIED HOOK || PolicyRefused(56), read from the account by tools/scripts/why-evil.ts; the bundler reports only: Internal error from bundler",
     "at": "2026-11-06T00:18:17.935Z"
   },
   "WC": {
@@ -708,7 +708,8 @@
     "txHash": "0x67810e38daf222d4b84500847a495a6595d77c28d1cfe2934e4aa09cb3b8498c",
     "extra": {
       "chain": "sepolia",
-      "rerun": "cd tools/e2e && pnpm walletconnect"
+      "rerun": "cd tools/e2e && pnpm walletconnect",
+      "evilRoute": "bundler reported a generic internal error; the cause is PolicyRefused(56), read from the account by tools/scripts/why-evil.ts"
     },
     "at": "2026-11-06T00:39:00.089336Z"
   }

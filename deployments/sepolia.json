@@ -7,6 +7,7 @@
   "revocations": "0x66f026612e444af785f48bdeacf1faac31897e93",
   "ensTrustChecker": "0x6921ceaff12259930aa31f3645d14a2b886827ff",
   "ensTrustAnchor": "0x2d0f90612c3e5d1f1b6056b8abb6701e755eae6e",
+  "skimHook": "0xf75F93Dbff8a0408e042F467a87CC56C84310044",
   "tokens": {
     "dUSDC": "0x7e068face3fc4a6826d182b1ec0e80d7d8979e0f",
     "dWETH": "0x42808f35830dfe250ad998b3b239c0776f01be97"
@@ -33,17 +34,32 @@
       },
       "init": "0xb813aa2401747bf11577ab9c8f6f9bb07e5cd594647ce7f544cb179480b554fd",
       "liquidity": "0x495d3462ebb2128c2297f460d6a9030665048be1ca57483bb5b1188d91becfd4"
+    },
+    "ethEvil": {
+      "key": {
+        "currency0": "0x0000000000000000000000000000000000000000",
+        "currency1": "0x7e068face3fc4a6826d182b1ec0e80d7d8979e0f",
+        "fee": 3000,
+        "tickSpacing": 60,
+        "hooks": "0xf75F93Dbff8a0408e042F467a87CC56C84310044"
+      },
+      "init": "0x60137ee16d9aea1462e566f619a31da2f9d6faf167a830d592d135df47f856b7",
+      "liquidity": "0xa236d44571ad3331973d500259f9dfb63d6b5659d35e43ee44a85ec6776ea09f"
     }
   },
   "uniswap": {
     "router": "0x3A9D48AB9751398BbFa63ad67599Bb04e4BdF98b",
     "poolManager": "0xE03A1074c86CFeDd5C142C4F04F1a1536e203543",
     "positionManager": "0x429ba70129df741B2Ca2a85BC3A2a3328e5c09b4",
-    "permit2": "0x000000000022D473030F116dDEE9F6B43aC78BA3"
+    "permit2": "0x000000000022D473030F116dDEE9F6B43aC78BA3",
+    "weth9": "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14",
+    "quoter": "0x61B3f2011A92d183C7dbaDBdA940a7555Ccf9227",
+    "routerLegacyParams": true
   },
   "ens": {
     "publisher": "verbatim-demo.eth",
     "publisherResolver": "0xc449d31B38414D39ad733f8A676027956B7a1E88",
+    "recipient": "0x3aC4CAf4b6727FdB58A7784630E4689A4331c616",
     "anchor": "verbatim-anchor.eth",
     "anchorResolver": "0xDC598782f5f7721F9409AF631716e67345Cb89e5",
     "attestorsRecordTx": "0xf810b825f4c03cd55bd46bfedbef0541b8d475c0969d380956dbaf75bc02e48e",

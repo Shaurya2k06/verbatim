@@ -1,6 +1,6 @@
 // What the demo apps share: chain access, the signing hand-off, and showing what happened.
 import QRCode from "qrcode";
-import { createPublicClient, decodeErrorResult, encodeFunctionData, hashTypedData, http, parseAbi, type Address, type Hex } from "viem";
+import { createPublicClient, encodeFunctionData, hashTypedData, http, parseAbi, type Address, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { ChainTrust, PAYMASTER_ABI, PUBLIC_GATEWAY_GAS, prepare, txCommit, typedData, withSignatures, type Call, type OwnerSig, type Prepared } from "@verbatim/client";
 import { RpcError, submit, waitReceipt, type FrameReceipt, type FrameTx } from "@verbatim/frames-sdk";
@@ -34,61 +34,8 @@ export function sentence(tree: Hex): HTMLElement {
   return box;
 }
 
-const ERRORS = parseAbi([
-  "error TreeMismatch(bytes32 expected, bytes32 actual)",
-  "error SpecHashMismatch(bytes32 expected, bytes32 actual)",
-  "error PolicyRefused(uint256 risk)",
-  "error DigestMismatch(bytes32 expected, bytes32 signed)",
-  "error Replayed(bytes32 digest)",
-  "error SnapshotMissing()",
-  "error SnapshotExpiresTooSoon(uint64 expiry, uint64 snapshotExpiry)",
-  "error SnapshotTtlTooLong(uint256 ttl, uint256 max)",
-  "error NoTicket(uint256 nonce, uint256 needed)",
-  "error TtlTooLong(uint256 remaining, uint256 maxTtl)",
-  "error NotCanonicalSender(bytes32 codehash)",
-  "error BadLayout(uint256 check)",
-  "error BadSignatureEntry()",
-  "error SignersNotSortedOrUnknown()",
-  "error FrameReadFailed()",
-  "error AssertionFailed(uint256 index, uint256 expected, uint256 actual)",
-  "error Expired(uint256 timestamp, uint256 expiry)",
-  "error CallFailed(uint256 index, bytes reason)",
-  "error CodeChanged(address target)",
-  "error CodeAppeared(address target)",
-]);
-
-const EXPLAIN: Record<string, string> = {
-  TreeMismatch: "The calldata does not render to the sentence you signed.",
-  SpecHashMismatch: "The assertions do not match the sentence you signed.",
-  PolicyRefused: "The sentence is true, and your policy refuses it.",
-  DigestMismatch: "The signatures cover something other than what this transaction renders to.",
-  Replayed: "This exact signed content has already run.",
-  SnapshotExpiresTooSoon: "The signature outlives the attested snapshot. Trust needs refreshing.",
-  NoTicket: "No fee is prepaid for this transaction's nonce.",
-  TtlTooLong: "The signature stays valid for longer than your policy allows.",
-  BadLayout: "The transaction is not the required four-frame shape.",
-  BadSignatureEntry: "The signatures do not cover this transaction.",
-  FrameReadFailed: "Frame data could not be read.",
-  AssertionFailed: "The contract did something the sentence did not say. Everything was undone.",
-  Expired: "The signature is past its validity window.",
-  CallFailed: "A call in the batch reverted. Everything was undone.",
-  CodeAppeared: "An address claimed to hold no code does.",
-  CodeChanged: "A contract's code changed after signing.",
-};
-
-export function explainRevert(text: string): { name?: string; human: string; raw: string } {
-  const m = text.match(/0x[0-9a-fA-F]{8,}/);
-  if (m) {
-    try {
-      const e = decodeErrorResult({ abi: ERRORS, data: m[0] as Hex });
-      const args = (e.args ?? []).map((a: unknown) => (typeof a === "bigint" ? `0x${a.toString(16)}` : String(a))).join(", ");
-      return { name: e.errorName, human: EXPLAIN[e.errorName] ?? e.errorName, raw: `${e.errorName}(${args})` };
-    } catch {
-      /* not one of ours */
-    }
-  }
-  return { human: text, raw: text };
-}
+import { explainRevert } from "./errors";
+export { ERRORS, EXPLAIN, explainRevert } from "./errors";
 
 export function batchOutcome(r: FrameReceipt, account: Address): { ok: boolean | null; err: string } {
   for (const f of r.frameReceipts ?? []) {

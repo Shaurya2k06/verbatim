@@ -1,16 +1,14 @@
-# React + Vite
+# Verbatim client
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The hosted site, and the ENS track's live demo link. Vite + React. It replaces `apps/wallet`, `apps/swap-demo`, `apps/evil-frontend`, `apps/hook-xray` and `apps/ens-demo`. The offline signer stays a separate build in `packages/signer`.
 
-Currently, two official plugins are available:
+```sh
+pnpm --filter @verbatim/server dev   # the API, with the secrets
+pnpm --filter @verbatim/web dev      # :5173, proxies /api to :8787
+```
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- `scripts/sync-data.mjs` runs before `dev` and `build`. It publishes `deployments/*.json`, `docs/proofs.json`, the render vectors, registry coverage and the docs the pages render into `public/data`. The site reads addresses only from there and from ENS.
+- Keyed services go through the server. Set `VITE_API_URL` to the server's origin in production. No secret is ever a `VITE_` variable.
+- Optional: `VITE_SIGNER_URL`, the hosted offline signer, linked from `/wallet`.
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Deploy `client/` as a static site (Vercel or Netlify; SPA rewrites are in `vercel.json` and `public/_redirects`).

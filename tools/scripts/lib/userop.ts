@@ -1,5 +1,5 @@
 // The production leg's user operations: stateless, any bundler, no paymaster (context.md §11).
-import type { Address, Hex } from "viem";
+import { concat, encodeFunctionData, pad, parseAbi, toHex, type Address, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { packedUniswap, prepareUserOp, userOpWithSignatures, type Call } from "@verbatim/client";
 import type { PublishedSnapshot } from "@verbatim/snapshot-cli";
@@ -73,4 +73,20 @@ export async function waitOp(bundler: string, h: Hex, timeoutMs = 180_000): Prom
     await new Promise((res) => setTimeout(res, 4000));
   }
   throw new Error(`user operation ${h} not mined`);
+}
+
+const VALIDATE = parseAbi([
+  "struct PackedUserOperation { address sender; uint256 nonce; bytes initCode; bytes callData; bytes32 accountGasLimits; uint256 preVerificationGas; bytes32 gasFees; bytes paymasterAndData; bytes signature; }",
+  "function validateUserOp(PackedUserOperation op, bytes32 userOpHash, uint256 missingAccountFunds) returns (uint256)",
+]);
+
+/** A bundler reports a reverting validation as a generic error, so ask the account itself, as the EntryPoint would. Returns the raw revert data, or null if validation passes. */
+export async function validationRevert(b: Built): Promise<Hex | null> {
+  const o = b.op as Record<string, Hex>;
+  const two = (hi: Hex, lo: Hex) => concat([pad(hi, { size: 16 }), pad(lo, { size: 16 })]);
+  const data = encodeFunctionData({ abi: VALIDATE, functionName: "validateUserOp", args: [{ sender: o.sender as Address, nonce: BigInt(o.nonce), initCode: "0x", callData: o.callData, accountGasLimits: two(o.verificationGasLimit, o.callGasLimit), preVerificationGas: BigInt(o.preVerificationGas), gasFees: two(o.maxPriorityFeePerGas, o.maxFeePerGas), paymasterAndData: "0x", signature: o.signature }, b.hash, 0n] });
+  const res = await fetch(pub.transport.url ?? "", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_call", params: [{ from: ENTRY_POINT, to: o.sender, data, gas: toHex(2_000_000) }, "latest"] }) });
+  const j = (await res.json()) as { error?: { data?: Hex; message?: string } };
+  if (!j.error) return null;
+  return j.error.data ?? (toHex(j.error.message ?? "reverted, no data") as Hex);
 }
