@@ -7,7 +7,7 @@ import { Failed } from "../components/States";
 import { TxLink } from "../components/TxLink";
 import { Architecture } from "../landing/Architecture";
 import { Boot } from "../landing/Boot";
-import { BENEFITS, COMMANDS, COVERS, EXCLUDES, EXPLORE, FAQ, PATHS, REFUSALS, STEPS, TRY, VERSUS } from "../landing/content";
+import { BENEFITS, COMMANDS, COVERS, EXCLUDES, EXPLORE, FAQ, FRAMES_EVIDENCE, PATHS, REFUSALS, STEPS, TRY, VERSUS } from "../landing/content";
 import { Finale } from "../landing/Finale";
 import { Footer } from "../landing/Footer";
 import { GateArt } from "../landing/GateArt";
@@ -59,7 +59,7 @@ function Hero({ data, error, list, s }) {
           <br />
           Then it checks that it came true.
         </p>
-        <p className="lp-lede">Bybit lost $1.5B because its signers approved what a tampered screen showed them. Verbatim makes Ethereum rebuild every transaction into the sentence you signed. Different words, and it never reaches the mempool. Broken promise, and the whole batch reverts.</p>
+        <p className="lp-lede">Bybit lost $1.5B because its signers approved what a tampered screen showed them. Verbatim makes Ethereum’s new frame transactions rebuild every transaction into the sentence you signed, inside the validation frame. Different words, and the alt mempool never admits it. Broken promise, and the whole batch reverts.</p>
         <div className="lp-ctas">
           <Link className="lp-btn lp-btn-primary" to="/demo">
             See the demo
@@ -165,7 +165,7 @@ function ArchitectureSection() {
           <p className="lp-eyebrow">Architecture</p>
           <h2 id="architecture-title">Where the words are checked</h2>
         </div>
-        <p className="lp-copy">Everything left of the device is untrusted. The chain renders the sentence again before admitting the transaction, and holds it to its promises after the calls run.</p>
+        <p className="lp-copy">Everything left of the device is untrusted. On an EIP-8141 frame transaction, a VERIFY frame renders the sentence again before the mempool admits it, and the account holds it to its promises after the calls run. ERC-4337 carries the same check on chains without frames.</p>
       </div>
       <div {...reveal(1)}>
         <Architecture />
@@ -231,6 +231,10 @@ function SideBySide({ list }) {
           </dl>
         </article>
       </div>
+      <p className="lp-copy lp-duel-note" {...reveal()}>
+        We also compromised <b>Uniswap’s real interface</b>: it quoted <b>26.19 USDC</b>, and the ordinary wallet got <b>0.026</b>. Verbatim’s device showed three risk lines, and the account answered <code>PolicyRefused</code>.{" "}
+        <Link to="/uniswap">Watch the recording →</Link>
+      </p>
       <div className="lp-ctas lp-ctas-center">
         <Link className="lp-btn lp-btn-outline" to="/uniswap#skim">
           Run both, live
@@ -274,10 +278,18 @@ function Paths() {
       <div className="lp-head" {...reveal()}>
         <div>
           <p className="lp-eyebrow">Where it runs</p>
-          <h2 id="paths-title">Three paths, one guarantee</h2>
+          <h2 id="paths-title">Frames first. ERC-4337 where there are none.</h2>
         </div>
-        <p className="lp-copy">Every path renders the sentence during validation and asserts it during execution. They differ in who does the rendering, and in how far each has been proven live.</p>
+        <p className="lp-copy">Both frame paths are live on the public EF devnet, on the final build, under the 100,000 validation gas cap. With fifty transactions pending, rotating the trust snapshot invalidated all fifty on the paymaster path, and none on the stateless path.</p>
       </div>
+      <ul className="lp-frames-evidence" aria-label="Evidence from the EF frames devnet">
+        {FRAMES_EVIDENCE.map(([big, what], i) => (
+          <li key={big} {...reveal(i)}>
+            <b>{big}</b>
+            <span>{what}</span>
+          </li>
+        ))}
+      </ul>
       <ul className="lp-paths">
         {PATHS.map((p, i) => (
           <li key={p.name} {...reveal(i)}>

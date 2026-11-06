@@ -8,7 +8,7 @@ export const TAGLINE = [
 
 /** What the chain answers. Names are the contracts' own errors. */
 export const REFUSALS = [
-  ["swap the recipient", "TreeMismatch"],
+  ["swap the recipient", "SpecHashMismatch"],
   ["minimum output 0 through a skim hook", "TreeMismatch"],
   ["sign the true skim hook sentence", "PolicyRefused"],
   ["drop the renderer frame", "BadLayout(0)"],
@@ -50,8 +50,8 @@ export const STEPS = [
   {
     icon: "gate",
     step: "The chain renders it again",
-    body: "During validation, a contract rebuilds the sentence from the real calldata. If it differs from what you signed, the transaction is refused before it enters the mempool.",
-    log: "render(calldata) ≠ T  →  TreeMismatch",
+    body: "During validation, a VERIFY frame renders the sentence again from the real calldata. If it differs from what you signed, the transaction never enters the mempool.",
+    log: "render(calldata) ≠ T  →  SpecHashMismatch",
     to: "/demo#lifecycle",
     more: "Follow one swap",
   },
@@ -100,38 +100,46 @@ export const BENEFITS = [
     more: "Check any name",
   },
   {
-    say: "we have no paymaster and no special mempool",
+    say: "this chain has no frame transactions yet",
     icon: "rails",
-    title: "It fits the rails you have",
-    body: "The same logic runs behind ERC-4337 with any bundler, as well as on EIP-8141 frame transactions. The three paths are below.",
+    title: "Built for frames, runs today",
+    body: "Verbatim is built on EIP-8141 frame transactions and the ERC-8421 alternative mempool. Where a chain has no frames yet, the same logic runs behind any ERC-4337 bundler.",
   },
 ];
 
 export const PATHS = [
   {
-    icon: "bundle",
-    name: "ERC-4337",
-    where: "any bundler, no paymaster",
-    body: "Account validation renders the sentence. Honest transfers landed on Sepolia through Pimlico and Alchemy, and a v4 swap through Uniswap’s official router.",
-    state: "Live on Sepolia",
+    icon: "vault",
+    name: "Paymaster",
+    where: "EIP-8141 frames · ERC-8421 alt mempool",
+    body: "A staked paymaster renders from its own cache in a VERIFY frame and rebuilds the owners’ digest. The canonical rules refuse that storage read (StorageReadNonSender). ERC-8421 admits it because the renderer is staked: that is what the alt mempool is for. A transfer fit in 85,429 gas of the 100,000 cap.",
+    state: "Live on the EF frames devnet",
     tone: "ok",
   },
   {
     icon: "layers",
     name: "Stateless",
-    where: "any mempool, no stake",
-    body: "Trust travels inside the transaction as snapshot proofs and attestor signatures, so validation reads no global state.",
-    state: "Live on the frames devnet",
+    where: "EIP-8141 frames · any frame mempool",
+    body: "Trust travels inside the transaction as snapshot proofs and attestor signatures, so validation reads no global state and needs no stake. That makes it valid in any frame mempool.",
+    state: "Live on the EF frames devnet",
     tone: "ok",
   },
   {
-    icon: "vault",
-    name: "Paymaster",
-    where: "ERC-8421 alternative mempool",
-    body: "A staked paymaster renders from its own cache and rebuilds the digest. A transfer fit in 85,429 gas of the 100,000 cap.",
-    state: "Live on the frames devnet",
+    icon: "bundle",
+    name: "ERC-4337",
+    where: "the fallback, for chains without frames",
+    body: "The same logic behind any ERC-4337 bundler: account validation renders the sentence. Honest transfers landed on Sepolia through Pimlico and Alchemy, and a v4 swap through Uniswap’s official router.",
+    state: "Also live on Sepolia",
     tone: "ok",
   },
+];
+
+/** The frames evidence, from contracts/docs/ALTMEMPOOL.md (BENCH-N50, invalidation-bench.json) and FINDINGS.md. */
+export const FRAMES_EVIDENCE = [
+  ["50 of 50", "pending transactions invalidated by rotating the trust snapshot on the paymaster path"],
+  ["0 of 50", "invalidated by the same rotation on the stateless path, which carries its snapshot inside each transaction"],
+  ["Explicit digest", "owners sign over an explicit message, so the protocol checks every signature before any frame runs"],
+  ["4 rule findings", "for the ERC-8421 author: a flat 100k cap, no precompiles, no WebAuthn scheme, proxied tokens"],
 ];
 
 export const COVERS = [
