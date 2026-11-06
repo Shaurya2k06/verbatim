@@ -128,6 +128,8 @@ pnpm -r --if-present test           # TypeScript packages, golden vectors
 cd contracts/scripts/difffuzz && pnpm fuzz      # 10,000 cases against a local anvil
 ```
 
+**The live demo, no keys for the visitor.** `/suites` on the hosted site runs 13 fixed cases for real on Sepolia and shows the transaction URLs or the refusals. Locally: `pnpm --filter @verbatim/server dev`, then `pnpm --filter @verbatim/web dev`. The server needs `OWNER1_KEY` and `OWNER2_KEY` for this, and signs only the operations it builds itself (see [server/README.md](server/README.md)).
+
 **The demo, against what is already deployed.** Start the pages:
 
 ```sh

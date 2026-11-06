@@ -32,6 +32,7 @@ export const VERSUS = [
 
 export const STEPS = [
   {
+    icon: "build",
     step: "The frontend builds it",
     body: "It may be honest. It may be tampered with. Verbatim assumes nothing, and treats the host, the RPC and the relayer the same way.",
     log: "frontend → calls, sentence T, spec S",
@@ -39,6 +40,7 @@ export const STEPS = [
     more: "See both routes",
   },
   {
+    icon: "device",
     step: "You read it and sign",
     body: "An offline device decodes the sentence itself, shows the guarantees first, and signs its hash, not the calldata. It needs no internet, registry or metadata.",
     log: "QR → device → sign(hash T, hash S, expiry)",
@@ -46,6 +48,7 @@ export const STEPS = [
     more: "Open the wallet",
   },
   {
+    icon: "gate",
     step: "The chain renders it again",
     body: "During validation, a contract rebuilds the sentence from the real calldata. If it differs from what you signed, the transaction is refused before it enters the mempool.",
     log: "render(calldata) ≠ T  →  TreeMismatch",
@@ -53,6 +56,7 @@ export const STEPS = [
     more: "Compare the paths",
   },
   {
+    icon: "check",
     step: "Execution keeps the promise",
     body: "The calls run, then the account asserts what the sentence guaranteed. If a balance is off or an approval is left standing, everything is undone.",
     log: "assert(S) fails  →  batch reverted",
@@ -150,11 +154,13 @@ export const SCENES = [
 export const BENEFITS = [
   {
     say: "the frontend was swapped overnight",
+    icon: "screen",
     title: "Your screen stops being trusted",
     body: "Frontend, host, RPC, relayer and target contracts are all untrusted. The signer is one HTML file you can load once and use in airplane mode.",
   },
   {
     say: "this hook can take your output",
+    icon: "warning",
     title: "Risk arrives in plain words",
     body: "What a Uniswap v4 hook may do is written in the low bits of its address. Verbatim reads those bits on chain and puts the warning in the sentence you sign.",
     to: "/xray",
@@ -162,6 +168,7 @@ export const BENEFITS = [
   },
   {
     say: "the contract said one thing and did another",
+    icon: "check",
     title: "Promises are checked after the calls",
     body: "A truthful description is not enough. No tracked holding may drop beyond what you signed, and no approval survives the batch.",
     to: "/sentences",
@@ -169,11 +176,13 @@ export const BENEFITS = [
   },
   {
     say: "that signature is weeks old",
+    icon: "clock",
     title: "Signatures go stale on purpose",
     body: "Every transaction carries a mandatory absolute expiry. The device refuses a long one, and the chain reverts it if it gets signed anyway.",
   },
   {
     say: "the name looks right to me",
+    icon: "tag",
     title: "A name has to earn its place",
     body: "On Sepolia, an ENS name appears only with an attested snapshot and a live exclusivity proof read at execution. A lookalike shows as hex.",
     to: "/ens",
@@ -181,6 +190,7 @@ export const BENEFITS = [
   },
   {
     say: "we have no paymaster and no special mempool",
+    icon: "rails",
     title: "It fits the rails you have",
     body: "The same logic runs behind ERC-4337 with any bundler, as well as on EIP-8141 frame transactions. The three paths are below.",
   },
@@ -188,6 +198,7 @@ export const BENEFITS = [
 
 export const PATHS = [
   {
+    icon: "bundle",
     name: "ERC-4337",
     where: "any bundler, no paymaster",
     body: "Account validation renders the sentence. Honest transfers landed on Sepolia through Pimlico and Alchemy, and a v4 swap through Uniswap’s official router.",
@@ -195,6 +206,7 @@ export const PATHS = [
     tone: "ok",
   },
   {
+    icon: "layers",
     name: "Stateless",
     where: "any mempool, no stake",
     body: "Trust travels inside the transaction as snapshot proofs and attestor signatures, so validation reads no global state.",
@@ -202,6 +214,7 @@ export const PATHS = [
     tone: "warn",
   },
   {
+    icon: "vault",
     name: "Paymaster",
     where: "ERC-8421 alternative mempool",
     body: "A staked paymaster renders from its own cache and rebuilds the digest. A transfer fit in 85,245 gas of the 100,000 cap, measured before the devnet stopped.",
@@ -226,19 +239,20 @@ export const EXCLUDES = [
 ];
 
 export const TRY = [
-  { to: "/demo", title: "Watch it fail", body: "The same malicious swap twice: an ordinary wallet on one side, Verbatim on the other." },
-  { to: "/attack", title: "Attack it yourself", body: "Pick an attack, send it, and see which layer stops it." },
-  { to: "/wallet", title: "Use the wallet", body: "A working account on Sepolia. Everything it sends is a sentence the owners read." },
+  { to: "/suites", title: "Run the suites", body: "No wallet or keys needed. Pick a case, and it runs on Sepolia while you watch." },
+  { to: "/demo", title: "Tamper with a swap", body: "Choose the route and the amount yourself. Signing the Verbatim side needs two owner keys." },
+  { to: "/attack", title: "Run a team session", body: "Others pick attacks from their phones while your team signs on the device." },
+  { to: "/wallet", title: "Use the wallet", body: "A working account on Sepolia, for owners. Everything it sends is a sentence they read." },
 ];
 
 export const EXPLORE = [
-  ["/sentences", "Sentences", "Explore what people actually approved"],
-  ["/xray", "Hook X-ray", "Paste a v4 hook, read its powers"],
-  ["/ens", "ENS", "Run the exclusivity proof on any name"],
-  ["/trust", "Trust", "Attestors, snapshots and revocation"],
-  ["/mempool", "Mempool", "Two validation paths, measured"],
-  ["/proofs", "Proofs", "Every claim, with its evidence"],
-  ["/standards", "Standards", "ERC drafts and findings"],
+  ["/sentences", "Sentences", "Explore what people actually approved", "doc"],
+  ["/xray", "Hook X-ray", "Paste a v4 hook, read its powers", "scan"],
+  ["/ens", "ENS", "Run the exclusivity proof on any name", "tag"],
+  ["/trust", "Trust", "Attestors, snapshots and revocation", "layers"],
+  ["/mempool", "Mempool", "Two validation paths, measured", "rails"],
+  ["/proofs", "Proofs", "Every claim, with its evidence", "check"],
+  ["/standards", "Standards", "ERC drafts and findings", "build"],
 ];
 
 export const COMMANDS = `pnpm install
@@ -268,6 +282,10 @@ export const FAQ = [
   {
     q: "What do I still have to trust?",
     a: "The device’s decoder and screen, the owners’ keys, the attestor quorum and the ENS publisher, and the EVM. Frontend, host, RPC, relayer, target contracts and Verbatim’s own TypeScript are untrusted. A mismatch fails closed.",
+  },
+  {
+    q: "Who signs when I run a suite?",
+    a: "The demo server, using two of the testnet account’s three owner keys, because you don’t have any. It signs only the fixed cases it builds itself. Outside this demo nobody’s server signs: the owners read the sentence and sign on an offline device.",
   },
   {
     q: "Who decides what a contract’s sentence says?",

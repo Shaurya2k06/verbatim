@@ -4,6 +4,7 @@ import { DevnetBanner, StatusBar } from "./StatusBar";
 import { useData } from "../lib/data";
 
 export const ROUTES = [
+  ["/suites", "Live demo"],
   ["/demo", "Side-by-side"],
   ["/attack", "Attack us"],
   ["/wallet", "Wallet"],

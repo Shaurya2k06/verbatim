@@ -7,11 +7,11 @@ services:
     plan: free
     rootDir: .
     buildCommand: corepack enable && pnpm install --frozen-lockfile --filter @verbatim/server...
-    startCommand: node server/src/index.js
+    startCommand: cd server && node --import tsx src/index.js
     healthCheckPath: /api/health
     autoDeploy: true
     buildFilter:
-      paths: ["server/**", "contracts/deployments/**", "pnpm-lock.yaml"]
+      paths: ["server/**", "packages/**", "client/src/lib/abi/**", "contracts/deployments/**", "pnpm-lock.yaml"]
     envVars:
       - key: NODE_VERSION
         value: "22"
@@ -30,6 +30,10 @@ services:
       - key: ETHERSCAN_API_KEY
         sync: false
       - key: DEMO_EOA_KEY
+        sync: false
+      - key: OWNER1_KEY
+        sync: false
+      - key: OWNER2_KEY
         sync: false
       - key: ATTESTOR1_KEY
         sync: false
