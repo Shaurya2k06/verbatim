@@ -282,4 +282,4 @@ details > summary { cursor: pointer; }
 .qr-frames i.on { background: var(--ok); }
 .match-code { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; width: 100%; max-width: 320px; margin-top: 10px; padding: 8px 12px; border-radius: 8px; background: var(--okbg); color: var(--mute); font-size: 12px; }
 .match-code b { color: var(--ok); font: 400 22px/28px var(--head, var(--mono)); letter-spacing: 0.06em; }
-.scanner video { display: block; width: 100%; max-width: 360px; border-radius: 8px; background: #000; transform: scaleX(-1); }
+.scanner video { display: block; width: 100%; max-width: 520px; border-radius: 8px; background: #000; transform: scaleX(-1); }

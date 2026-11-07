@@ -5,7 +5,7 @@ import jsQR from "jsqr";
 import QRCode from "qrcode";
 import { recoverTypedDataAddress } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { decodeResponse, encodeRequest, matchCode, review, toFrames, typedData } from "@verbatim/signer";
+import { decodeResponse, encodeRequest, isResponse, matchCode, review, toFrames, typedData } from "@verbatim/signer";
 import { Pill } from "./Badge";
 
 const FRAME_MS = 350;
@@ -51,10 +51,15 @@ function Qr({ frames }) {
   );
 }
 
-/** The laptop's camera, reading the signature QR the device shows. Stops itself once it has one. */
+/**
+ * The laptop's camera, reading the signature QR the device shows. Stops itself once it has one. A laptop webcam is low resolution and
+ * fixed focus, so this asks for HD and reads each frame three ways (see passes). It says what it sees, so a person knows whether to
+ * move the phone closer or further.
+ */
 function Scanner({ onCode, onClose }) {
   const video = useRef(null);
   const [err, setErr] = useState(null);
+  const [status, setStatus] = useState("Starting the camera");
   // The callback changes whenever the page above re-renders (status polling, a new request object). The camera must not restart
   // each time, so the effect reads the latest callback through a ref and starts the camera once.
   const latest = useRef(onCode);
@@ -63,27 +68,54 @@ function Scanner({ onCode, onClose }) {
   });
   useEffect(() => {
     let stream;
-    let frame;
+    let timer;
     let live = true;
+    let lastOther = 0;
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    // Three looks at each frame. Shrinking it first averages out a webcam's sensor noise, which defeats the decoder far more often
+    // than size does; then the frame as it is; then its middle half, enlarged, for a phone held further away.
+    const passes = (w, h) => {
+      const big = Math.min(w, 1280);
+      return [
+        [0, 0, w, h, 640, Math.round((640 * h) / w)],
+        [0, 0, w, h, big, Math.round((big * h) / w)],
+        [w / 4, h / 4, w / 2, h / 2, big, Math.round((big * h) / w)],
+      ];
+    };
     const tick = () => {
       if (!live) return;
       const v = video.current;
-      if (v && v.readyState === v.HAVE_ENOUGH_DATA) {
-        canvas.width = v.videoWidth;
-        canvas.height = v.videoHeight;
-        ctx.drawImage(v, 0, 0);
-        const code = jsQR(ctx.getImageData(0, 0, canvas.width, canvas.height).data, canvas.width, canvas.height, { inversionAttempts: "dontInvert" });
-        if (code?.data.startsWith("VSG1:")) {
-          latest.current(code.data);
+      if (v && v.readyState === v.HAVE_ENOUGH_DATA && v.videoWidth) {
+        const w = v.videoWidth;
+        const h = v.videoHeight;
+        let code = null;
+        for (const [sx, sy, sw, sh, dw, dh] of passes(w, h)) {
+          canvas.width = dw;
+          canvas.height = dh;
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = "high";
+          ctx.drawImage(v, sx, sy, sw, sh, 0, 0, dw, dh);
+          code = jsQR(ctx.getImageData(0, 0, dw, dh).data, dw, dh, { inversionAttempts: "attemptBoth" });
+          if (code) break;
+        }
+        if (code && isResponse(code.data)) {
+          setStatus("Signature read");
+          latest.current(code.data.trim());
           return;
         }
+        const now = Date.now();
+        if (code) {
+          lastOther = now;
+          setStatus("That QR is not a signature. Show the QR the phone displays after Approve and sign");
+        } else if (now - lastOther > 2500) {
+          setStatus(`Looking for the signature QR (camera ${w}×${h}). Hold the phone 15 to 30 cm away, screen bright, facing the camera`);
+        }
       }
-      frame = requestAnimationFrame(tick);
+      timer = setTimeout(tick, 120);
     };
     navigator.mediaDevices
-      ?.getUserMedia({ video: { facingMode: "user" } })
+      ?.getUserMedia({ video: { facingMode: "user", width: { ideal: 1920 }, height: { ideal: 1080 } } })
       .then(async (s) => {
         stream = s;
         if (!live) return s.getTracks().forEach((t) => t.stop());
@@ -95,15 +127,19 @@ function Scanner({ onCode, onClose }) {
     if (!navigator.mediaDevices) setErr("this browser gives the page no camera");
     return () => {
       live = false;
-      cancelAnimationFrame(frame);
+      clearTimeout(timer);
       stream?.getTracks().forEach((t) => t.stop());
     };
   }, []);
   return (
     <div className="scanner">
       {err ? <div className="bad">Cannot scan: {err}. Paste the signature instead.</div> : <video ref={video} playsInline muted />}
+      {err ? null : (
+        <p className="small muted" aria-live="polite">
+          {status}
+        </p>
+      )}
       <div className="row small">
-        <span className="muted">Hold the device's signature QR up to this camera.</span>
         <button type="button" className="chip" onClick={onClose}>
           close camera
         </button>
@@ -191,7 +227,7 @@ export function SigningPanel({ request, owners, needed, onReady, disabled }) {
         )}
         <label className="field">
           <span>Signature from the offline signer</span>
-          <textarea rows={2} value={paste} onChange={(e) => setPaste(e.target.value)} placeholder="VSG1:0x…:0x…" disabled={disabled || done} />
+          <textarea rows={2} value={paste} onChange={(e) => setPaste(e.target.value)} placeholder="VSG2:… or VSG1:0x…:0x…" disabled={disabled || done} />
         </label>
         <button
           type="button"

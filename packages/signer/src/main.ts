@@ -181,7 +181,10 @@ async function approve(r: Reviewed) {
   const text = encodeResponse(a.address, sig);
   const canvas = document.createElement("canvas");
   canvas.className = "qr";
-  await QRCode.toCanvas(canvas, text, { errorCorrectionLevel: "M", margin: 2, width: 320 });
+  // As large and as simple as the screen allows: the laptop's webcam is low resolution and fixed focus. Low error correction keeps the
+  // modules big (a phone screen is clean, unlike a printed code), and the standard four-module quiet zone lets the finder patterns stand out.
+  const size = Math.max(280, Math.min(window.innerWidth - 48, 520));
+  await QRCode.toCanvas(canvas, text, { errorCorrectionLevel: "L", margin: 4, width: size });
   app.replaceChildren(
     panel("signed", "show this to the laptop", el("div", { class: "line ok" }, "Signed. Hold this QR up to the laptop's camera."), canvas, el("div", { class: "match" }, el("span", {}, "Match code"), el("b", {}, matchCode(r.digest))), el("textarea", { readOnly: true, value: text })),
     el("div", { class: "row" }, el("button", { class: "primary", onclick: () => home() }, "Done")),

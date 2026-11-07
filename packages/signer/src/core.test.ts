@@ -1,7 +1,7 @@
 import { hashTypedData, keccak256, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { describe, expect, it } from "vitest";
-import { FrameCollector, decodeRequest, decodeResponse, encodeRequest, encodeResponse, matchCode, review, toFrames, typedData } from "./core";
+import { FrameCollector, decodeRequest, decodeResponse, encodeRequest, encodeResponse, isResponse, matchCode, review, toFrames, typedData } from "./core";
 
 const ACCOUNT = "00".repeat(19) + "01";
 const TAIL = "500001" + "09" + "500001" + "0a" + "500002" + "0b00" + "500001" + "0c";
@@ -74,8 +74,19 @@ describe("signer core", () => {
     const r = review(req, NOW);
     const sig = await a.signTypedData(typedData(r.decoded, req, r.treeHash, r.specHash) as never);
     const back = decodeResponse(encodeResponse(a.address, sig));
-    expect(back.signer).toBe(a.address);
+    expect(back.signer).toBe(a.address.toLowerCase());
     const { recoverAddress } = await import("viem");
     expect(await recoverAddress({ hash: r.digest, signature: back.sig })).toBe(a.address);
+  });
+  it("answers in QR alphanumeric characters only, so the code stays small", () => {
+    const text = encodeResponse(`0x${"aB".repeat(20)}`, `0x${"cd".repeat(65)}`);
+    expect(text).toMatch(/^[0-9A-Z $%*+\-./:]+$/);
+    expect(isResponse(text)).toBe(true);
+  });
+  it("still reads the older VSG1 answer", () => {
+    const signer = `0x${"ab".repeat(20)}`;
+    const sig = `0x${"cd".repeat(65)}`;
+    expect(decodeResponse(`VSG1:${signer}:${sig}`)).toEqual({ signer, sig });
+    expect(() => decodeResponse("VSG2:XYZ")).toThrow();
   });
 });

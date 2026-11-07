@@ -114,10 +114,19 @@ export function typedData(d: DecodedTree, r: Request, treeHash: Hex, specHash: H
   };
 }
 
-export const encodeResponse = (signer: string, sig: string) => `VSG1:${signer}:${sig}`;
+/**
+ * The device's answer. VSG2 is all uppercase hex with no 0x, so a QR code can hold it in alphanumeric mode: a much simpler code than
+ * the same text in byte mode, which a laptop's webcam reads from further away. VSG1, the earlier lowercase form, is still accepted.
+ */
+export const encodeResponse = (signer: string, sig: string) => `VSG2:${signer.slice(2).toUpperCase()}:${sig.slice(2).toUpperCase()}`;
+
+export const isResponse = (text: string) => /^VSG[12]:/i.test(text.trim());
 
 export function decodeResponse(text: string): { signer: Hex; sig: Hex } {
-  const m = text.trim().match(/^VSG1:(0x[0-9a-fA-F]{40}):(0x[0-9a-fA-F]{130})$/);
-  if (!m) throw new Error("not a Verbatim signature");
-  return { signer: m[1] as Hex, sig: m[2] as Hex };
+  const t = text.trim();
+  const v2 = t.match(/^VSG2:([0-9A-Fa-f]{40}):([0-9A-Fa-f]{130})$/);
+  if (v2) return { signer: `0x${v2[1].toLowerCase()}` as Hex, sig: `0x${v2[2].toLowerCase()}` as Hex };
+  const v1 = t.match(/^VSG1:(0x[0-9a-fA-F]{40}):(0x[0-9a-fA-F]{130})$/);
+  if (!v1) throw new Error("not a Verbatim signature");
+  return { signer: v1[1] as Hex, sig: v1[2] as Hex };
 }
