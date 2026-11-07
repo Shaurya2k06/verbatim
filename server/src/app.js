@@ -22,7 +22,7 @@ import { sepolia } from "viem/chains";
 
 // Reads the repository's published deployments directly. DEPLOYMENTS_DIR overrides it when deployed away from the checkout.
 const DATA = process.env.DEPLOYMENTS_DIR ? resolve(process.env.DEPLOYMENTS_DIR) : resolve(dirname(fileURLToPath(import.meta.url)), "../../contracts/deployments");
-const readData = (p) => JSON.parse(readFileSync(resolve(DATA, p), "utf8"));
+export const readData = (p) => JSON.parse(readFileSync(resolve(DATA, p), "utf8"));
 let depCache;
 export const dep = () => (depCache ??= readData("sepolia.json"));
 
@@ -282,6 +282,7 @@ function config(env) {
 
 // Loaded on first use: it brings the signer and the renderer, which the rest of the API does not need.
 const suites = () => import("./suites.js");
+const frames = () => import("./frames.js");
 
 const jsonSafe = (v) => JSON.parse(JSON.stringify(v, (_, x) => (typeof x === "bigint" ? x.toString() : x)));
 
@@ -319,6 +320,13 @@ export async function handle({ method, path, body, env, ip = "local" }) {
       case "GET suites/run":
         limit(`suites-read:${ip}`, 240);
         out = (await suites()).get(parts[2]);
+        break;
+      case "POST frames/run":
+        out = (await frames()).start(env, ip);
+        break;
+      case "GET frames/run":
+        limit(`frames-read:${ip}`, 240);
+        out = (await frames()).get(parts[2]);
         break;
       case "POST uniswap/quote":
         out = await uniswapQuote(env, body, ip);

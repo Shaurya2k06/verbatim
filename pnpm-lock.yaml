@@ -522,15 +522,24 @@ importers:
       '@verbatim/app-kit':
         specifier: workspace:*
         version: link:../packages/app-kit
+      '@verbatim/attestor-cli':
+        specifier: workspace:*
+        version: link:../packages/attestor-cli
       '@verbatim/client':
         specifier: workspace:*
         version: link:../packages/client
       '@verbatim/displayvm-ts':
         specifier: workspace:*
         version: link:../packages/displayvm-ts
+      '@verbatim/frames-sdk':
+        specifier: workspace:*
+        version: link:../packages/frames-sdk
       '@verbatim/signer':
         specifier: workspace:*
         version: link:../packages/signer
+      '@verbatim/snapshot-cli':
+        specifier: workspace:*
+        version: link:../packages/snapshot-cli
       '@verbatim/urrender':
         specifier: workspace:*
         version: link:../packages/urrender

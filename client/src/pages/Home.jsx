@@ -6,6 +6,7 @@ import { Architecture } from "../landing/Architecture";
 import { Boot } from "../landing/Boot";
 import { COMMANDS, EXPLORE, FAQ, FEATURES, FRAME_CAP, FRAME_PATHS, REFUSALS, STEPS, TRY, VERSUS } from "../landing/content";
 import { Finale } from "../landing/Finale";
+import { FramesRun } from "../landing/FramesRun";
 import { Footer } from "../landing/Footer";
 import { GateArt } from "../landing/GateArt";
 import { HexField } from "../landing/HexField";
@@ -332,6 +333,7 @@ function Paths() {
           </article>
         ))}
       </div>
+      <FramesRun />
       <div className="lp-gas-legend" aria-hidden="true">
         {Object.entries(SEG_LABEL).map(([k, v]) => (
           <span key={k}>

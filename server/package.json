@@ -9,9 +9,12 @@
   },
   "dependencies": {
     "@verbatim/app-kit": "workspace:*",
+    "@verbatim/attestor-cli": "workspace:*",
     "@verbatim/client": "workspace:*",
     "@verbatim/displayvm-ts": "workspace:*",
+    "@verbatim/frames-sdk": "workspace:*",
     "@verbatim/signer": "workspace:*",
+    "@verbatim/snapshot-cli": "workspace:*",
     "@verbatim/urrender": "workspace:*",
     "cors": "^2.8.6",
     "dotenv": "^18.0.9",
