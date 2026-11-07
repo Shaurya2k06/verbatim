@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { formatUnits, parseAbi, parseEther } from "viem";
 import { Pill } from "../components/Badge";
-import { REPO } from "../components/Layout";
 import { SuiteRunner } from "../components/SuiteRunner";
-import { TxLog } from "../components/TxLog";
 import { OpRunner } from "../components/OpRunner";
 import { ProofRef } from "../components/ProofRef";
 import { Loading } from "../components/States";
@@ -141,15 +139,14 @@ function Verbatim({ dep, setup, tamper, route, live, onTx }) {
 export default function Uniswap() {
   const { deployments, stateOf } = useNetwork();
   const dep = deployments?.sepolia;
-  const [leg, setLeg] = useState("sepolia");
-  const [amount, setAmount] = useState("0.001");
-  const [route, setRoute] = useState("honest");
-  const [tamper, setTamper] = useState(true);
+  // One fixed scenario: 0.001 ETH on Sepolia, through a tampered frontend that claims the honest pool.
+  const leg = "sepolia";
+  const amount = "0.001";
+  const route = "honest";
+  const tamper = true;
   const amountOk = /^\d*\.?\d+$/.test(amount) && parseEther(amount) > 0n && parseEther(amount) <= parseEther("0.001");
   const setup = useSetup(amountOk ? dep : null, amount);
   const live = stateOf("sepolia") === "live";
-  const [txs, setTxs] = useState([]);
-  const addTx = (t) => setTxs((x) => [...x, { id: `${Date.now()}-${x.length}`, at: Date.now(), ...t }]);
   const manifest = useData("manifest.json");
   void manifest;
 
@@ -157,36 +154,6 @@ export default function Uniswap() {
     <>
       <h1>Uniswap</h1>
       <p className="lede">The same malicious swap, twice: an ordinary wallet on the left, Verbatim on the right. Live on Sepolia, against Uniswap's official v4 contracts.</p>
-      <div className="panel controls">
-        <label className="filter">
-          <span>Leg</span>
-          <select value={leg} onChange={(e) => setLeg(e.target.value)}>
-            <option value="sepolia">Sepolia, official Uniswap contracts</option>
-            <option value="devnet" disabled={stateOf("devnet") !== "live"}>
-              Frames devnet{stateOf("devnet") !== "live" ? " (not producing blocks)" : ""}
-            </option>
-          </select>
-        </label>
-        <label className="filter">
-          <span>Amount (ETH, at most 0.001)</span>
-          <input inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />
-        </label>
-        <label className="filter">
-          <span>Route the frontend claims</span>
-          <select value={route} onChange={(e) => setRoute(e.target.value)}>
-            <option value="honest">Honest pool</option>
-            <option value="evil">SkimHook route</option>
-          </select>
-        </label>
-        <label className="switch">
-          <input type="checkbox" checked={tamper} onChange={(e) => setTamper(e.target.checked)} />
-          <span>
-            <strong>Tampered frontend</strong>
-            <span className="muted small">Sets minimum output to 0 and routes through a hook that can take your output.</span>
-          </span>
-        </label>
-      </div>
-      <TxLog entries={txs} onClear={() => setTxs([])} />
       {leg === "devnet" ? (
         <div className="panel">
           <div className="callout">The frames devnet leg runs the same swap through the alternative mempool. It is not producing blocks right now, so here are its recorded runs.</div>
@@ -215,8 +182,8 @@ export default function Uniswap() {
             The honest pool quotes {fmt(setup.expected)} dUSDC for {amount} ETH right now (Uniswap v4 Quoter). The frontend claims at least {fmt(setup.minOut)}, after 1% slippage.
           </p>
           <div className="sidebyside">
-            <Ordinary dep={dep} setup={setup} tamper={tamper} route={route} onTx={addTx} />
-            <Verbatim dep={dep} setup={setup} tamper={tamper} route={route} live={live} onTx={addTx} />
+            <Ordinary dep={dep} setup={setup} tamper={tamper} route={route} />
+            <Verbatim dep={dep} setup={setup} tamper={tamper} route={route} live={live} />
           </div>
         </>
       )}
@@ -241,9 +208,6 @@ export default function Uniswap() {
           <ProofRef id="B-UI-eoa" />
           <ProofRef id="B-UI-verbatim" />
         </div>
-        <p className="small muted">
-          What is real: the interface, built from a clean checkout; the quote, from the Trading API; the transaction, on Sepolia. What the harness changes: it runs on a local origin, so RPC goes to our provider, Uniswap's data backend is unavailable, and token metadata for the selected pair comes from the chain. Testnet mode is preset. The checkout loses references to unpublished workspaces (<code>DECISIONS.md</code>, D-A22). The page offers USDC, and the skim pays out in the demo pool's dUSDC.
-        </p>
       </section>
 
             <section className="panel" id="uniswap-cases">
@@ -251,20 +215,9 @@ export default function Uniswap() {
         <p className="muted small">
           Every case that is about a swap or the router, run by the server against Uniswap's official v4 contracts. No wallet or keys needed: the demo server signs as two of the account's owners, on a testnet account.
         </p>
-        <SuiteRunner topic="uniswap" onTx={addTx} facts />
+        <SuiteRunner topic="uniswap" facts />
       </section>
 
-      <section className="panel">
-        <h2>What just happened</h2>
-        <ol className="explain">
-          <li>The owners signed a sentence, not calldata. The signature covers the sentence's hash.</li>
-          <li>In validation, the account re-rendered the sentence from the real calldata. A tampered transaction renders differently, so it was refused before reaching the mempool, at no cost.</li>
-          <li>
-            The honest swap's guarantees were asserted in execution: had the pool paid less than the minimum, the whole batch would have reverted. The design is the{" "}
-            <a href={`${REPO}/blob/main/contracts/docs/erc/sentence-bound-frame-transactions.md`} target="_blank" rel="noreferrer">Sentence-bound frame transactions draft</a>.
-          </li>
-        </ol>
-      </section>
     </>
   );
 }

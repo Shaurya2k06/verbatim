@@ -5,7 +5,7 @@ import { Evidence, Pill } from "../components/Badge";
 import { Failed, Loading } from "../components/States";
 import { TxLink } from "../components/TxLink";
 import { useData } from "../lib/data";
-import { EVIDENCE, GROUPS, OUTCOME, errorName, rows, summary } from "../lib/evidence";
+import { EVIDENCE, GROUPS, OUTCOME, errorName, rows } from "../lib/evidence";
 
 const History = lazy(() => import("./History"));
 
@@ -136,12 +136,9 @@ function ProofLedger() {
   if (d.loading) return <Loading what="Loading proofs" />;
   if (d.error) return <Failed what="proofs.json" error={d.error} />;
   const [, manifest] = d.data;
-  const s = summary(all);
   const passOf = (r) => (r.outcome === "not-run" ? "notrun" : r.pass ? "met" : "notmet");
   const shown = all.filter((r) => (!f.leg || r.leg === f.leg) && (!f.outcome || r.outcome === f.outcome) && (!f.evidence || r.evidence === f.evidence) && (!f.group || r.group === f.group) && (!f.result || passOf(r) === f.result));
-  const finalMet = all.filter((r) => r.evidence === "final" && r.pass).length;
   const olderMet = all.filter((r) => r.evidence === "older" && r.pass).length;
-  const foundry = all.filter((r) => r.evidence === "foundry").length;
 
   return (
     <>
@@ -149,29 +146,6 @@ function ProofLedger() {
       <p className="lede">
         Every claim, checkable. Each row is what a live network returned when the proof scripts ran. Earlier runs of each row are in <Link to="/proofs?view=history">the test history</Link>.
       </p>
-      <div className="counters">
-        <div className="counter">
-          <div className="big">{finalMet}</div>
-          <Evidence kind="final" />
-          <div>met their expected result</div>
-        </div>
-        <div className="counter">
-          <div className="big">{olderMet}</div>
-          <Evidence kind="older" />
-          <div>met their expected result</div>
-        </div>
-        <div className="counter">
-          <div className="big">{foundry}</div>
-          <Evidence kind="foundry" />
-          <div>Foundry-only rows in this file</div>
-        </div>
-        <div className={`counter${s.notMet ? " warn" : ""}`}>
-          <div className="big">
-            {s.notMet} + {s.notRun}
-          </div>
-          <div>rows miss their expected result, plus rows not run</div>
-        </div>
-      </div>
       {olderMet ? (
         <div className="callout">
           <strong>Older rows, stated plainly.</strong> The public frames devnet was reset to genesis on 6 November 2026, and Leg A was rerun on the final build after that. A row marked {EVIDENCE.older.label} predates the reset, so its transaction is no longer on the chain.

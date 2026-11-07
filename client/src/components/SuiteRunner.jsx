@@ -272,30 +272,6 @@ export function SuiteRunner({ topic, onTx, facts = false }) {
         </p>
       ) : null}
       {!info && !loadError ? <p className="lp-caret-line">Reaching the demo server. It can take up to a minute to wake</p> : null}
-      {info && facts ? (
-        <dl className="lp-facts">
-          <div>
-            <dt>Network</dt>
-            <dd>{info.network}</dd>
-          </div>
-          <div>
-            <dt>Account</dt>
-            <dd>
-              <a href={`${info.explorer}/address/${info.account}`} target="_blank" rel="noreferrer">
-                {short(info.account, 6)} ↗
-              </a>
-            </dd>
-          </div>
-          <div>
-            <dt>Funds for gas</dt>
-            <dd>{info.funds ? `${Number(info.funds.accountEth).toFixed(4)} Sepolia ETH` : "Could not read"}</dd>
-          </div>
-          <div>
-            <dt>In line now</dt>
-            <dd>{info.queued}</dd>
-          </div>
-        </dl>
-      ) : null}
       {info && !info.ready ? <p className="lp-run-error">Runs are off: {info.why}.</p> : null}
       {facts ? (
         <div className="lp-notes">
