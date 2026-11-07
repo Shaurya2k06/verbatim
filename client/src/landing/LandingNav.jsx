@@ -110,7 +110,7 @@ export function LandingNav({ base = "", pages = null }) {
                   {label}
                 </a>
               ))}
-              <Link to="/proofs" onClick={close} style={{ transitionDelay: open ? "360ms" : "0ms" }}>
+              <Link to="/demo#proofs" onClick={close} style={{ transitionDelay: open ? "360ms" : "0ms" }}>
                 Every proof
               </Link>
             </>

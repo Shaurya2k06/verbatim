@@ -369,3 +369,40 @@
 .lp-app .lp-menu {
   overflow-y: auto;
 }
+
+/* The proof ledger on the live demo page: a toggle, and a Run button on the rows the server can run again */
+.lp-app .proofs-toggle-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.lp-app .proofs-toggle-head h2 {
+  margin-top: 0;
+}
+.lp-app #proof-ledger {
+  margin-top: 16px;
+}
+.lp-app .plink {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+.lp-app .proof-run {
+  margin-left: auto;
+}
+.lp-app .proof > .lp-run,
+.lp-app .proof > .lp-run-error {
+  margin: 0 14px 14px;
+}
+.lp-app .lp-frame-receipt {
+  margin: 12px 0;
+}
+.lp-app .lp-frame-receipt th:nth-child(2),
+.lp-app .lp-frame-receipt td:nth-child(2),
+.lp-app .lp-frame-receipt th:nth-child(3),
+.lp-app .lp-frame-receipt td:nth-child(3) {
+  text-align: left;
+}

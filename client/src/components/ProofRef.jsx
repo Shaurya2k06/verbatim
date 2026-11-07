@@ -14,7 +14,7 @@ export function ProofRef({ id }) {
   return (
     <div className="proofref">
       <div className="proofref-head">
-        <Link to={`/proofs?id=${encodeURIComponent(r.id)}`} className="mono">
+        <Link to={`/demo?id=${encodeURIComponent(r.id)}#proofs`} className="mono">
           {r.id}
         </Link>
         <strong>{r.title}</strong>

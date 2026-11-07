@@ -33,7 +33,7 @@ function HeroProof({ s }) {
   const live = s.attacksMetByEvidence.final ?? 0;
   return (
     <p className="lp-hero-proof">
-      <b>{live}</b> attacks stopped on live networks, on the final build. <Link to="/proofs">See every record →</Link>
+      <b>{live}</b> attacks stopped on live networks, on the final build. <Link to="/demo#proofs">See every record →</Link>
     </p>
   );
 }

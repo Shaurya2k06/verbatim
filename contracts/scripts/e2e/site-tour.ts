@@ -651,7 +651,7 @@ async function arrive(path: string, labelText: string, said?: string) {
 
 if (!LANDING_ONLY) {
   // ================= the proof ledger: frame transactions on the devnet =================
-  await arrive("/proofs", "History & proofs · the proof ledger", N.proofsIntro);
+  await arrive("/demo#proofs", "Live demo · every proof", N.proofsIntro);
   const row = (id: string) => site.locator("li.proof", { has: site.locator(".pid", { hasText: new RegExp(`^${id}$`) }) }).first();
   async function openRow(id: string, said: string | string[]) {
     const r = row(id);
@@ -767,7 +767,7 @@ if (!LANDING_ONLY) {
 }
 
 // Ending: the runs just made, on the record
-await arrive("/proofs?view=history", "History & proofs · every run on record", N.history);
+await arrive("/proofs?view=history", "History · every run on record", N.history);
 await label("");
 cut(site, "real", "end");
 await sleep(2500);

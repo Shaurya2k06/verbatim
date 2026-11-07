@@ -48,7 +48,7 @@ export function TxLog({ entries, onClear }) {
                       <Pill tone={k.tone}>{k.text}</Pill>
                       {e.error ? <div className="muted small mono">{e.error}</div> : null}
                     </td>
-                    <td>{e.txHash ? <TxLink hash={e.txHash} leg="sepolia" /> : <span className="muted small">none: it never reached a block</span>}</td>
+                    <td>{e.txHash ? <TxLink hash={e.txHash} leg={e.leg ?? "sepolia"} /> : <span className="muted small">none: it never reached a block</span>}</td>
                     <td>{e.block ?? ""}</td>
                     <td>{e.gas ? Number(e.gas).toLocaleString("en-US") : ""}</td>
                   </tr>

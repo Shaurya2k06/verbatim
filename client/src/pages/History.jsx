@@ -211,7 +211,7 @@ function ProofDetail({ r, others }) {
       <div className="kv small">
         <span>Test</span>
         <span>
-          <code>{r.id}</code> · {GROUPS[r.group]} · <Link to={`/proofs?id=${encodeURIComponent(r.id)}`}>in the proof ledger →</Link>
+          <code>{r.id}</code> · {GROUPS[r.group]} · <Link to={`/demo?id=${encodeURIComponent(r.id)}#proofs`}>in the proof ledger →</Link>
         </span>
         <span>Ran at</span>
         <span>

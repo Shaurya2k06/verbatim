@@ -27,10 +27,10 @@ function SuitesRedirect() {
   return <Navigate to={`${uniswap ? "/uniswap" : "/demo"}${hash}`} replace />;
 }
 
-/** The test history is the second view of the proofs page. */
+/** The test history lives at /proofs. */
 function HistoryRedirect() {
   const { search } = useLocation();
-  return <Navigate to={`/proofs${search ? `${search}&` : "?"}view=history`} replace />;
+  return <Navigate to={`/proofs${search}`} replace />;
 }
 
 const page = (C) => (

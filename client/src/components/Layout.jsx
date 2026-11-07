@@ -11,7 +11,7 @@ export const ROUTES = [
   ["/demo", "Live demo"],
   ["/uniswap", "Uniswap"],
   ["/ens", "ENS"],
-  ["/proofs", "History & proofs"],
+  ["/proofs", "History"],
 ];
 
 /** One page failing must not blank the site: show the error, keep the navigation. */
@@ -27,7 +27,7 @@ export class PageBoundary extends Component {
     if (!this.state.error) return this.props.children;
     return (
       <div className="bad">
-        This page failed: {this.state.error.message}. The rest of the site still works; <a href="/proofs">the proof ledger</a> needs no network.
+        This page failed: {this.state.error.message}. The rest of the site still works; <a href="/proofs">the test history</a> needs no network.
       </div>
     );
   }

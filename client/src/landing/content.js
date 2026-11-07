@@ -201,14 +201,14 @@ export const TRY = [
   { to: "/demo", title: "Run the live demo", body: "No wallet or keys needed. Follow one swap from the click to the block, or run the whole demo in order." },
   { to: "/uniswap", title: "Tamper with a swap", body: "The same swap twice on Uniswap's contracts: an ordinary wallet and Verbatim. Follow one swap from the click to the block." },
   { to: "/ens", title: "Check an ENS name", body: "Run the exclusivity proof on any name, and see a lookalike refused." },
-  { to: "/proofs", title: "Read every record", body: "Every claim with its evidence, and every test run on record." },
+  { to: "/demo#proofs", title: "Run every proof", body: "Every claim with its evidence, and a Run button wherever the server can send it again." },
 ];
 
 export const EXPLORE = [
   ["/demo", "Live demo", "End-to-end workflows on Sepolia", "scan"],
   ["/uniswap", "Uniswap", "Every Uniswap test and demo, in one place", "build"],
   ["/ens", "ENS", "Run the exclusivity proof on any name", "tag"],
-  ["/proofs", "History & proofs", "Every claim, and every run on record", "check"],
+  ["/proofs", "History", "Every run on record", "check"],
 ];
 
 export const COMMANDS = `pnpm install

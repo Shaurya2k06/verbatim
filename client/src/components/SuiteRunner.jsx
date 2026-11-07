@@ -183,7 +183,7 @@ function Case({ c, state, info, onRun }) {
                 with <code>{c.expect.name}</code>
               </>
             ) : null}
-            . <Link to={`/proofs?id=${encodeURIComponent(c.proof)}`}>Earlier recorded run →</Link>
+            . <Link to={`/demo?id=${encodeURIComponent(c.proof)}#proofs`}>Earlier recorded run →</Link>
           </p>
         </div>
         <button type="button" className="lp-btn lp-btn-outline lp-case-run" disabled={busy || !info.ready} onClick={() => onRun(c.id)}>
