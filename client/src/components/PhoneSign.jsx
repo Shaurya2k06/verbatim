@@ -27,15 +27,6 @@ const MODES = {
   },
 };
 
-const STEPS = [
-  ["Open Verbatim Signer on the phone", "The Android app has no internet permission. Its key is one of the account's three owners."],
-  ["Tap Scan QR and point the phone at the laptop", "The QR below rotates through a few frames. The phone keeps reading until it has all of them."],
-  ["Read the sentence on the phone, and compare the match code", "The phone decodes the sentence itself, guarantees first. Its match code must equal the one beside the QR here."],
-  ["Tap Approve and sign", "The phone signs the sentence's hash, not the calldata, and shows a signature QR."],
-  ["On the laptop, press Scan the device's signature", "Hold the phone's QR up to the laptop camera. The page checks that the signer is an owner."],
-  ["Add the laptop's signature", "The account needs two of three owners. Paste the laptop's owner key in Demo laptop owner, then Sign with the demo key. It stays in this tab's memory."],
-];
-
 export function PhoneSign({ onTx }) {
   const [base, setBase] = useState(null);
   const [err, setErr] = useState(null);
@@ -75,20 +66,6 @@ export function PhoneSign({ onTx }) {
 
   return (
     <section className="panel phone-sign" id="phone">
-      <h2>Sign it on your phone</h2>
-      <p className="muted small">
-        The real hand-off between an owner’s phone and the laptop, with nothing in between but QR codes. The laptop builds a transaction on Sepolia and never holds the phone’s key; the phone never touches the internet. You read the sentence on the phone and approve it there.
-      </p>
-      <ol className="phone-steps">
-        {STEPS.map(([t, d], i) => (
-          <li key={t}>
-            <b>
-              {i + 1}. {t}
-            </b>
-            <span className="muted small">{d}</span>
-          </li>
-        ))}
-      </ol>
       {err ? <div className="bad">Could not reach Sepolia: {err}</div> : null}
       {!base && !err ? <Loading what="Reading the account on Sepolia" /> : null}
       {base ? (
