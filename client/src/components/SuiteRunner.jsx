@@ -8,7 +8,7 @@ import { SentenceDiff } from "./SentenceDiff";
 import { apiGet, apiPost } from "../lib/api";
 
 /** The cases that are about Uniswap: swaps, the router's commands, and the skim hook. Everything else is general. */
-const UNISWAP_CASES = new Set(["honest-swap", "tampered-swap", "ordinary-wallet", "skim-true", "allow-revert", "unknown-command"]);
+const UNISWAP_CASES = new Set(["honest-swap", "multihop", "tampered-swap", "ordinary-wallet", "skim-true", "allow-revert", "unknown-command"]);
 export const topicOf = (caseId) => (UNISWAP_CASES.has(caseId) ? "uniswap" : "general");
 
 const POLL_MS = 1500;

@@ -89,5 +89,15 @@
     "0x82e0559476FfDA4be044B46aAff50D3F8279f5C2",
     "0xA2d21fD462698bA40e96F84147F86E11d744c2Cf"
   ],
-  "threshold": 2
+  "threshold": 2,
+  "probeAccount": "0xaa63b3dba63820c19208876321389046ff1db30f",
+  "probePaymaster": "0x74770fa3d6736c3061b9c451a08eeb73974d5daf",
+  "feeFailAccount": "0xb582307afbe34c37383029f1f37a3c2d6ac11239",
+  "feeFailPaymaster": "0x4ffe8981ae827f7fc9820f75c9d94dea999a187f",
+  "probeG0": "0x10a7ebbc180f5386bee4d9571f17fd395354704d",
+  "unstaked": {
+    "account": "0xa2d008dd078716b4bb5872cb8e367b34dd4dc0fa",
+    "paymaster": "0xfed03466425d1b032bfaf1c691a1de1f428be184",
+    "dUSDC": "0xda39718ccde1bdd7fbb13f10aec468088344f507"
+  }
 }

@@ -1,10 +1,13 @@
 // Writes the public addresses the apps and docs read. No keys, by construction: only named fields are copied.
-import { writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { privateKeyToAccount } from "viem/accounts";
 import { ROOT, key, readState } from "./lib/env";
 
 const s = readState();
+// The unstaked side deployment (CANONICAL-UNSTAKED) keeps its own state file.
+const unstakedState = resolve(ROOT, "contracts/.state/unstaked.json");
+const u = existsSync(unstakedState) ? JSON.parse(readFileSync(unstakedState, "utf8")) : null;
 const out = {
   network: "frames-devnet",
   chainId: 1337,
@@ -20,6 +23,12 @@ const out = {
   trustAdmin: s.trustAdmin,
   account: s.account,
   emptyDepositAccount: s.account2,
+  probeAccount: s.probeAccount,
+  probePaymaster: s.probePaymaster,
+  feeFailAccount: s.feeFailAccount,
+  feeFailPaymaster: s.feeFailPaymaster,
+  probeG0: s.probeG0,
+  unstaked: u ? { account: u.account, paymaster: u.paymaster, dUSDC: u.tokenA } : undefined,
   paymaster: s.paymaster,
   accountCodehash: s.accountCodehash,
   deployTxs: s.deployTxs,

@@ -15,7 +15,7 @@ import { ERRORS as KIT_ERRORS, EXPLAIN } from "@verbatim/app-kit/errors";
 import { packedUniswap, prepareUserOp, userOpWithSignatures } from "@verbatim/client";
 import { decodeTree, specOf } from "@verbatim/displayvm-ts";
 import { review, typedData } from "@verbatim/signer";
-import { CMD, executeData, v4ExactInSingleInput, v4SwapCall } from "@verbatim/urrender";
+import { CMD, executeData, v4ExactInInput, v4ExactInSingleInput, v4SwapCall } from "@verbatim/urrender";
 import { HttpError, dep, forward, limit, need, snapshot } from "./app.js";
 
 const ACCOUNT_ABI = JSON.parse(readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), "../../client/src/lib/abi/VerbatimAccount4337.json"), "utf8"));
@@ -28,6 +28,9 @@ const QUOTER = parseAbi([
   "struct PoolKey { address currency0; address currency1; uint24 fee; int24 tickSpacing; address hooks; }",
   "struct QuoteExactSingleParams { PoolKey poolKey; bool zeroForOne; uint128 exactAmount; bytes hookData; }",
   "function quoteExactInputSingle(QuoteExactSingleParams params) returns (uint256 amountOut, uint256 gasEstimate)",
+  "struct PathKey { address intermediateCurrency; uint24 fee; int24 tickSpacing; address hooks; bytes hookData; }",
+  "struct QuoteExactParams { address exactCurrency; PathKey[] path; uint128 exactAmount; }",
+  "function quoteExactInput(QuoteExactParams params) returns (uint256 amountOut, uint256 gasEstimate)",
 ]);
 const VERBATIM_RESULT = keccak256(toHex("VerbatimResult(bool,bytes)"));
 const TRANSFER = keccak256(toHex("Transfer(address,address,uint256)"));
@@ -51,6 +54,18 @@ const swapCall = (d, key, minOut) => ({
   data: v4SwapCall({ key, zeroForOne: true, amountIn: SWAP_IN, amountOutMinimum: minOut, legacyParams: !!d.uniswap.routerLegacyParams }, BigInt(Math.floor(Date.now() / 1000) + 3600)),
 });
 
+/** ETH to dUSDC to dWETH: two v4 pools, one router command. */
+const twoHops = (d) => [
+  { currency: d.tokens.dUSDC, fee: d.pools.eth.key.fee, tickSpacing: d.pools.eth.key.tickSpacing, hooks: d.pools.eth.key.hooks },
+  { currency: d.tokens.dWETH, fee: d.pools.erc20.key.fee, tickSpacing: d.pools.erc20.key.tickSpacing, hooks: d.pools.erc20.key.hooks },
+];
+const multihopCall = (d, minOut) => ({
+  target: d.uniswap.router,
+  value: SWAP_IN,
+  data: executeData([CMD.V4_SWAP], [v4ExactInInput({ currencyIn: "0x0000000000000000000000000000000000000000", path: twoHops(d), amountIn: SWAP_IN, amountOutMinimum: minOut, legacyParams: !!d.uniswap.routerLegacyParams })], deadline()),
+});
+const dwethOf = (who, label) => ({ label, unit: "dWETH", read: (x) => x.pub.readContract({ address: x.d.tokens.dWETH, abi: ERC20, functionName: "balanceOf", args: [who(x)] }), format: (n) => formatUnits(n, 18) });
+
 const dusdcOf = (who, label) => ({ label, unit: "dUSDC", read: (x) => x.pub.readContract({ address: x.d.tokens.dUSDC, abi: ERC20, functionName: "balanceOf", args: [who(x)] }), format: (n) => formatUnits(n, 6) });
 const NONCE = { label: "Account nonce", unit: "", read: (x) => x.pub.readContract({ address: x.d.entryPoint, abi: EP, functionName: "getNonce", args: [x.d.account, 0n] }), format: (n) => n.toString() };
 const recipient = dusdcOf((x) => x.d.ens.recipient, "Recipient balance");
@@ -70,6 +85,8 @@ export const SUITES = [
     summary: "Nothing is being attacked here. The chain renders the same sentence the owners signed, and the transaction goes through.",
     cases: [
       { id: "honest-transfer", proof: "B-honest-pimlico", title: "Send 1 dUSDC", plain: "A transfer to verbatim-demo.eth, with the name shown in the sentence.", expect: { kind: "landed" }, watch: [recipient, NONCE], build: (x) => ({ calls: [transferCall(x.d.tokens.dUSDC, x.d.ens.recipient, ONE_USDC)] }) },
+      { id: "honest-transfer-2", proof: "B-honest-alchemy", bundler: 2, title: "Send 1 dUSDC through a second bundler", plain: "The same honest transfer, sent through the server's second bundler, so no single bundler is trusted to carry it.", expect: { kind: "landed" }, watch: [recipient, NONCE], build: (x) => ({ calls: [transferCall(x.d.tokens.dUSDC, x.d.ens.recipient, ONE_USDC)] }) },
+      { id: "multihop", proof: "B-multihop", title: "Swap through two pools", plain: "ETH to dUSDC to dWETH in one router command. The sentence names the route, and the minimum is 5% under Uniswap's own quote.", expect: { kind: "landed" }, watch: [dwethOf((x) => x.d.account, "Account dWETH"), NONCE], build: (x) => ({ calls: [multihopCall(x.d, x.minOut2)] }) },
       { id: "honest-swap", proof: "B-swap", title: "Swap 0.0001 ETH on Uniswap v4", plain: "Through Uniswap’s official Sepolia router, at a minimum output 1% under a fresh quote.", expect: { kind: "landed" }, watch: [treasury, NONCE], build: (x) => ({ calls: [swapCall(x.d, x.d.pools.eth.key, x.minOut)] }) },
     ],
   },
@@ -154,7 +171,12 @@ async function fees(env, pub) {
     const r = await bundle(env, "pimlico_getUserOperationGasPrice", []);
     return { maxFeePerGas: BigInt(r.fast.maxFeePerGas), maxPriorityFeePerGas: BigInt(r.fast.maxPriorityFeePerGas) };
   } catch {
-    return pub.estimateFeesPerGas();
+    // Not Pimlico. Alchemy's bundler names its own floor for the priority fee; anything else gets the node's estimate.
+    const est = await pub.estimateFeesPerGas();
+    const floor = await bundle(env, "rundler_maxPriorityFeePerGas", []).then((x) => BigInt(x)).catch(() => 0n);
+    if (floor <= est.maxPriorityFeePerGas) return est;
+    const priority = (floor * 12n) / 10n;
+    return { maxPriorityFeePerGas: priority, maxFeePerGas: est.maxFeePerGas - est.maxPriorityFeePerGas + priority * 2n };
   }
 }
 
@@ -212,6 +234,11 @@ const client = (env) => createPublicClient({ chain: sepolia, transport: http(nee
 
 /** Everything a case reads from the chain, once, so that one run's operations share one expiry. */
 async function contextFor(env, c) {
+  // A case may ask for the second bundler, so that the run shows no single bundler is needed.
+  if (c.bundler === 2) {
+    if (!env.BUNDLER_URL_2) throw new Error("the server has no second bundler configured");
+    env = { ...env, BUNDLER_URL: env.BUNDLER_URL_2 };
+  }
   const d = dep();
   const pub = client(env);
   const [snap, block, f, attacker, quoted] = await Promise.all([
@@ -223,11 +250,16 @@ async function contextFor(env, c) {
   ]);
   if (snap.stale) throw new Error("the attested snapshot has expired and the server has no attestor keys to refresh it");
   const minOut = (quoted.result[0] * 99n) / 100n;
+  let minOut2 = 0n;
+  if (c.id === "multihop") {
+    const q2 = await pub.simulateContract({ address: d.uniswap.quoter, abi: QUOTER, functionName: "quoteExactInput", args: [{ exactCurrency: "0x0000000000000000000000000000000000000000", path: twoHops(d).map((h) => ({ intermediateCurrency: h.currency, fee: h.fee, tickSpacing: h.tickSpacing, hooks: h.hooks, hookData: "0x" })), exactAmount: SWAP_IN }] });
+    minOut2 = (q2.result[0] * 95n) / 100n;
+  }
   let expiry = block.timestamp + BigInt(c.validity ?? 240);
   const cap = BigInt(snap.expiry) - 30n;
   if (expiry > cap) expiry = cap;
   const prepare = (calls, override) => prepareUserOp({ client: pub, account: d.account, calls, snapshot: snap, router: { permit2: d.uniswap.permit2, weth: d.uniswap.weth9, publisher: packedUniswap }, fees: f, expiry, override });
-  return { env, d, pub, block, attacker, minOut, expiry, prepare };
+  return { env, d, pub, block, attacker, minOut, minOut2, expiry, prepare };
 }
 
 const step = (run, text, tone) => run.steps.push({ text, tone: tone ?? null, at: Date.now() });

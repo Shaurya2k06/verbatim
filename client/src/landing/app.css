@@ -406,3 +406,6 @@
 .lp-app .lp-frame-receipt td:nth-child(3) {
   text-align: left;
 }
+.lp-app .proof-norun {
+  flex-basis: 100%;
+}

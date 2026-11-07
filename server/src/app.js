@@ -283,6 +283,7 @@ function config(env) {
 // Loaded on first use: it brings the signer and the renderer, which the rest of the API does not need.
 const suites = () => import("./suites.js");
 const frames = () => import("./frames.js");
+const framesCases = () => import("./frames-cases.js");
 
 const jsonSafe = (v) => JSON.parse(JSON.stringify(v, (_, x) => (typeof x === "bigint" ? x.toString() : x)));
 
@@ -323,6 +324,16 @@ export async function handle({ method, path, body, env, ip = "local" }) {
         break;
       case "POST frames/run":
         out = (await frames()).start(env, ip);
+        break;
+      case "GET frames/cases":
+        out = (await framesCases()).list();
+        break;
+      case "POST frames/case":
+        out = (await framesCases()).start(env, body, ip);
+        break;
+      case "GET frames/case":
+        limit(`frames-read:${ip}`, 240);
+        out = (await framesCases()).get(parts[2]);
         break;
       case "GET frames/run":
         limit(`frames-read:${ip}`, 240);
