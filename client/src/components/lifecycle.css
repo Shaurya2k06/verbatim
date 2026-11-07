@@ -164,3 +164,48 @@
   gap: 8px;
   margin: 0 0 24px;
 }
+
+/* Phone and laptop signing, on /demo */
+.phone-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 8px;
+  margin: 16px 0;
+  padding: 0;
+  list-style: none;
+}
+.phone-steps li {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.phone-modes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 8px 0 16px;
+}
+.phone-mode {
+  display: grid;
+  gap: 4px;
+  padding: 14px;
+  border-radius: 8px;
+  text-align: left;
+  white-space: normal;
+}
+.phone-mode span {
+  color: var(--mute);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 20px;
+}
+.phone-mode.on {
+  box-shadow: inset 0 0 0 2px var(--ok);
+}
+@media (max-width: 600px) {
+  .phone-modes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

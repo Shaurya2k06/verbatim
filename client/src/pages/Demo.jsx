@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { Lifecycle } from "../components/Lifecycle";
+import { PhoneSign } from "../components/PhoneSign";
 import { ProofLedger } from "../components/ProofLedger";
 import { SuiteRunner } from "../components/SuiteRunner";
 import { TxLog } from "../components/TxLog";
@@ -29,6 +30,7 @@ export default function Demo() {
       </p>
       <TxLog entries={txs} onClear={() => setTxs([])} />
       <Lifecycle onTx={addTx} />
+      <PhoneSign onTx={addTx} />
       <section className="panel" id="cases">
         <h2>The general cases</h2>
         <p className="muted small">Signed sentences, stale signatures, and promises checked after the calls. Each runs on Sepolia when you press Run.</p>
