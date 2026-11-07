@@ -145,7 +145,15 @@ async function lands(k, tx, account = d().account) {
     throw e;
   }
   k.log("Admitted. Waiting for the block");
-  const r = await waitReceipt(h);
+  // The devnet's mempool sometimes admits a transaction and then drops it. If nothing is mined in time and the sender's nonce has
+  // not moved, the case is built and signed again at a higher fee.
+  let r = await waitReceipt(h, DEVNET, 90_000).catch(() => null);
+  if (!r) {
+    const nonce = BigInt(await pub.getTransactionCount({ address: account }));
+    if (nonce > tx.nonceSeq) r = await waitReceipt(h, DEVNET, 30_000).catch(() => null);
+    if (!r && nonce > tx.nonceSeq) throw new Error("the transaction's nonce was used, but its receipt never arrived");
+    if (!r) throw new Replace("the mempool admitted it and then dropped it");
+  }
   const v = verdictOf(r, account);
   k.log(v.ok ? "Mined. The account reports every guarantee held" : v.ok === false ? `Mined, and the batch reverted: ${v.name ?? "see the receipt"}` : "Mined");
   return { r, out: { kind: v.ok === false ? "reverted" : "landed", txHash: h, txUrl: explorerTx(h), block: Number(BigInt(r.blockNumber)), frames: framesOf(r), name: v.name, raw: v.raw, human: v.human } };
@@ -205,7 +213,7 @@ async function probeTx(k, shape, opts = {}) {
 async function probeLands(k, tx) {
   const { out } = await lands(k, tx, d().probeG0);
   const ok = out.frames.length > 0 && out.frames.every((f) => f.status === 1);
-  return { ...out, kind: "landed", asExpected: ok, note: ok ? `All ${out.frames.length} frames succeeded.` : `Frame statuses: ${out.frames.map((f) => f.status).join(", ")}.` };
+  return { ...out, kind: "probe-landed", asExpected: ok, note: ok ? `All ${out.frames.length} frames succeeded.` : `Frame statuses: ${out.frames.map((f) => f.status).join(", ")}.` };
 }
 
 // ---------------------------------------------------------------------------------------------------------------------------
@@ -796,7 +804,7 @@ async function pump(env) {
           break;
         } catch (e) {
           if (!(e instanceof Replace) || bump >= 16n) throw e;
-          k.log("The pool already holds a transaction on this nonce. Rebuilding at a higher fee to replace it");
+          k.log(/dropped/.test(e.message) ? "The mempool dropped it. Building and signing it again at a higher fee" : "The pool already holds a transaction on this nonce. Rebuilding at a higher fee to replace it");
           await sleep(3000);
         }
       }

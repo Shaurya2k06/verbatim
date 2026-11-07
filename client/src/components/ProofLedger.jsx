@@ -38,6 +38,7 @@ const KIND_TEXT = {
   skimmed: "Landed, and the hook took the output. Nothing checked what the route did.",
   "fee-failed": "Mined, and the execute frame failed on the fee, so no protected call ran.",
   checked: "Read from the chain.",
+  "probe-landed": "Admitted by the alt mempool and mined. This is the probe account, which checks what the protocol does, not Verbatim's account.",
 };
 
 function Verdict({ r }) {
@@ -122,7 +123,7 @@ function DevnetCaseView({ run }) {
       {run.status === "failed" ? <p className="lp-run-error">The run failed before it reached a result: {run.error}</p> : null}
       {r ? (
         <>
-          <div className={`lp-verdict-box is-${!r.asExpected ? "bad" : r.kind === "landed" ? "ok" : "stop"}`}>
+          <div className={`lp-verdict-box is-${!r.asExpected ? "bad" : r.kind === "landed" || r.kind === "probe-landed" || r.kind === "checked" ? "ok" : "stop"}`}>
             <p>{KIND_TEXT[r.kind] ?? r.kind}</p>
             {r.name ? (
               <p>
@@ -340,7 +341,7 @@ export function ProofLedger({ onTx }) {
       const put = (v) => alive.current && setLive((s) => ({ ...s, [id]: v }));
       const run = await follow(() => apiPost("/frames/case", { id }), (rid) => apiGet(`/frames/case/${rid}`), put, alive);
       const r = run?.result;
-      if (r) onTx?.({ label: `${id}: ${run.title}`, kind: r.kind === "fee-failed" ? "reverted" : r.kind, txHash: r.txHash, block: r.block, leg: "devnet", error: r.kind === "rejected" || r.kind === "reverted" ? r.name ?? undefined : undefined });
+      if (r) onTx?.({ label: `${id}: ${run.title}`, kind: r.kind === "fee-failed" ? "reverted" : r.kind === "probe-landed" ? "landed" : r.kind, txHash: r.txHash, block: r.block, leg: "devnet", error: r.kind === "rejected" || r.kind === "reverted" ? r.name ?? undefined : undefined });
       return;
     }
     const put = (v) => alive.current && setLive((s) => ({ ...s, [id]: v }));
